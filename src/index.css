@@ -8,7 +8,7 @@
 }
 #cookie:hover
 {
-	background-position:-128px;
+  transform: scale(1.05);
 }
 #cookie:active
 {
@@ -29,29 +29,26 @@
 }
 
 #cookie2:hover {
-  background-color: #f06d06;
-  color: #000000;
-  padding: 22px;
-  border: 3px solid #000000;
+  box-shadow: 0 0 20px #f06d06;
+  transform: scale(1.05);
 }
 
-#Vovo {
+
+
+.construcoes {
   background: #f0f000;
-  font-size: 40px;
-  color: #000000;
-  padding: 20px;
-  border-radius: 20px;
-  border: 5px solid #000000;
-  position: absolute;
-  right:0px;
-  
+  font-size: 24px;
+  color: #000;
+  padding: 15px;
+  border-radius: 10px;
+  border: 3px solid #000;
+  margin: 10px;
+  transition: all 0.2s ease;
 }
-#Vovo:hover {
-  background: url("./Vovo2.png");
+
+.construcoes:hover {
   background-color: #f06d06;
-  color: #000000;
-  padding: 22px;
-  border: 3px solid #000000;
+  transform: scale(1.05);
 }
 
 

@@ -1,6 +1,7 @@
 import logo from './PrimeiroCookie.png';
 import Vovo1 from './Vovo1.png';
 import Vovo2 from './Vovo2.png';
+import Fazenda from './Fazenda.png';
 import './App.css';
 import { useState, useEffect } from "react";
 
@@ -8,7 +9,13 @@ function App() {
 
   const [contagem, setContagem] = useState(0); // contagem de cookies
   const [CPS, setCPS] = useState(0); // CPS
-  const [preço, setPreço] = useState(15);
+  const [construcoes, setConstrucoes] = useState([
+    {nome: "Vovó", preço: 15, cps: 1, quantidade: 0, icone: Vovo1},
+    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda},
+    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Vovo2}
+  ]
+
+  )
 
   function AssarCookies() {
     setContagem(contagem + 1);
@@ -26,28 +33,59 @@ function App() {
 
 
   useEffect(() => {
+    
     const timer = setInterval(() => {
-      setContagem((atual) => atual + CPS);
-    }, 1000); // a cada 1 segundo
+      const producao = construcoes.reduce((soma, c) => soma + c.cps * c.quantidade, 0);
+      setCPS(producao);
+      setContagem((atual) => atual + producao/10);
+    }, 100); // a cada 1 segundo
     return () => clearInterval(timer); // limpa o timer
-  }, [CPS]);
+  }, [construcoes]);
 
+/*
+  function ComprarConstrucao(indice) {
+    setConstrucoes((anterior) =>
+      anterior.map((c, i) => {
+        if (contagem >= c.preço && i == indice) {
+          setContagem(contagem - c.preço);
+          return {
+            ...c,
+            quantidade: c.quantidade + 1,
+            preço: Math.floor(c.preço*1.2)
+          };
+          }
+          return c;
+        }
+      )
+    )
 
-  function ComprarConstrucao() {
-    if (contagem >= preço) {
-      setContagem(contagem - preço);
-      setCPS(CPS + 1);
-      setPreço(Math.floor(preço*1.2));
-    }
+    
   }
+*/
 
+  function ComprarConstrucao(indice) {
+    setConstrucoes((anterior) => {
+      const novo = anterior.map((c, i) => {
+        if (contagem >= c.preço && i === indice) {
+          setContagem(contagem - c.preço);
+          return {
+            ...c,
+            quantidade: c.quantidade + 1,
+            preço: Math.floor(c.preço*1.2)
+          };
+        }
+        return c;
+      });
+      return novo;
+    });
+  }
 
 
 
   return (
     <div className="App">
       <h1>Cookie Clicker</h1>
-      <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${contagem} cookies`}</div>
+      <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
       <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
       <script src="cookie.js"></script>
 
@@ -61,13 +99,16 @@ function App() {
         Outro Cookie? 
       </button>
 
-      <button id="Vovo" onClick={ComprarConstrucao} style={{cursor: "pointer" }}>
-        <img src={Vovo1}> 
-        
-        </img>
-        Vovó 
-        [Preço: {preço}]
-      </button>
+
+      {construcoes.map((c, i) => 
+        <button className ="construcoes" id={c.nome} onClick={() => ComprarConstrucao(i)} style={{cursor: "pointer"}}>
+        <img src={c.icone}></img>
+        {c.nome} <br />
+        CPS: {c.cps} <br />
+        Preço: {c.preço} <br />
+        Quantidade: {c.quantidade} 
+        </button>
+      )}
 
       <section className="hidden" id="Escondido1">
         <h1> +1 Cookie! </h1>
