@@ -10,7 +10,7 @@ function App() {
   const [contagem, setContagem] = useState(0); // contagem de cookies
   const [CPS, setCPS] = useState(0); // CPS
   const [construcoes, setConstrucoes] = useState([
-    {nome: "Vovó", preço: 15, cps: 1, quantidade: 0, icone: Vovo1},
+    {nome: "Vovó", preço: 15, cps: 0.2, quantidade: 0, icone: Vovo1},
     {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda},
     {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Vovo2}
   ]
@@ -85,40 +85,48 @@ function App() {
   return (
     <div className="App">
       <h1>Cookie Clicker</h1>
-      <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
-      <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
-      <script src="cookie.js"></script>
+      <div className="game-container">
+        <div className="seção-cookie">
+          <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
+          <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
+          <script src="cookie.js"></script>
 
-      <button id="cookie" onClick={AssarCookies} style={{cursor: "pointer" }}>
-        <img src={logo} style={{ width: "400px", height: "auto", display: "block" }}>
+          <button id="cookie" onClick={AssarCookies} style={{cursor: "pointer" }}>
+            <img src={logo} style={{ width: "400px", height: "auto", display: "block" }}>
 
-        </img>
-      </button>
+            </img>
+          </button>
 
-      <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
-        Outro Cookie? 
-      </button>
+          <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
+            Outro Cookie? 
+          </button>
 
+          <section className="hidden" id="Escondido1">
+            <h1> +1 Cookie! </h1>
+            <p> Vc ganhou 1 Cookie! </p>
+          </section>
 
-      {construcoes.map((c, i) => 
-        <button className ="construcoes" id={c.nome} onClick={() => ComprarConstrucao(i)} style={{cursor: "pointer"}}>
-        <img src={c.icone}></img>
-        {c.nome} <br />
-        CPS: {c.cps} <br />
-        Preço: {c.preço} <br />
-        Quantidade: {c.quantidade} 
-        </button>
-      )}
+          <section className="hidden" id="Escondido2">
+            <h1> -1 Cookie! </h1>
+            <p> Vc destruiu 1 Cookie! </p>
+          </section>
+        </div>
 
-      <section className="hidden" id="Escondido1">
-        <h1> +1 Cookie! </h1>
-        <p> Vc ganhou 1 Cookie! </p>
-      </section>
+      <div className="seção-construções">
+        {construcoes.map((c, i) => 
+          <button className ="construcoes" id={c.nome} onClick={() => ComprarConstrucao(i)} style={{cursor: "pointer"}}>
+          <img src={c.icone}></img>
+          {c.nome} <br />
+          CPS: {c.cps} <br />
+          Preço: {c.preço} <br />
+          Quantidade: {c.quantidade} 
+          </button>
+        )}
 
-      <section className="hidden" id="Escondido2">
-        <h1> -1 Cookie! </h1>
-        <p> Vc destruiu 1 Cookie! </p>
-      </section>
+        
+      </div>
+
+      </div>
     </div>
   );
 }
