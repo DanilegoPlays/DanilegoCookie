@@ -21,7 +21,11 @@ function App() {
     {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false},
     {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false},
     {nome: "Treinamento da Vovó", preço: 500, efeito:'duplicarVovo', id: 'vovo1', comprado: false},
-    {nome: "Super Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo2', comprado: false}
+    {nome: "Super Vovó", preço: 2000, efeito:'duplicarVovo', id: 'vovo2', comprado: false},
+    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false},
+    {nome: "Super Fazenda", preço: 10000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false},
+    {nome: "Engrenagens Melhores", preço: 20000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false},
+    {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false}
   ])
 
 
@@ -48,8 +52,15 @@ function App() {
 
   // efeito CPS
   useEffect(() => {
+    // Contagem de quantas melhorias foram compradas para cada tipo
     const mult_Vovo = melhorias.filter(m => m.efeito === 'duplicarVovo' && m.comprado).length;
+    const mult_Fazenda = melhorias.filter(m => m.efeito === 'duplicarFazenda' && m.comprado).length;
+    const mult_Fabrica = melhorias.filter(m => m.efeito === 'duplicarFabrica' && m.comprado).length;
+
+    // Cálculo dos multiplicadores (2x, 4x, 8x, etc)
     const novoVovo = 2 ** mult_Vovo;
+    const novoFazenda = 2 ** mult_Fazenda;
+    const novoFabrica = 2 ** mult_Fabrica;
 
     const timer = setInterval(() => {
       //const producao = construcoes.reduce((soma, c) => soma + c.cps * c.quantidade, 0);
@@ -57,9 +68,15 @@ function App() {
       // calcula o CPS levando em conta construções E melhorias
       // (pode ser útil para implementar melhorias sem alterar o cps base das construções)
       const producao = construcoes.reduce((soma, c) => {
-        const base = c.cps;
-        const Cps_verdadeiro = (c.nome === "Vovó") ? base * novoVovo : base;
-        return soma + Cps_verdadeiro * c.quantidade;
+        let base = c.cps;
+        let multiplicador = 1;
+
+        // Aplica o multiplicador conforme o tipo de construção
+        if (c.nome === "Vovó") multiplicador = novoVovo;
+        if (c.nome === "Fazenda") multiplicador = novoFazenda;
+        if (c.nome === "Fábrica") multiplicador = novoFabrica;
+
+        return soma + base * multiplicador * c.quantidade;
       }, 0);
 
 
@@ -138,19 +155,23 @@ function App() {
 
   // Condição para desbloquear “Treinamento da Vovó”
   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
-  
+  const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
+  const ContagemFabrica = construcoes.find((c) => c.nome === "Fábrica")?.quantidade || 0;
+
   // separar somente os upgrades que devem aparecer
   const upgradesDisponiveis = melhorias
   .map((m, i) => ({ ...m, indiceOriginal: i }))
   .filter(m => {
     if (m.comprado) return false;
 
-    // unlock rules by upgrade name:
     if (m.id === "click2" && contagem < 100) return false;
     if (m.id === "vovo1" && ContagemVovo < 1) return false;
     if (m.id === "vovo2" && ContagemVovo < 10) return false;
+    if (m.id === "fazenda1" && ContagemFazenda < 1) return false;
+    if (m.id === "fazenda2" && ContagemFazenda < 10) return false;
+    if (m.id === "fabrica1" && ContagemFabrica < 1) return false;
+    if (m.id === "fabrica2" && ContagemFabrica < 10) return false;
 
-    // add other name-based conditions here if needed
 
     return true;
   });
