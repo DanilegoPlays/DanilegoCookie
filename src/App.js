@@ -5,11 +5,11 @@ import Fazenda from './Fazenda.png';
 import Fabrica from './Fabrica.png';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
+import { motion, useAnimation } from "framer-motion";
 
 function App() {
-
+  // useStates principais
   const [contagem, setContagem] = useState(0); // contagem de cookies
-  const clickRef = useRef(1); // referência
   const [click, setClick] = useState(1); // valor do click
   const [CPS, setCPS] = useState(0); // CPS
   const [construcoes, setConstrucoes] = useState([
@@ -27,6 +27,12 @@ function App() {
     {nome: "Engrenagens Melhores", preço: 20000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false},
     {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false}
   ])
+
+  // useStates de teste
+  const clickRef = useRef(1); // referência
+  const [hover, setHover] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [numerinhos, setNumerinhos] = useState([]);
 
 
   // efeitos das melhorias
@@ -89,9 +95,17 @@ function App() {
 
   function AssarCookies() {
     setContagem((anterior) => anterior + clickRef.current);
-    document.querySelectorAll('#Escondido1').forEach((item) => {
-    item.classList.toggle("showing");
-  });
+    //document.querySelectorAll('#Escondido1').forEach((item) => {
+    //item.classList.toggle("showing");});
+
+    setIsVisible((prev) => !prev);
+
+    // adiciona animação de CSS ao cookie
+    //const cookie = document.getElementById("cookie-img");
+    //cookie.classList.add("bounce"); // adiciona efeito "bounce"
+    //setTimeout(() => cookie.classList.remove("bounce"), 3000); // remove efeito após um tempo
+
+
   }
 
   function DestruirCookies() {
@@ -100,6 +114,35 @@ function App() {
     item.classList.toggle("showing");
   });
   }
+
+  // animação do cookie
+  const controls = useAnimation();
+  const Clicar = (e) => {
+
+    // --- Animação dos numerinhos
+    const id = Date.now(); // Id único para os numerinhos
+    // Pega a posição onde o click foi feito
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - 20;
+    const y = e.clientY - 20; // posiciona um pouco acima do mouse
+    // Adiciona os numerinhos
+    setNumerinhos((prev) => [...prev, { id, x, y }]);
+
+    // Animação de clicar
+    controls.start({
+      scale: [1, 0.9, 1.1, 1],
+      y: [0, 0, 0, 0],
+      transition: { duration: 0.3, ease: "easeOut" },
+    });
+    
+    AssarCookies();
+    // Apaga os numerinhos
+    setTimeout(() => {
+      setNumerinhos((prev) => prev.filter((t) => t.id !== id));
+    }, 2000);
+  };
+
+
 
 
 
@@ -190,20 +233,58 @@ function App() {
           <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
           <script src="cookie.js"></script>
 
-          <button id="cookie" onClick={AssarCookies} style={{cursor: "pointer" }}>
-            <img src={logo} style={{ width: "400px", height: "auto", display: "block" }}>
+          
+          {/* novo cookie com animação! */}
+          <motion.img
+            id="cookie"
+            src={logo}
+            onClick={Clicar}
+            animate={controls}
+            whileHover={{
+              scale: 1.1,
+              //boxShadow: "0 0 25px 5px rgba(255, 200, 100, 0.8)",
+              filter: "brightness(1.1)",
+              transition: { duration: 0.3, repeat: Infinity, repeatType: "reverse" },
+            }}
+            //whileTap={{ scale: 0.95 }}
+            style={{ width: "400px", cursor: "pointer", borderRadius: "50%", userSelect: "none", }}
+          />
 
-            </img>
-          </button>
+          {/* Números do click */}
+          {numerinhos.map((text) => (
+            <motion.div
+              key={text.id}
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 0, y: -50 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              style={{
+                position: "absolute",
+                left: text.x,
+                top: text.y,
+                transform: "translate(-50%, -50%)",
+                color: "#fff",
+                fontSize: "30px",
+                fontWeight: "bold",
+                textShadow: "0 0 5px black",
+                pointerEvents: "none",
+              }}
+            >
+              +{click}
+            </motion.div>
+          ))}
+
+
 
           <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
             Outro Cookie? 
           </button>
+          
 
-          <section className="hidden" id="Escondido1">
-            <h1> +{click} Cookie! </h1>
-            <p> Vc ganhou 1 Cookie! </p>
-          </section>
+
+          {isVisible && <section className="escondido" id="Escondido1">
+            <h1> +{click} Cookies! </h1>
+            <p> Vc ganhou {click} Cookies! </p>
+          </section>}
 
           <section className="hidden" id="Escondido2">
             <h1> -1 Cookie! </h1>
