@@ -3,7 +3,7 @@ import Vovo1 from './Vovo1.png';
 import Vovo2 from './Vovo2.png';
 import Fazenda from './Fazenda.png';
 import Fabrica from './Fabrica.png';
-import Karaj from './KARAJ.png';
+import Karaj from './Karaj.png';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
@@ -129,7 +129,6 @@ function App() {
     // --- Animação dos numerinhos
     const id = Date.now(); // Id único para os numerinhos
     // Pega a posição onde o click foi feito
-    const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - 20;
     const y = e.clientY - 20; // posiciona um pouco acima do mouse
     // Adiciona os numerinhos
