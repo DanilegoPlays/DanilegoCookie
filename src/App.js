@@ -3,7 +3,6 @@ import Vovo1 from './Vovo1.png';
 import Vovo2 from './Vovo2.png';
 import Fazenda from './Fazenda.png';
 import Fabrica from './Fabrica.png';
-import Karaj from './Karaj.png';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
@@ -17,7 +16,7 @@ function App() {
     {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1},
     {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda},
     {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica},
-    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Karaj}
+    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Vovo2}
   ])
   const [melhorias, setMelhorias] = useState([
     {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false},
