@@ -15,8 +15,7 @@ function App() {
   const [construcoes, setConstrucoes] = useState([
     {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1},
     {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda},
-    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica},
-    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Vovo2}
+    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica}
   ])
   const [melhorias, setMelhorias] = useState([
     {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false},
@@ -26,9 +25,7 @@ function App() {
     {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false},
     {nome: "Super Fazenda", preço: 10000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false},
     {nome: "Engrenagens Melhores", preço: 20000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false},
-    {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false},
-    {nome: "Torres mais Pontudas", preço: 100000, efeito:'duplicarTemplo', id: 'karaj1', comprado: false},
-    {nome: "Café Salgado", preço: 500000, efeito:'duplicarTemplo', id: 'karaj2', comprado: false}
+    {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false}
   ])
 
   // useStates de teste
@@ -65,13 +62,11 @@ function App() {
     const mult_Vovo = melhorias.filter(m => m.efeito === 'duplicarVovo' && m.comprado).length;
     const mult_Fazenda = melhorias.filter(m => m.efeito === 'duplicarFazenda' && m.comprado).length;
     const mult_Fabrica = melhorias.filter(m => m.efeito === 'duplicarFabrica' && m.comprado).length;
-    const mult_Templo = melhorias.filter(m => m.efeito === 'duplicarTemplo' && m.comprado).length;
 
     // Cálculo dos multiplicadores (2x, 4x, 8x, etc)
     const novoVovo = 2 ** mult_Vovo;
     const novoFazenda = 2 ** mult_Fazenda;
     const novoFabrica = 2 ** mult_Fabrica;
-    const novoTemplo = 2 ** mult_Templo;
 
     const timer = setInterval(() => {
       //const producao = construcoes.reduce((soma, c) => soma + c.cps * c.quantidade, 0);
@@ -86,7 +81,6 @@ function App() {
         if (c.nome === "Vovó") multiplicador = novoVovo;
         if (c.nome === "Fazenda") multiplicador = novoFazenda;
         if (c.nome === "Fábrica") multiplicador = novoFabrica;
-        if (c.nome === "Templo de Karaj") multiplicador = novoTemplo;
 
         return soma + base * multiplicador * c.quantidade;
       }, 0);
@@ -128,6 +122,7 @@ function App() {
     // --- Animação dos numerinhos
     const id = Date.now(); // Id único para os numerinhos
     // Pega a posição onde o click foi feito
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - 20;
     const y = e.clientY - 20; // posiciona um pouco acima do mouse
     // Adiciona os numerinhos
@@ -205,7 +200,7 @@ function App() {
   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
   const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
   const ContagemFabrica = construcoes.find((c) => c.nome === "Fábrica")?.quantidade || 0;
-  const ContagemTemplo = construcoes.find((c) => c.nome === "Templo de Karaj")?.quantidade || 0;
+
   // separar somente os upgrades que devem aparecer
   const upgradesDisponiveis = melhorias
   .map((m, i) => ({ ...m, indiceOriginal: i }))
@@ -219,8 +214,7 @@ function App() {
     if (m.id === "fazenda2" && ContagemFazenda < 10) return false;
     if (m.id === "fabrica1" && ContagemFabrica < 1) return false;
     if (m.id === "fabrica2" && ContagemFabrica < 10) return false;
-    if (m.id === "karaj1" && ContagemTemplo < 1) return false;
-    if (m.id === "karaj2" && ContagemTemplo < 10) return false;
+
 
     return true;
   });
@@ -256,7 +250,7 @@ function App() {
             style={{ width: "400px", cursor: "pointer", borderRadius: "50%", userSelect: "none", }}
           />
 
-          {/* Numerinhos */}
+          {/* Números do click */}
           {numerinhos.map((text) => (
             <motion.div
               key={text.id}
