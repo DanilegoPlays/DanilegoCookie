@@ -33,10 +33,65 @@ function App() {
   ])
 
   // useStates de teste
-  const clickRef = useRef(1); // referência
-  const [hover, setHover] = useState(false);
+  //const [hover, setHover] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [numerinhos, setNumerinhos] = useState([]);
+
+  // referências
+  const contagemRef = useRef(contagem);
+  const clickRef = useRef(click);
+  const construcoesRef = useRef(construcoes);
+  const melhoriasRef = useRef(melhorias);
+
+
+  // Manter referencias sincronizadas
+  useEffect(() => { contagemRef.current = contagem; }, [contagem]);
+  useEffect(() => { clickRef.current = click; }, [click]);
+  useEffect(() => { construcoesRef.current = construcoes; }, [construcoes]);
+  useEffect(() => { melhoriasRef.current = melhorias; }, [melhorias]);
+
+
+
+
+  useEffect(() => {
+    const autoSave = setInterval(() => {
+      const saveData = {
+        contagem: contagemRef.current,
+        click: clickRef.current,
+        construcoes: construcoesRef.current,
+        melhorias: melhoriasRef.current,
+      };
+      localStorage.setItem("QuickSave", JSON.stringify(saveData));
+      console.log("jogo salvo", saveData);
+    }, 5000);
+
+    return () => clearInterval(autoSave);
+  }, []);
+  /*
+  useEffect(() => {
+    const QuickSave = { contagem, click, construcoes, melhorias };
+    localStorage.setItem("QuickSave", JSON.stringify(QuickSave));
+    console.log("jogo salvo", QuickSave);
+  }, [contagem, click, construcoes, melhorias]);
+*/
+
+  useEffect(() => {
+    const salvamento = localStorage.getItem("QuickSave");
+
+    if (salvamento) {
+      const dados = JSON.parse(salvamento);
+
+      setContagem(dados.contagem ?? 0);
+      setClick(dados.click ?? 1);
+      setConstrucoes(dados.construcoes ?? []);
+      setMelhorias(dados.melhorias ?? []);
+
+    }
+    
+  }, []);
+
+  
+
 
 
   // efeitos das melhorias
@@ -80,7 +135,7 @@ function App() {
       // calcula o CPS levando em conta construções E melhorias
       // (pode ser útil para implementar melhorias sem alterar o cps base das construções)
       const producao = construcoes.reduce((soma, c) => {
-        let base = c.cps;
+        let base = c.cps; // cps base da construção
         let multiplicador = 1;
 
         // Aplica o multiplicador conforme o tipo de construção
@@ -137,7 +192,7 @@ function App() {
     // Animação de clicar
     controls.start({
       scale: [1, 0.9, 1.1, 1],
-      y: [0, 0, 0, 0],
+      //y: [0, 0, 0, 0],
       transition: { duration: 0.3, ease: "easeOut" },
     });
     
@@ -284,6 +339,13 @@ function App() {
 
           <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
             Outro Cookie? 
+          </button>
+
+          <button onClick={() => {
+            localStorage.removeItem("QuickSave");
+            window.location.reload();
+          }}>
+            Resetar Jogo
           </button>
           
 
