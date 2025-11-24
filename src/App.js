@@ -22,6 +22,8 @@ function App() {
   const [melhorias, setMelhorias] = useState([
     {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false},
     {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false},
+    {nome: "Mouse de Ouro", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false},
+    {nome: "Mouse de Vibrânio", preço: 50000, efeito:'duplicarClick', id: 'click4', comprado: false},
     {nome: "Treinamento da Vovó", preço: 500, efeito:'duplicarVovo', id: 'vovo1', comprado: false},
     {nome: "Super Vovó", preço: 2000, efeito:'duplicarVovo', id: 'vovo2', comprado: false},
     {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false},
@@ -36,6 +38,7 @@ function App() {
   //const [hover, setHover] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [numerinhos, setNumerinhos] = useState([]);
+  const [avisoSave, setAvisoSave] = useState(false);
 
   // referências
   const contagemRef = useRef(contagem);
@@ -63,7 +66,13 @@ function App() {
       };
       localStorage.setItem("QuickSave", JSON.stringify(saveData));
       console.log("jogo salvo", saveData);
-    }, 5000);
+
+      setAvisoSave(true);
+
+      // hide after animation
+      setTimeout(() => setAvisoSave(false), 2000);
+
+    }, 60000);
 
     return () => clearInterval(autoSave);
   }, []);
@@ -89,9 +98,6 @@ function App() {
     }
     
   }, []);
-
-  
-
 
 
   // efeitos das melhorias
@@ -154,7 +160,7 @@ function App() {
     return () => clearInterval(timer); // limpa o timer
   }, [construcoes, melhorias]);
 
-
+  // função click (gera os cookies do click)
   function AssarCookies() {
     setContagem((anterior) => anterior + clickRef.current);
     //document.querySelectorAll('#Escondido1').forEach((item) => {
@@ -169,7 +175,7 @@ function App() {
 
 
   }
-
+  // função anti-click
   function DestruirCookies() {
     setContagem(contagem - 1);
     document.querySelectorAll('#Escondido2').forEach((item) => {
@@ -179,6 +185,7 @@ function App() {
 
   // animação do cookie
   const controls = useAnimation();
+  // função click (animação)
   const Clicar = (e) => {
 
     // --- Animação dos numerinhos
@@ -202,9 +209,6 @@ function App() {
       setNumerinhos((prev) => prev.filter((t) => t.id !== id));
     }, 2000);
   };
-
-
-
 
 
   function ComprarConstrucao(indice) {
@@ -236,6 +240,7 @@ function App() {
       })
     );
   }
+
   // aplicar efeito das melhorias (não funcionando)
   function AplicarEfeito(efeito) {
     if (efeito === "duplicarClick") {
@@ -257,18 +262,75 @@ function App() {
     }
   }
 
-  // Condição para desbloquear “Treinamento da Vovó”
+  function DeletarSave() {
+    const confirmar = window.confirm(
+    "Tem certeza que quer deletar o save? \n\nEsta ação não pode ser desfeita!"
+  );
+
+  if (!confirmar) return;
+
+    localStorage.removeItem("QuickSave");
+    window.location.reload();
+
+  }
+
+  function ExportarSave() {
+    const saveData = {
+        contagem: contagemRef.current,
+        click: clickRef.current,
+        construcoes: construcoesRef.current,
+        melhorias: melhoriasRef.current,
+      };
+    const saveTexto = JSON.stringify(saveData);
+
+    const encoded = btoa(saveTexto);  // save com encode base 64
+
+    navigator.clipboard.writeText(encoded).catch(() => {});
+    alert("Save copied:\n\n" + encoded);
+
+    //navigator.clipboard.writeText(saveTexto).catch(() => {});
+
+    //alert("Salvamento copiado:\n\n" + saveTexto);
+  }
+
+  function ImportarSave() {
+    const input = prompt("Coloque seu save aqui:");
+
+
+    try {
+      let decoded = atob(input); // decode base 64
+      const dados = JSON.parse(decoded);
+      
+
+      setContagem(dados.contagem);
+      setClick(dados.click);
+      setConstrucoes(dados.construcoes);
+      setMelhorias(dados.melhorias);
+
+    } catch {
+      alert("erro ao carregar o save");
+    }
+      
+
+
+
+
+  }
+
+  // Condição para desbloquear upgrades
   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
   const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
   const ContagemFabrica = construcoes.find((c) => c.nome === "Fábrica")?.quantidade || 0;
   const ContagemTemplo = construcoes.find((c) => c.nome === "Templo de Karaj")?.quantidade || 0;
-  // separar somente os upgrades que devem aparecer
+  // filtro que separa somente os upgrades que devem aparecer
   const upgradesDisponiveis = melhorias
   .map((m, i) => ({ ...m, indiceOriginal: i }))
   .filter(m => {
     if (m.comprado) return false;
 
     if (m.id === "click2" && contagem < 100) return false;
+    if (m.id === "click3" && contagem < 1000) return false;
+    if (m.id === "click4" && contagem < 10000) return false;
     if (m.id === "vovo1" && ContagemVovo < 1) return false;
     if (m.id === "vovo2" && ContagemVovo < 10) return false;
     if (m.id === "fazenda1" && ContagemFazenda < 1) return false;
@@ -284,11 +346,41 @@ function App() {
   // lista de upgrades comprados
   const upgradesComprados = melhorias.filter((m) => m.comprado);
 
-
-
   return (
     <div className="App">
-      <h1>Cookie Clicker</h1>
+      
+      {/* Aviso de jogo salvo (pode ser usado para mais avisos no futuro) */}
+      <div style={{
+        position: "fixed",
+        left: 0,
+        right: 0,
+        bottom: 18,
+        pointerEvents: "none",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 9999
+      }}>
+        {avisoSave && (
+          <motion.div
+            initial={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 0, y: -30 }}
+            transition={{ duration: 2.0 }}
+            style={{
+              position: "absolute",
+              width: "100%",
+              textAlign: "center",
+              fontSize: "20px",
+              fontWeight: "bold",
+              pointerEvents: "none",
+            }}
+          >
+            Jogo Salvo!
+          </motion.div>
+        )}
+      </div>
+
+
       <div className="jogo">
         <div className="seção-cookie">
           <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
@@ -336,18 +428,9 @@ function App() {
           ))}
 
 
-
           <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
             Outro Cookie? 
           </button>
-
-          <button onClick={() => {
-            localStorage.removeItem("QuickSave");
-            window.location.reload();
-          }}>
-            Resetar Jogo
-          </button>
-          
 
 
           {isVisible && <section className="escondido" id="Escondido1">
@@ -389,12 +472,26 @@ function App() {
               <button className ="construcoes" id={c.nome} onClick={() => ComprarConstrucao(i)} style={{cursor: "pointer"}}>
               <img src={c.icone}></img>
               {c.nome} <br />
-              {//CPS: {c.cps} <br />
-              }
               Preço: {c.preço} <br />
               Quantidade: {c.quantidade} 
               </button>
             )}
+          </div>
+
+          <div className="seção-opções">
+            <h2> Opções </h2>
+              <button onClick={ExportarSave}>
+                Exportar Save
+              </button>
+
+              <button onClick={ImportarSave}>
+                Importar Save
+              </button>
+
+              <button onClick={DeletarSave}>
+                Resetar Jogo
+              </button>
+
           </div>
 
         </div>
