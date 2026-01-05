@@ -1,6 +1,7 @@
 import logo from './PrimeiroCookie.png';
 import Vovo1 from './Vovo1.png';
 import Vovo2 from './Vovo2.png';
+import Vovo3 from './Vovo3.png';
 import Fazenda from './Fazenda.png';
 import Fabrica from './Fabrica.png';
 import Karaj from './Karaj.png';
@@ -14,24 +15,24 @@ function App() {
   const [click, setClick] = useState(1); // valor do click
   const [CPS, setCPS] = useState(0); // CPS
   const [construcoes, setConstrucoes] = useState([
-    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1},
-    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda},
-    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica},
-    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Karaj}
+    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1, icone_pequeno: Vovo3},
+    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda, icone_pequeno: Fazenda},
+    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica, icone_pequeno: Fabrica},
+    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Karaj, icone_pequeno: Karaj}
   ])
   const [melhorias, setMelhorias] = useState([
-    {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false},
-    {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false},
-    {nome: "Mouse de Ouro", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false},
-    {nome: "Mouse de Vibrânio", preço: 50000, efeito:'duplicarClick', id: 'click4', comprado: false},
-    {nome: "Treinamento da Vovó", preço: 500, efeito:'duplicarVovo', id: 'vovo1', comprado: false},
-    {nome: "Super Vovó", preço: 2000, efeito:'duplicarVovo', id: 'vovo2', comprado: false},
-    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false},
-    {nome: "Super Fazenda", preço: 10000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false},
-    {nome: "Engrenagens Melhores", preço: 20000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false},
-    {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false},
-    {nome: "Torres mais Pontudas", preço: 100000, efeito:'duplicarTemplo', id: 'karaj1', comprado: false},
-    {nome: "Café Salgado", preço: 500000, efeito:'duplicarTemplo', id: 'karaj2', comprado: false}
+    {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu Mouse ganha super poderes. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Mouse de Ouro", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Mouse de Vibrânio", preço: 50000, efeito:'duplicarClick', id: 'click4', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Treinamento da Vovó", preço: 500, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Super Vovó", preço: 2000, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Super Fazenda", preço: 10000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Engrenagens Melhores", preço: 20000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "Fabricas 2 vezes mais eficientes!"},
+    {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "Fabricas 2 vezes mais eficientes!"},
+    {nome: "Torres mais Pontudas", preço: 100000, efeito:'duplicarTemplo', id: 'karaj1', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
+    {nome: "Café Salgado", preço: 500000, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!"}
   ])
 
   // useStates de teste
@@ -123,42 +124,54 @@ function App() {
 
   // efeito CPS
   useEffect(() => {
-    // Contagem de quantas melhorias foram compradas para cada tipo
-    const mult_Vovo = melhorias.filter(m => m.efeito === 'duplicarVovo' && m.comprado).length;
-    const mult_Fazenda = melhorias.filter(m => m.efeito === 'duplicarFazenda' && m.comprado).length;
-    const mult_Fabrica = melhorias.filter(m => m.efeito === 'duplicarFabrica' && m.comprado).length;
-    const mult_Templo = melhorias.filter(m => m.efeito === 'duplicarTemplo' && m.comprado).length;
-
-    // Cálculo dos multiplicadores (2x, 4x, 8x, etc)
-    const novoVovo = 2 ** mult_Vovo;
-    const novoFazenda = 2 ** mult_Fazenda;
-    const novoFabrica = 2 ** mult_Fabrica;
-    const novoTemplo = 2 ** mult_Templo;
 
     const timer = setInterval(() => {
       //const producao = construcoes.reduce((soma, c) => soma + c.cps * c.quantidade, 0);
       
       // calcula o CPS levando em conta construções E melhorias
       // (pode ser útil para implementar melhorias sem alterar o cps base das construções)
+      
       const producao = construcoes.reduce((soma, c) => {
-        let base = c.cps; // cps base da construção
-        let multiplicador = 1;
-
-        // Aplica o multiplicador conforme o tipo de construção
-        if (c.nome === "Vovó") multiplicador = novoVovo;
-        if (c.nome === "Fazenda") multiplicador = novoFazenda;
-        if (c.nome === "Fábrica") multiplicador = novoFabrica;
-        if (c.nome === "Templo de Karaj") multiplicador = novoTemplo;
-
-        return soma + base * multiplicador * c.quantidade;
+        return soma + CpsConstrucao(c) * c.quantidade;
       }, 0);
-
 
       setCPS(producao);
       setContagem((atual) => atual + producao/10);
     }, 100); // a cada 0.1 segundos
     return () => clearInterval(timer); // limpa o timer
   }, [construcoes, melhorias]);
+
+  function getMultiplicador(c) {
+    if (c.nome === "Vovó") {
+      const mult = melhorias.filter(
+        m => m.efeito === "duplicarVovo" && m.comprado
+      ).length;
+      return 2 ** mult;
+    }
+    if (c.nome === "Fazenda") {
+      const mult = melhorias.filter(
+        m => m.efeito === "duplicarFazenda" && m.comprado
+      ).length;
+      return 2 ** mult;
+    }
+    if (c.nome === "Fabrica") {
+      const mult = melhorias.filter(
+        m => m.efeito === "duplicarFabrica" && m.comprado
+      ).length;
+      return 2 ** mult;
+    }
+    if (c.nome === "Karaj") {
+      const mult = melhorias.filter(
+        m => m.efeito === "duplicarKaraj" && m.comprado
+      ).length;
+      return 2 ** mult;
+    }
+    return 1;
+  }
+  // cps da construção
+  function CpsConstrucao(c) {
+    return c.cps * getMultiplicador(c);
+  }
 
   // função click (gera os cookies do click)
   function AssarCookies() {
@@ -310,10 +323,6 @@ function App() {
     } catch {
       alert("erro ao carregar o save");
     }
-      
-
-
-
 
   }
 
@@ -382,75 +391,119 @@ function App() {
 
 
       <div className="jogo">
-        <div className="seção-cookie">
-          <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
-          <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
-          <script src="cookie.js"></script>
+        <div className="lado-esquerdo">
+          <div className="seção-cookie">
 
-          
-          {/* novo cookie com animação! */}
-          <motion.img
-            id="cookie"
-            src={logo}
-            onClick={Clicar}
-            animate={controls}
-            whileHover={{
-              scale: 1.1,
-              //boxShadow: "0 0 25px 5px rgba(255, 200, 100, 0.8)",
-              filter: "brightness(1.1)",
-              transition: { duration: 0.3, repeat: Infinity, repeatType: "reverse" },
-            }}
-            //whileTap={{ scale: 0.95 }}
-            style={{ width: "400px", cursor: "pointer", borderRadius: "50%", userSelect: "none", }}
-          />
+            {/* Contagem de Cookies */}
+            <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
+            <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
+            <script src="cookie.js"></script>
 
-          {/* Numerinhos */}
-          {numerinhos.map((text) => (
-            <motion.div
-              key={text.id}
-              initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: 0, y: -50 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              style={{
-                position: "absolute",
-                left: text.x,
-                top: text.y,
-                transform: "translate(-50%, -50%)",
-                color: "#fff",
-                fontSize: "30px",
-                fontWeight: "bold",
-                textShadow: "0 0 5px black",
-                pointerEvents: "none",
+            
+            {/* novo cookie com animação! */}
+            <motion.img
+              id="cookie"
+              src={logo}
+              onClick={Clicar}
+              animate={controls}
+              whileHover={{
+                scale: 1.1,
+                //boxShadow: "0 0 25px 5px rgba(255, 200, 100, 0.8)",
+                filter: "brightness(1.1)",
+                transition: { duration: 0.3, repeat: Infinity, repeatType: "reverse" },
               }}
-            >
-              +{click}
-            </motion.div>
-          ))}
+              //whileTap={{ scale: 0.95 }}
+              style={{ width: "400px", cursor: "pointer", borderRadius: "50%", userSelect: "none", }}
+            />
+
+            {/* Numerinhos */}
+            {numerinhos.map((text) => (
+              <motion.div
+                key={text.id}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 0, y: -50 }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                style={{
+                  position: "absolute",
+                  left: text.x,
+                  top: text.y,
+                  transform: "translate(-50%, -50%)",
+                  color: "#fff",
+                  fontSize: "30px",
+                  fontWeight: "bold",
+                  textShadow: "0 0 5px black",
+                  pointerEvents: "none",
+                }}
+              >
+                +{click}
+              </motion.div>
+            ))}
 
 
-          <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
-            Outro Cookie? 
-          </button>
+            <button id="cookie2" onClick={DestruirCookies} style={{cursor: "pointer" }}> 
+              Outro Cookie? 
+            </button>
+
+            <section className="hidden" id="Escondido2">
+              <h1> -1 Cookie! </h1>
+              <p> Vc destruiu 1 Cookie! </p>
+            </section>
+          </div>
 
 
-          {isVisible && <section className="escondido" id="Escondido1">
-            <h1> +{click} Cookies! </h1>
-            <p> Vc ganhou {click} Cookies! </p>
-          </section>}
+          <div className="seção-coleção">
+            <h2>Sua Produção</h2>
 
-          <section className="hidden" id="Escondido2">
-            <h1> -1 Cookie! </h1>
-            <p> Vc destruiu 1 Cookie! </p>
-          </section>
+            {construcoes.map((c) => (
+              c.quantidade > 0 && (
+                <div key={c.nome} className="colecao-grupo">
+                  {/*<span className="colecao-nome">{c.nome}</span>*/}
+                  
+
+                  <div className="colecao-icones">
+                    {Array.from({ length: c.quantidade }).map((_, i) => {
+                      const cpsAtual = CpsConstrucao(c);
+                      const cpsTotal = cpsAtual * c.quantidade;
+
+                      return (
+                        <div key={i} className="icone-wrapper" style={{cursor: "pointer" }}>
+                          <motion.img
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ duration: 0.2 }}
+                            src={c.icone_pequeno}
+                            alt={c.nome}
+                            className="icone-pequeno"
+                          />
+                          <div className="info">
+                            <strong>{c.nome}</strong><br />
+                              Quantidade: {c.quantidade} <br />
+                              Cada {c.nome} está produzindo {cpsAtual} CPS,<br />
+                              para um total de {cpsTotal} CPS
+                          </div>
+
+                        </div>
+                      );
+
+                    })}
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
         </div>
+
+
+
 
         <div className='lado-direito'>
 
           <div className="seção-upgrades">
             <h2> Upgrades </h2>
             {upgradesDisponiveis.map((m, i) => (
+              <div key={m.indiceOriginal} className="upgrade-wrapper">
                 <button
-                  key={i}
+                  classname="melhorias"
                   onClick={() => ComprarMelhoria(m.indiceOriginal)}
                   disabled={contagem < m.preço}
                   style={{
@@ -461,8 +514,13 @@ function App() {
                 >
                   {m.nome} <br /> {m.preço}
                 </button>
-              ))
-            }
+
+                <div className="info">
+                  <strong>{m.nome}</strong><br />
+                  {m.descricao}
+                </div>
+              </div>
+              ))}
           </div>
 
 
@@ -473,7 +531,6 @@ function App() {
               <img src={c.icone}></img>
               {c.nome} <br />
               Preço: {c.preço} <br />
-              Quantidade: {c.quantidade} 
               </button>
             )}
           </div>
