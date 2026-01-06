@@ -154,7 +154,7 @@ function App() {
       ).length;
       return 2 ** mult;
     }
-    if (c.nome === "Fabrica") {
+    if (c.nome === "Fábrica") {
       const mult = melhorias.filter(
         m => m.efeito === "duplicarFabrica" && m.comprado
       ).length;
