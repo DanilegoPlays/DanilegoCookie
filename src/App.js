@@ -5,6 +5,7 @@ import Vovo3 from './Vovo3.png';
 import Fazenda from './Fazenda.png';
 import Fabrica from './Fabrica.png';
 import Karaj from './Karaj.png';
+import PC from './PC.png';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
@@ -18,7 +19,8 @@ function App() {
     {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1, icone_pequeno: Vovo3},
     {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda, icone_pequeno: Fazenda},
     {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica, icone_pequeno: Fabrica},
-    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Karaj, icone_pequeno: Karaj}
+    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Karaj, icone_pequeno: Karaj},
+    {nome: "Computador", preço: 100000, cps: 100, quantidade: 0, icone: PC, icone_pequeno: PC}
   ])
   const [melhorias, setMelhorias] = useState([
     {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n Clique 2 vezes mais eficiente!"},
@@ -35,25 +37,48 @@ function App() {
     {nome: "Café Salgado", preço: 500000, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!"}
   ])
 
+  // Minigames
+  
+  const [cookieCoin, setCookieCoin] = useState({
+    desbloqueado: false,
+    level: 0,
+    coins: 0,
+    mercado: 1
+  })
+
+  useEffect(() => {
+    const computer = construcoes.find(c => c.nome === "Computador");
+    if (computer && computer.quantidade >= 1) {
+      setCookieCoin(prev =>
+        prev.desbloqueado ? prev : { ...prev, desbloqueado: true }
+      );
+    }
+  }, [construcoes]);
+
   // useStates de teste
   //const [hover, setHover] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [numerinhos, setNumerinhos] = useState([]);
-  const [avisoSave, setAvisoSave] = useState(false);
+  const [aviso, setAviso] = useState(false);
+  const [historicoCookieCoin, setHistoricoCookieCoin] = useState([]);
+
+  function mostrarAviso(texto) {
+    setAviso({ texto, id: Date.now() });
+  }
 
   // referências
   const contagemRef = useRef(contagem);
   const clickRef = useRef(click);
   const construcoesRef = useRef(construcoes);
   const melhoriasRef = useRef(melhorias);
-
+  const cookieCoinRef = useRef(cookieCoin);
 
   // Manter referencias sincronizadas
   useEffect(() => { contagemRef.current = contagem; }, [contagem]);
   useEffect(() => { clickRef.current = click; }, [click]);
   useEffect(() => { construcoesRef.current = construcoes; }, [construcoes]);
   useEffect(() => { melhoriasRef.current = melhorias; }, [melhorias]);
-
+  useEffect(() => { cookieCoinRef.current = cookieCoin; }, [cookieCoin]);
 
 
 
@@ -64,14 +89,15 @@ function App() {
         click: clickRef.current,
         construcoes: construcoesRef.current,
         melhorias: melhoriasRef.current,
+        cookieCoin: cookieCoinRef.current,
       };
       localStorage.setItem("QuickSave", JSON.stringify(saveData));
       console.log("jogo salvo", saveData);
 
-      setAvisoSave(true);
+      mostrarAviso("Jogo Salvo!");
 
       // hide after animation
-      setTimeout(() => setAvisoSave(false), 2000);
+      //setTimeout(() => setAviso(false), 2000);
 
     }, 60000);
 
@@ -84,7 +110,7 @@ function App() {
     console.log("jogo salvo", QuickSave);
   }, [contagem, click, construcoes, melhorias]);
 */
-
+  // Load Quicksave
   useEffect(() => {
     const salvamento = localStorage.getItem("QuickSave");
 
@@ -95,6 +121,7 @@ function App() {
       setClick(dados.click ?? 1);
       setConstrucoes(dados.construcoes ?? []);
       setMelhorias(dados.melhorias ?? []);
+      setCookieCoin(dados.cookieCoin ?? []);
 
     }
     
@@ -124,7 +151,6 @@ function App() {
 
   // efeito CPS
   useEffect(() => {
-
     const timer = setInterval(() => {
       //const producao = construcoes.reduce((soma, c) => soma + c.cps * c.quantidade, 0);
       
@@ -293,6 +319,7 @@ function App() {
         click: clickRef.current,
         construcoes: construcoesRef.current,
         melhorias: melhoriasRef.current,
+        cookieCoin: cookieCoinRef.current,
       };
     const saveTexto = JSON.stringify(saveData);
 
@@ -319,6 +346,7 @@ function App() {
       setClick(dados.click);
       setConstrucoes(dados.construcoes);
       setMelhorias(dados.melhorias);
+      setCookieCoin(dados.cookieCoin);
 
     } catch {
       alert("erro ao carregar o save");
@@ -351,30 +379,137 @@ function App() {
 
     return true;
   });
+  // Ordena upgrades do mais barato ao mais caro
+  const upgradesOrdenados = [...upgradesDisponiveis].sort(
+    (a, b) => a.preço - b.preço
+  );
 
   // lista de upgrades comprados
   const upgradesComprados = melhorias.filter((m) => m.comprado);
+
+
+  // Minigame Cookie Coin (futuramente pode ser colocado em outro arquivo)
+  const VALOR_BASE = 100000;
+  const valorAtualCookieCoin = Math.floor(
+    VALOR_BASE * cookieCoin.mercado
+  );
+
+  const precoCookieCoin = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
+
+  function ComprarCookieCoinNivel() {
+     if (contagem >= precoCookieCoin) {
+      setContagem(prev => prev - precoCookieCoin);
+      setCookieCoin(prev => ({
+        ...prev,
+        level: prev.level + 1
+      }));
+     }    
+  }
+
+  useEffect(() => {
+    if (!cookieCoin.desbloqueado || cookieCoin.level === 0) return;
+    
+    const timer = setInterval(() => {
+      setCookieCoin(prev => ({
+        ...prev,
+        coins: prev.coins + prev.level * 0.001
+      }));
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [cookieCoin.desbloqueado, cookieCoin.level]);
+
+  function VenderCookieCoin() {
+    const moedasInteiras = Math.floor(cookieCoin.coins);
+    if (moedasInteiras < 1) return;
+
+    const ganhoCookies = moedasInteiras * valorAtualCookieCoin;
+
+    setContagem(c => c + ganhoCookies);
+    setCookieCoin(prev => ({
+      ...prev,
+      coins: prev.coins - moedasInteiras
+    }));
+    mostrarAviso(`${moedasInteiras} Cookie Coins vendidas por ${ganhoCookies.toLocaleString()} cookies`);
+  }
+
+  useEffect(() => {
+    if (!cookieCoin.desbloqueado) return;
+
+    const timer = setInterval(() => {
+      const mudanca = (Math.random() - 0.5);
+      let NovoMercado = cookieCoin.mercado + mudanca;
+
+      NovoMercado = Math.max(0.01, Math.min(100, NovoMercado))
+      setCookieCoin(prev => {
+
+      return {
+        ...prev,
+        mercado: Number(NovoMercado.toFixed(2))
+      }})
+      setHistoricoCookieCoin(h => {
+        const novo = [...h, NovoMercado];
+        return novo.slice(-30); // últimos 30 pontos do gráfico
+      });
+    }, 30000);
+    
+    return () => clearInterval(timer);
+  }, [cookieCoin.desbloqueado]);
+
+  function GraficoCookieCoin({ dados }) {
+    const width = 240;
+    const height = 120;
+    const padding = 10;
+
+    if (dados.length < 2) return null;
+
+    const min = Math.min(...dados);
+    const max = Math.max(...dados);
+    const range = max - min || 1;
+
+    const points = dados.map((value, i) => {
+      const x = (i / (dados.length - 1)) * width;
+      const y = height - ((value - min) / range) * height;
+      return `${x},${y}`;
+    });
+
+    return (
+      <svg width={width} height={height} style={{ background: "white", borderRadius: 6 }}>
+        <polyline
+          points={points.join(" ")}
+          fill="none"
+          stroke="black"
+          strokeWidth="2"
+        />
+      </svg>
+    );
+  }
+
+
 
   return (
     <div className="App">
       
       {/* Aviso de jogo salvo (pode ser usado para mais avisos no futuro) */}
-      <div style={{
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 18,
-        pointerEvents: "none",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 9999
-      }}>
-        {avisoSave && (
+      <div
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 18,
+          pointerEvents: "none",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 9999,
+        }}
+      >
+        {aviso && (
           <motion.div
+            key={aviso.id}
             initial={{ opacity: 1, y: 0 }}
             animate={{ opacity: 0, y: -30 }}
-            transition={{ duration: 2.0 }}
+            transition={{ duration: 3.0 }}
             style={{
               position: "absolute",
               width: "100%",
@@ -384,14 +519,55 @@ function App() {
               pointerEvents: "none",
             }}
           >
-            Jogo Salvo!
+            {aviso.texto}
           </motion.div>
         )}
       </div>
 
 
       <div className="jogo">
+        
         <div className="lado-esquerdo">
+          {cookieCoin.desbloqueado && (
+          <div className="seção-cookie-coin">
+            <h2>Mineração de Cookie Coins</h2>
+
+            <p>Coins: {cookieCoin.coins.toFixed(3)}</p>
+            <p>Level: {cookieCoin.level}</p>
+
+            <button
+              onClick={ComprarCookieCoinNivel}
+              disabled={contagem < precoCookieCoin}
+            >
+              Nova Placa de Vídeo<br />
+              Preço: {precoCookieCoin}
+            </button>
+            
+              <p>
+                Valor:{" "}
+                <strong>
+                  {valorAtualCookieCoin.toLocaleString()} cookies
+                </strong>
+              </p>
+              <GraficoCookieCoin dados={historicoCookieCoin} />
+
+            <button
+              onClick={VenderCookieCoin}
+              disabled={cookieCoin.coins < 1}
+            >
+              Vender Cookie Coins<br />
+            </button>
+
+            
+
+          </div>
+        )}
+
+        </div>
+        
+
+
+        <div className="lado-meio">
           <div className="seção-cookie">
 
             {/* Contagem de Cookies */}
@@ -500,7 +676,7 @@ function App() {
 
           <div className="seção-upgrades">
             <h2> Upgrades </h2>
-            {upgradesDisponiveis.map((m, i) => (
+            {upgradesOrdenados.map((m, i) => (
               <div key={m.indiceOriginal} className="upgrade-wrapper">
                 <button
                   classname="melhorias"
