@@ -1,41 +1,75 @@
-import logo from './PrimeiroCookie.png';
-import Vovo1 from './Vovo1.png';
-import Vovo2 from './Vovo2.png';
-import Vovo3 from './Vovo3.png';
-import Fazenda from './Fazenda.png';
-import Fabrica from './Fabrica.png';
-import Karaj from './Karaj.png';
-import PC from './PC.png';
+import logo from './arte/PrimeiroCookie.png';
+import Vovo1 from './arte/Vovo1.png';
+import Vovo2 from './arte/Vovo2.png';
+import Vovo3 from './arte/Vovo3.png';
+import Fazenda from './arte/Fazenda.png';
+import Fabrica from './arte/Fabrica.png';
+import Karaj from './arte/Karaj.png';
+import PC from './arte/PC.png';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
+import { Save, Load, saveGame, loadSave } from './version';
 
 function App() {
+  // Definir estruturas padrão para construções e melhorias
+  const DEFAULT_CONSTRUCOES = [
+    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1, icone_pequeno: Vovo3},
+    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda, icone_pequeno: Fazenda},
+    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica, icone_pequeno: Fabrica},
+    {nome: "Banco", preço: 11000, cps: 40, quantidade: 0, icone: Karaj, icone_pequeno: Karaj},
+    {nome: "Computador", preço: 100000, cps: 200, quantidade: 0, icone: PC, icone_pequeno: PC},
+    {nome: "Templo de Karaj", preço: 777777, cps: 777, quantidade: 0, icone: Karaj, icone_pequeno: Karaj}
+  ];
+  
+  const DEFAULT_MELHORIAS = [
+    {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu Mouse ganha super poderes. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Mouse de Ouro", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Mouse de Vibrânio", preço: 100000, efeito:'duplicarClick', id: 'click4', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n Clique 2 vezes mais eficiente!"},
+
+    {nome: "Treinamento da Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Fornos de Cookie", preço: 5000, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Dentaduras Novas", preço: 50000, efeito:'duplicarVovo', id: 'vovo3', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Super Vovó", preço: 5000000, efeito:'duplicarVovo', id: 'vovo4', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+
+    {nome: "Enxada de Pedra", preço: 1000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Enxada de Ferro", preço: 50000, efeito:'duplicarFazenda', id: 'fazenda3', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Super Fazenda", preço: 5000000, efeito:'duplicarFazenda', id: 'fazenda4', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+
+    {nome: "Engrenagens Melhores", preço: 11000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+    {nome: "Energia Sustentável", preço: 55000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+    {nome: "Trabalhadores Rápidos", preço: 555000, efeito:'duplicarFabrica', id: 'fabrica3', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+    {nome: "Super Fábrica", preço: 55000000, efeito:'duplicarFabrica', id: 'fabrica4', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+
+    {nome: "Cartão Sem Anuidade", preço: 120000, efeito:'duplicarBanco', id: 'banco1', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+    {nome: "Cofres de Cookie", preço: 600000, efeito:'duplicarBanco', id: 'banco2', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+    {nome: "Juros Compostos", preço: 6000000, efeito:'duplicarBanco', id: 'banco3', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+    {nome: "Super Banco", preço: 600000000, efeito:'duplicarBanco', id: 'banco4', comprado: false, descricao: "... 2 vezes mais eficientes!"},
+
+    {nome: "Refrigeração", preço: 1300000, efeito:'duplicarPC', id: 'PC1', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
+    {nome: "Atualização de Software", preço: 6500000, efeito:'duplicarPC', id: 'PC2', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
+    {nome: "Novo Processador", preço: 65000000, efeito:'duplicarPC', id: 'PC3', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
+    {nome: "Mais Memória RAM", preço: 650000000, efeito:'duplicarPC', id: 'PC4', comprado: false, descricao: "Tá caro demais essa memória RAM! Computadores 2 vezes mais eficientes!"},
+
+    {nome: "Torres mais Pontudas", preço: 14000000, efeito:'duplicarTemplo', id: 'karaj1', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
+    {nome: "Festival do Sol", preço: 70000000, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
+    {nome: "Conexão Espiritual", preço: 700000000, efeito:'duplicarTemplo', id: 'karaj3', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
+    {nome: "Café Salgado", preço: 7000000000, efeito:'duplicarTemplo', id: 'karaj4', comprado: false, descricao: "Templos 2 vezes mais eficientes!"}
+  ];
+
+  // Função para calcular o preço atual de cada construção baseado no preço base e quantidade
+  function getPreçoAtual(preçoBase, quantidade) {
+    return Math.floor(preçoBase * Math.pow(1.2, quantidade));
+  }
+
   // useStates principais
   const [contagem, setContagem] = useState(0); // contagem de cookies
   const [click, setClick] = useState(1); // valor do click
   const [CPS, setCPS] = useState(0); // CPS
-  const [construcoes, setConstrucoes] = useState([
-    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1, icone_pequeno: Vovo3},
-    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda, icone_pequeno: Fazenda},
-    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica, icone_pequeno: Fabrica},
-    {nome: "Templo de Karaj", preço: 7777, cps: 20, quantidade: 0, icone: Karaj, icone_pequeno: Karaj},
-    {nome: "Computador", preço: 100000, cps: 100, quantidade: 0, icone: PC, icone_pequeno: PC}
-  ])
-  const [melhorias, setMelhorias] = useState([
-    {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n Clique 2 vezes mais eficiente!"},
-    {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu Mouse ganha super poderes. \n Clique 2 vezes mais eficiente!"},
-    {nome: "Mouse de Ouro", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n Clique 2 vezes mais eficiente!"},
-    {nome: "Mouse de Vibrânio", preço: 50000, efeito:'duplicarClick', id: 'click4', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n Clique 2 vezes mais eficiente!"},
-    {nome: "Treinamento da Vovó", preço: 500, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
-    {nome: "Super Vovó", preço: 2000, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
-    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
-    {nome: "Super Fazenda", preço: 10000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
-    {nome: "Engrenagens Melhores", preço: 20000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "Fabricas 2 vezes mais eficientes!"},
-    {nome: "Super Fábrica", preço: 50000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "Fabricas 2 vezes mais eficientes!"},
-    {nome: "Torres mais Pontudas", preço: 100000, efeito:'duplicarTemplo', id: 'karaj1', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
-    {nome: "Café Salgado", preço: 500000, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!"}
-  ])
+  const [construcoes, setConstrucoes] = useState(DEFAULT_CONSTRUCOES)
+  const [melhorias, setMelhorias] = useState(DEFAULT_MELHORIAS)
 
   // Minigames
   
@@ -86,6 +120,13 @@ function App() {
     return Math.floor(n);
   }
 
+  function simplificarNumeroPT(n) {
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + "bilhão";
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "milhão";
+    if (n >= 1_000) return (n / 1_000).toFixed(2) + "mil";
+    return Math.floor(n);
+  }
+
 
 
   useEffect(() => {
@@ -97,7 +138,7 @@ function App() {
         melhorias: melhoriasRef.current,
         cookieCoin: cookieCoinRef.current,
       };
-      localStorage.setItem("QuickSave", JSON.stringify(saveData));
+      saveGame(saveData);
       console.log("jogo salvo", saveData);
 
       mostrarAviso("Jogo Salvo!");
@@ -121,13 +162,13 @@ function App() {
     const salvamento = localStorage.getItem("QuickSave");
 
     if (salvamento) {
-      const dados = JSON.parse(salvamento);
+      const dados = loadSave(salvamento, DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS);
 
       setContagem(dados.contagem ?? 0);
       setClick(dados.click ?? 1);
-      setConstrucoes(dados.construcoes ?? []);
-      setMelhorias(dados.melhorias ?? []);
-      setCookieCoin(dados.cookieCoin ?? []);
+      setConstrucoes(dados.construcoes ?? DEFAULT_CONSTRUCOES);
+      setMelhorias(dados.melhorias ?? DEFAULT_MELHORIAS);
+      setCookieCoin(dados.cookieCoin ?? {desbloqueado: false, level: 0, coins: 0, mercado: 1});
 
     }
     
@@ -192,9 +233,21 @@ function App() {
       ).length;
       return 2 ** mult;
     }
-    if (c.nome === "Karaj") {
+    if (c.nome === "Banco") {
       const mult = melhorias.filter(
-        m => m.efeito === "duplicarKaraj" && m.comprado
+        m => m.efeito === "duplicarBanco" && m.comprado
+      ).length;
+      return 2 ** mult;
+    }
+    if (c.nome === "Computador") {
+      const mult = melhorias.filter(
+        m => m.efeito === "duplicarPC" && m.comprado
+      ).length;
+      return 2 ** mult;
+    }
+    if (c.nome === "Templo de Karaj") {
+      const mult = melhorias.filter(
+        m => m.efeito === "duplicarTemplo" && m.comprado
       ).length;
       return 2 ** mult;
     }
@@ -259,12 +312,13 @@ function App() {
   function ComprarConstrucao(indice) {
     setConstrucoes((anterior) => {
       const novo = anterior.map((c, i) => {
-        if (contagem >= c.preço && i === indice) {
-          setContagem(contagem - c.preço);
+        const preçoAtual = getPreçoAtual(c.preço, c.quantidade);
+        if (contagem >= preçoAtual && i === indice) {
+          setContagem(contagem - preçoAtual);
           return {
             ...c,
-            quantidade: c.quantidade + 1,
-            preço: Math.floor(c.preço*1.2)
+            quantidade: c.quantidade + 1
+            // Preço não é mais modificado, é calculado dinamicamente
           };
         }
         return c;
@@ -327,35 +381,31 @@ function App() {
         melhorias: melhoriasRef.current,
         cookieCoin: cookieCoinRef.current,
       };
-    const saveTexto = JSON.stringify(saveData);
-
-    const encoded = btoa(saveTexto);  // save com encode base 64
+    
+    const encoded = Save(saveData);  // Uses versioned save system
 
     navigator.clipboard.writeText(encoded).catch(() => {});
     alert("Save copied:\n\n" + encoded);
-
-    //navigator.clipboard.writeText(saveTexto).catch(() => {});
-
-    //alert("Salvamento copiado:\n\n" + saveTexto);
   }
 
   function ImportarSave() {
     const input = prompt("Coloque seu save aqui:");
 
+    if (!input) return;
 
     try {
-      let decoded = atob(input); // decode base 64
-      const dados = JSON.parse(decoded);
-      
+      const dados = Load(input, DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS);
 
-      setContagem(dados.contagem);
-      setClick(dados.click);
-      setConstrucoes(dados.construcoes);
-      setMelhorias(dados.melhorias);
-      setCookieCoin(dados.cookieCoin);
+      setContagem(dados.contagem ?? 0);
+      setClick(dados.click ?? 1);
+      setConstrucoes(dados.construcoes ?? DEFAULT_CONSTRUCOES);
+      setMelhorias(dados.melhorias ?? DEFAULT_MELHORIAS);
+      setCookieCoin(dados.cookieCoin ?? {desbloqueado: false, level: 0, coins: 0, mercado: 1});
 
-    } catch {
-      alert("erro ao carregar o save");
+      mostrarAviso("Save importado com sucesso!");
+    } catch (error) {
+      console.error("Error importing save:", error);
+      alert("Erro ao carregar o save. Verifique se o save está correto.");
     }
 
   }
@@ -364,6 +414,8 @@ function App() {
   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
   const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
   const ContagemFabrica = construcoes.find((c) => c.nome === "Fábrica")?.quantidade || 0;
+  const ContagemBanco = construcoes.find((c) => c.nome === "Banco")?.quantidade || 0;
+  const ContagemComputador = construcoes.find((c) => c.nome === "Computador")?.quantidade || 0;
   const ContagemTemplo = construcoes.find((c) => c.nome === "Templo de Karaj")?.quantidade || 0;
   // filtro que separa somente os upgrades que devem aparecer
   const upgradesDisponiveis = melhorias
@@ -372,16 +424,32 @@ function App() {
     if (m.comprado) return false;
 
     if (m.id === "click2" && contagem < 100) return false;
-    if (m.id === "click3" && contagem < 1000) return false;
-    if (m.id === "click4" && contagem < 10000) return false;
+    if (m.id === "click3" && contagem < 5000) return false;
+    if (m.id === "click4" && contagem < 50000) return false;
     if (m.id === "vovo1" && ContagemVovo < 1) return false;
     if (m.id === "vovo2" && ContagemVovo < 10) return false;
+    if (m.id === "vovo3" && ContagemVovo < 25) return false;
+    if (m.id === "vovo4" && ContagemVovo < 50) return false;
     if (m.id === "fazenda1" && ContagemFazenda < 1) return false;
     if (m.id === "fazenda2" && ContagemFazenda < 10) return false;
+    if (m.id === "fazenda3" && ContagemFazenda < 25) return false;
+    if (m.id === "fazenda4" && ContagemFazenda < 50) return false;
     if (m.id === "fabrica1" && ContagemFabrica < 1) return false;
     if (m.id === "fabrica2" && ContagemFabrica < 10) return false;
+    if (m.id === "fabrica3" && ContagemFabrica < 25) return false;
+    if (m.id === "fabrica4" && ContagemFabrica < 50) return false;
+    if (m.id === "banco1" && ContagemBanco < 1) return false;
+    if (m.id === "banco2" && ContagemBanco < 10) return false;
+    if (m.id === "banco3" && ContagemBanco < 25) return false;
+    if (m.id === "banco4" && ContagemBanco < 50) return false;
+    if (m.id === "PC1" && ContagemComputador < 1) return false;
+    if (m.id === "PC2" && ContagemComputador < 10) return false;
+    if (m.id === "PC3" && ContagemComputador < 25) return false;
+    if (m.id === "PC4" && ContagemComputador < 50) return false;
     if (m.id === "karaj1" && ContagemTemplo < 1) return false;
     if (m.id === "karaj2" && ContagemTemplo < 10) return false;
+    if (m.id === "karaj3" && ContagemTemplo < 25) return false;
+    if (m.id === "karaj4" && ContagemTemplo < 50) return false;
 
     return true;
   });
@@ -728,7 +796,7 @@ function App() {
                   disabled={contagem < m.preço}
                   style={{
                     opacity: contagem < m.preço ? 0.6 : 1,
-                    cursor: contagem < m.preço ? "not-allowed" : "pointer",
+                    cursor: contagem < m.preço ? "auto" : "pointer",
                     marginBottom: "8px",
                   }}
                 >
@@ -745,14 +813,31 @@ function App() {
 
 
           <div className="seção-construções">
-            <h2> Construções</h2>
-            {construcoes.map((c, i) => 
-              <button className ="construcoes" id={c.nome} onClick={() => ComprarConstrucao(i)} style={{cursor: "pointer"}}>
-              <img src={c.icone}></img>
-              {c.nome} <br />
-              Preço: {c.preço} <br />
-              </button>
-            )}
+            {construcoes.map((c, i) => {
+              const preçoAtual = getPreçoAtual(c.preço, c.quantidade);
+              return (
+                <button 
+                  key={c.nome}
+                  className="construcoes" 
+                  id={c.nome} 
+                  onClick={() => ComprarConstrucao(i)} 
+                  disabled={contagem < preçoAtual}
+                  style={{
+                    cursor: contagem < preçoAtual ? "auto" : "pointer",
+                    opacity: contagem < preçoAtual ? 0.6 : 1
+                  }}
+                >
+                  <div className="construcoes-icone">
+                    <img src={c.icone} alt={c.nome}></img>
+                  </div>
+                  <div className="construcoes-info">
+                    <div className="construcoes-nome">{c.nome}</div>
+                    <div className="construcoes-preco">Preço: {preçoAtual}</div>
+                  </div>
+                  <div className="construcoes-quantidade">{c.quantidade}</div>
+                </button>
+              );
+            })}
           </div>
 
           <div className="seção-opções">
