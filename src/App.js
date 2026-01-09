@@ -80,6 +80,12 @@ function App() {
   useEffect(() => { melhoriasRef.current = melhorias; }, [melhorias]);
   useEffect(() => { cookieCoinRef.current = cookieCoin; }, [cookieCoin]);
 
+  function simplificarNumero(n) {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + "k";
+    return Math.floor(n);
+  }
+
 
 
   useEffect(() => {
@@ -394,11 +400,11 @@ function App() {
     VALOR_BASE * cookieCoin.mercado
   );
 
-  const precoCookieCoin = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
+  const precoNvidia = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
 
   function ComprarCookieCoinNivel() {
-     if (contagem >= precoCookieCoin) {
-      setContagem(prev => prev - precoCookieCoin);
+     if (contagem >= precoNvidia) {
+      setContagem(prev => prev - precoNvidia);
       setCookieCoin(prev => ({
         ...prev,
         level: prev.level + 1
@@ -412,7 +418,7 @@ function App() {
     const timer = setInterval(() => {
       setCookieCoin(prev => ({
         ...prev,
-        coins: prev.coins + prev.level * 0.001
+        coins: prev.coins + prev.level * 0.0003
       }));
     }, 100);
 
@@ -437,7 +443,7 @@ function App() {
     if (!cookieCoin.desbloqueado) return;
 
     const timer = setInterval(() => {
-      const mudanca = (Math.random() - 0.5);
+      const mudanca = (Math.random() - 0.5)*0.2;
       let NovoMercado = cookieCoin.mercado + mudanca;
 
       NovoMercado = Math.max(0.01, Math.min(100, NovoMercado))
@@ -447,8 +453,10 @@ function App() {
         ...prev,
         mercado: Number(NovoMercado.toFixed(2))
       }})
+
+      let Valor = NovoMercado * VALOR_BASE
       setHistoricoCookieCoin(h => {
-        const novo = [...h, NovoMercado];
+        const novo = [...h, Valor];
         return novo.slice(-30); // últimos 30 pontos do gráfico
       });
     }, 30000);
@@ -457,9 +465,8 @@ function App() {
   }, [cookieCoin.desbloqueado]);
 
   function GraficoCookieCoin({ dados }) {
-    const width = 240;
+    const width = 250;
     const height = 120;
-    const padding = 10;
 
     if (dados.length < 2) return null;
 
@@ -467,20 +474,55 @@ function App() {
     const max = Math.max(...dados);
     const range = max - min || 1;
 
-    const points = dados.map((value, i) => {
-      const x = (i / (dados.length - 1)) * width;
-      const y = height - ((value - min) / range) * height;
-      return `${x},${y}`;
-    });
+    const color =
+    dados[dados.length - 1] >= dados[dados.length - 2]
+      ? "#4caf50"
+      : "#f44336";
+
+  const points = dados.map((value, i) => ({
+    x: (i / (dados.length - 1)) * width,
+    y: height - ((value - min) / range) * height,
+    value
+  }));
+
+  const labels = [
+    { value: max, y: 12 },
+    { value: (max + min) / 2, y: height / 2 },
+    { value: min, y: height - 4 }
+  ];
 
     return (
-      <svg width={width} height={height} style={{ background: "white", borderRadius: 6 }}>
-        <polyline
-          points={points.join(" ")}
-          fill="none"
-          stroke="black"
-          strokeWidth="2"
-        />
+      <svg width={width + 40} height={height} style={{ background: "white", borderRadius: 6 }}>
+        {/* rotulos do gráfico */}
+        {labels.map((l, i) => (
+          <text
+            key={i}
+            x={2}
+            y={l.y}
+            fill="#aaa"
+            fontSize="10"
+          >
+            {simplificarNumero(l.value)}
+          </text>
+        ))}
+
+        {/* Gráfico formado por linhas */}
+        {points.slice(1).map((p, i) => {
+          const prev = points[i];
+          const color = p.value >= prev.value ? "#4caf50" : "#f44336";
+
+          return (
+            <line
+              key={i}
+              x1={prev.x + 40}
+              y1={prev.y}
+              x2={p.x + 40}
+              y2={p.y}
+              stroke={color}
+              strokeWidth="2"
+            />
+          );
+        })}
       </svg>
     );
   }
@@ -537,16 +579,17 @@ function App() {
 
             <button
               onClick={ComprarCookieCoinNivel}
-              disabled={contagem < precoCookieCoin}
+              disabled={contagem < precoNvidia}
+              style={{cursor: "pointer"}}
             >
               Nova Placa de Vídeo<br />
-              Preço: {precoCookieCoin}
+              Preço: {precoNvidia}
             </button>
             
               <p>
                 Valor:{" "}
                 <strong>
-                  {valorAtualCookieCoin.toLocaleString()} cookies
+                  {simplificarNumero(valorAtualCookieCoin).toLocaleString()} cookies
                 </strong>
               </p>
               <GraficoCookieCoin dados={historicoCookieCoin} />
@@ -554,6 +597,7 @@ function App() {
             <button
               onClick={VenderCookieCoin}
               disabled={cookieCoin.coins < 1}
+              style={{cursor: "pointer"}}
             >
               Vender Cookie Coins<br />
             </button>
