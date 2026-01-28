@@ -14,19 +14,21 @@ import { Save, Load, saveGame, loadSave } from './version';
 function App() {
   // Definir estruturas padrão para construções e melhorias
   const DEFAULT_CONSTRUCOES = [
-    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1, icone_pequeno: Vovo3},
-    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda, icone_pequeno: Fazenda},
-    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica, icone_pequeno: Fabrica},
-    {nome: "Banco", preço: 11000, cps: 40, quantidade: 0, icone: Karaj, icone_pequeno: Karaj},
-    {nome: "Computador", preço: 100000, cps: 200, quantidade: 0, icone: PC, icone_pequeno: PC},
-    {nome: "Templo de Karaj", preço: 777777, cps: 777, quantidade: 0, icone: Karaj, icone_pequeno: Karaj}
+    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, icone: Vovo1, icone_pequeno: Vovo3, descricao: "Uma vovó para assar cookies fresquinhos do forno"},
+    {nome: "Fazenda", preço: 100, cps: 1, quantidade: 0, icone: Fazenda, icone_pequeno: Fazenda, descricao: "As Fazendas plantam pés de cookies"},
+    {nome: "Fábrica", preço: 1000, cps: 5, quantidade: 0, icone: Fabrica, icone_pequeno: Fabrica, descricao: "As Fábricas produzem cookies em larga escala"},
+    {nome: "Banco", preço: 11000, cps: 40, quantidade: 0, icone: Karaj, icone_pequeno: Karaj, descricao: "Os Bancos produzem cookies a partir de empréstimos"},
+    {nome: "Computador", preço: 100000, cps: 200, quantidade: 0, icone: PC, icone_pequeno: PC, descricao: "O Computador produz cookies a partir do código do próprio jogo!"},
+    {nome: "Templo de Karaj", preço: 777777, cps: 777, quantidade: 0, icone: Karaj, icone_pequeno: Karaj, descricao: "Os Templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!"}
   ];
   
   const DEFAULT_MELHORIAS = [
-    {nome: "Mouse de Aço", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n Clique 2 vezes mais eficiente!"},
-    {nome: "Super Mouse", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu Mouse ganha super poderes. \n Clique 2 vezes mais eficiente!"},
+    {nome: "Mouse de Cobre", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Seu Mouse é encapado com uma camada de cobre. Melhor que nada! \n Clique 2 vezes mais eficiente!"},
+    {nome: "Mouse de Aço", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n Clique 2 vezes mais eficiente!"},
     {nome: "Mouse de Ouro", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n Clique 2 vezes mais eficiente!"},
     {nome: "Mouse de Vibrânio", preço: 100000, efeito:'duplicarClick', id: 'click4', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n Clique 2 vezes mais eficiente!"},
+
+    //{nome: "Super Mouse", preço: 100, efeito:'ClickCPS', id: 'click11', comprado: false, descricao: "Seu Mouse ganha super poderes! \n O Clique ganha 1% do seu CPS"},
 
     {nome: "Treinamento da Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
     {nome: "Fornos de Cookie", preço: 5000, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
@@ -95,6 +97,9 @@ function App() {
   const [numerinhos, setNumerinhos] = useState([]);
   const [aviso, setAviso] = useState(false);
   const [historicoCookieCoin, setHistoricoCookieCoin] = useState([]);
+  // Tooltips
+  const [hoveredConstrucao, setHoveredConstrucao] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   function mostrarAviso(texto) {
     setAviso({ texto, id: Date.now() });
@@ -114,16 +119,25 @@ function App() {
   useEffect(() => { melhoriasRef.current = melhorias; }, [melhorias]);
   useEffect(() => { cookieCoinRef.current = cookieCoin; }, [cookieCoin]);
 
+  function CasasDecimais(n, casas) {
+    return n.toLocaleString("pt-BR", {
+      minimumFractionDigits: casas,
+      maximumFractionDigits: casas
+    });
+  }
+
   function simplificarNumero(n) {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-    if (n >= 1_000) return (n / 1_000).toFixed(1) + "k";
+    if (n >= 1_000_000) return CasasDecimais(n / 1_000_000 , 1) + "M";
+    if (n >= 1_000) return CasasDecimais(n / 1_000 , 1) + "k";
     return Math.floor(n);
   }
 
   function simplificarNumeroPT(n) {
-    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + "bilhão";
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "milhão";
-    if (n >= 1_000) return (n / 1_000).toFixed(2) + "mil";
+    if (n >= 1_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000 , 3) + " trilhões";
+    if (n >= 1_000_000_000) return CasasDecimais(n / 1_000_000_000 , 3) + " bilhões";
+    if (n >= 1_000_000) return CasasDecimais(n / 1_000_000 , 3) + " milhões";
+    //if (n >= 1_000) return CasasDecimais(n / 1_000 , 3) + " mil";
+    if (n >= 1_000) return (n/1_000).toFixed(3);
     return Math.floor(n);
   }
 
@@ -642,7 +656,7 @@ function App() {
           <div className="seção-cookie-coin">
             <h2>Mineração de Cookie Coins</h2>
 
-            <p>Coins: {cookieCoin.coins.toFixed(3)}</p>
+            <p>Coins: {CasasDecimais(cookieCoin.coins, 3)}</p>
             <p>Level: {cookieCoin.level}</p>
 
             <button
@@ -651,7 +665,7 @@ function App() {
               style={{cursor: "pointer"}}
             >
               Nova Placa de Vídeo<br />
-              Preço: {precoNvidia}
+              Preço: {simplificarNumeroPT(precoNvidia)}
             </button>
             
               <p>
@@ -683,8 +697,8 @@ function App() {
           <div className="seção-cookie">
 
             {/* Contagem de Cookies */}
-            <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${Math.floor(contagem)} cookies`}</div>
-            <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${CPS} CPS`}</div>
+            <div style={{ fontSize: "50px", margin: "20px 0" }}>{`${simplificarNumeroPT(contagem)} de cookies`}</div>
+            <div style={{ fontSize: "30px", margin: "20px 0" }}>{`Cookies por segundo: ${simplificarNumeroPT(CPS)}`}</div>
             <script src="cookie.js"></script>
 
             
@@ -745,14 +759,10 @@ function App() {
             {construcoes.map((c) => (
               c.quantidade > 0 && (
                 <div key={c.nome} className="colecao-grupo">
-                  {/*<span className="colecao-nome">{c.nome}</span>*/}
-                  
-
                   <div className="colecao-icones">
                     {Array.from({ length: c.quantidade }).map((_, i) => {
                       const cpsAtual = CpsConstrucao(c);
                       const cpsTotal = cpsAtual * c.quantidade;
-
                       return (
                         <div key={i} className="icone-wrapper" style={{cursor: "pointer" }}>
                           <motion.img
@@ -816,29 +826,58 @@ function App() {
             {construcoes.map((c, i) => {
               const preçoAtual = getPreçoAtual(c.preço, c.quantidade);
               return (
-                <button 
-                  key={c.nome}
-                  className="construcoes" 
-                  id={c.nome} 
-                  onClick={() => ComprarConstrucao(i)} 
-                  disabled={contagem < preçoAtual}
-                  style={{
-                    cursor: contagem < preçoAtual ? "auto" : "pointer",
-                    opacity: contagem < preçoAtual ? 0.6 : 1
-                  }}
-                >
-                  <div className="construcoes-icone">
-                    <img src={c.icone} alt={c.nome}></img>
-                  </div>
-                  <div className="construcoes-info">
-                    <div className="construcoes-nome">{c.nome}</div>
-                    <div className="construcoes-preco">Preço: {preçoAtual}</div>
-                  </div>
-                  <div className="construcoes-quantidade">{c.quantidade}</div>
-                </button>
+                <div key={c.indiceOriginal} className="construção-wrapper">
+                  <button 
+                    key={c.nome}
+                    className="construções" 
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setTooltipPos({
+                        x: rect.left - 10,
+                        y: rect.top + rect.height / 2
+                      });
+                      setHoveredConstrucao(c);
+                    }}
+                    onMouseLeave={() => setHoveredConstrucao(null)}
+                    id={c.nome} 
+                    onClick={() => ComprarConstrucao(i)} 
+                    disabled={contagem < preçoAtual}
+                    style={{
+                      cursor: contagem < preçoAtual ? "auto" : "pointer",
+                      opacity: contagem < preçoAtual ? 0.6 : 1
+                    }}
+                  >
+                    <div className="construções-icone">
+                      <img src={c.icone} alt={c.nome}></img>
+                    </div>
+                    <div className="construções-info">
+                      <div className="construções-nome">{c.nome}</div>
+                      <div className="construções-preco">Preço: {simplificarNumeroPT(preçoAtual)}</div>
+                    </div>
+                    <div className="construções-quantidade">{c.quantidade}</div>
+                  </button>
+
+                </div>
               );
             })}
           </div>
+
+          {hoveredConstrucao && (
+            <div
+              className="info-const"
+              style={{
+                position: "fixed",
+                left: tooltipPos.x,
+                top: tooltipPos.y,
+                transform: "translate(-100%, -50%)",
+                zIndex: 9999
+              }}
+            >
+              <strong>{hoveredConstrucao.nome}</strong><br />
+              {hoveredConstrucao.descricao}<br />
+              CPS: {CpsConstrucao(hoveredConstrucao)}
+            </div>
+          )}
 
           <div className="seção-opções">
             <h2> Opções </h2>

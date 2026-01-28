@@ -32,8 +32,6 @@
   position: relative;
 }
 
-
-
 .lado-meio {
   display:flex;
   flex-direction: column;
@@ -79,22 +77,21 @@
   padding: 6px 8px;
   border-radius: 6px;
   font-size: 12px;
-  white-space: nowrap;
+  width: 240px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
   z-index: 100;
+  box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-family: monospace;
+  
+  pointer-events: none;
 }
 .icone-wrapper:hover .info {
   opacity: 1;
 }
-.upgrade-wrapper {
-  position: relative;
-  display: inline-block;
-}
-.upgrade-wrapper:hover .info {
-  opacity: 1;
-}
+
 
 .lado-direito {
   display:flex;
@@ -111,6 +108,13 @@
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 
 }
+.upgrade-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.upgrade-wrapper:hover .info {
+  opacity: 1;
+}
 
 
 /* Seção das construções */
@@ -123,7 +127,8 @@
   border: 4px solid #000;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
   max-height: 500px;        /* tamanho da caixa de construções*/
-  overflow-y: auto;          /* habilita scroll do mouse */
+  overflow-x: visible; /* permite os tooltips "vazarem" da caixa de upgrades */
+  overflow-y: auto;
   scrollbar-width: thin;     /* para o Firefox */
   scrollbar-color: #f06d06 #fff;
 }
@@ -142,7 +147,7 @@
   background-color: #fff;
   border-radius: 8px;
 }
-.construcoes {
+.construções {
   background: #f0f000;
   font-size: 16px;
   color: #000;
@@ -157,20 +162,18 @@
   width: calc(100% - 16px);
   min-height: 60px;
 }
-.construcoes-icone {
+.construções-icone {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-.construcoes-icone img {
+.construções-icone img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-
-.construcoes-info {
+.construções-info {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -179,27 +182,47 @@
   text-align: center;
   margin: 0 10px;
 }
-
-.construcoes-nome {
+.construções-nome {
   font-weight: bold;
   font-size: 26px;
   margin-bottom: 4px;
 }
-
-.construcoes-preco {
+.construções-preco {
   font-size: 20px;
 }
-
-.construcoes-quantidade {
+.construções-quantidade {
   flex-shrink: 0;
   font-size: 32px;
   min-width: 50px;
   text-align: right;
 }
-
-.construcoes:hover {
+.construções:hover {
   background-color: #f06d06;
   transform: scale(1.02);
+}
+
+.info-const {
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 240px;
+  line-height: 1.4;
+  pointer-events: none;
+
+  box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-family: monospace;
+  
+}
+
+.construção-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.construção-wrapper:hover .info-const {
+  opacity: 1;
 }
 
 .seção-opções {
@@ -210,8 +233,9 @@
   border-radius: 20px;
   border: 4px solid #000;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-
 }
+
+
 
 
 #cookie
