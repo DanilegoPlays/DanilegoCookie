@@ -1,52 +1,20 @@
 // Módulo para permitir usar saves antigos em novas versões (para não ser necessário recomeçar a cada update)
-
-export const VERSAO_ATUAL = 6.2; // Versão atual do save (semantic versioning: 6.2)
+import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
+export const VERSAO_ATUAL = 7.0; // Versão atual do save
 
 // Formato padrão do save
+
 export const DEFAULT_SAVE = {
   version: VERSAO_ATUAL,
   contagem: 0,
+  cookiesTotais: 0,
+  cookiesTotaisAscensao: 0,
   click: 1,
-  construcoes: [
-    { nome: "Vovó", quantidade: 0 },
-    { nome: "Fazenda", quantidade: 0 },
-    { nome: "Fábrica", quantidade: 0 },
-    { nome: "Banco", quantidade: 0 },
-    { nome: "Computador", quantidade: 0 },
-    { nome: "Templo de Karaj", quantidade: 0 }
-  ],
-  melhorias: [
-    { id: "click1", comprado: false },
-    { id: "click2", comprado: false },
-    { id: "click3", comprado: false },
-    { id: "click4", comprado: false },
-    { id: "vovo1", comprado: false },
-    { id: "vovo2", comprado: false },
-    { id: "vovo3", comprado: false },
-    { id: "vovo4", comprado: false },
-    { id: "fazenda1", comprado: false },
-    { id: "fazenda2", comprado: false },
-    { id: "fazenda3", comprado: false },
-    { id: "fazenda4", comprado: false },
-    { id: "fabrica1", comprado: false },
-    { id: "fabrica2", comprado: false },
-    { id: "fabrica3", comprado: false },
-    { id: "fabrica4", comprado: false },
-    { id: "banco1", comprado: false },
-    { id: "banco2", comprado: false },
-    { id: "banco3", comprado: false },
-    { id: "banco4", comprado: false },
-    { id: "PC1", comprado: false },
-    { id: "PC2", comprado: false },
-    { id: "PC3", comprado: false },
-    { id: "PC4", comprado: false },
-    { id: "karaj1", comprado: false },
-    { id: "karaj2", comprado: false },
-    { id: "karaj3", comprado: false },
-    { id: "karaj4", comprado: false }
-  ],
-  cookieCoin: { desbloqueado: false, level: 0, coins: 0, mercado: 1 }
-};
+  construcoes: DEFAULT_CONSTRUCOES,
+  melhorias: DEFAULT_MELHORIAS,
+  cookieCoin: DEFAULT_COOKIE_COIN,
+  ascensao: DEFAULT_ASCENSAO
+}
 
 // --- MIGRAÇÃO  ---
 // a migração recebe dados antigos e retorna com versão = N+1
@@ -95,6 +63,87 @@ function normalizeCookieCoin(saved) {
   };
 }
 
+function normalizeAscensao(saved) {
+  if (!saved || typeof saved !== "object") {
+    return DEFAULT_SAVE.ascensao;
+  }
+
+  // Merge saved ascensao with defaults, including all districts
+  const normalized = {
+    desbloqueado: saved.desbloqueado ?? DEFAULT_SAVE.ascensao.desbloqueado,
+    prestigio: saved.prestigio ?? DEFAULT_SAVE.ascensao.prestigio,
+    prestigioTotal: saved.prestigioTotal ?? DEFAULT_SAVE.ascensao.prestigioTotal
+  };
+
+  // Handle each distrito individually, preserving saved data but ensuring structure
+  const distritos = [
+    'distritotemplo',
+    'distritovovo', 
+    'distritofazenda',
+    'distritomina',
+    'distritofabrica',
+    'distritopc',
+    'distritobanco',
+    'distritoclick',
+    'distritoidle'
+  ];
+
+  distritos.forEach(distrito => {
+    // Handle old typo: distritofabricas -> distritofabrica
+    const savedDistrito = distrito === 'distritofabrica' 
+      ? (saved.distritofabrica || saved.distritofabricas)
+      : saved[distrito];
+    
+    const defaultDistrito = DEFAULT_SAVE.ascensao[distrito];
+    
+    if (!defaultDistrito) {
+      // District doesn't exist in defaults, skip it
+      return;
+    }
+
+    normalized[distrito] = {
+      ...defaultDistrito,    
+      ...savedDistrito,  
+
+    
+      upgrades: defaultDistrito.upgrades.map(defUpg => {
+        const savedUpgrade = savedDistrito?.upgrades?.find(u => u.id === defUpg.id);
+        return {
+          ...defUpg,
+          comprado: savedUpgrade?.comprado ?? false
+        };
+      })
+    };
+  });
+
+  return normalized;
+}
+
+function normalizeDistritos(saved, defaults) {
+  const result = {};
+
+  for (const key in defaults) {
+    const savedDistrito = saved?.[key];
+
+    result[key] = {
+      ...defaults[key],
+      ...savedDistrito,
+
+      upgrades: defaults[key].upgrades.map(defUpg => {
+        const found = savedDistrito?.upgrades?.find(
+          u => u.id === defUpg.id
+        );
+        return {
+          ...defUpg,
+          comprado: found?.comprado ?? false
+        };
+      })
+    };
+  }
+
+  return result;
+}
+
 
 // Funções de migração - cada função migra de uma versão para a próxima
 // Usa versões semânticas (6.1, 6.2, etc.) como chaves
@@ -130,13 +179,27 @@ const migrations = {
   
   // Adicione novas migrações aqui quando a versão aumentar
   // Exemplo para versão 6.3:
-  // 6.2: (save) => {
-  //   return {
-  //     ...save,
-  //     version: 6.3
-  //   };
-  // },
+   6.2: (save) => {
+     return {
+       ...save,
+       version: 6.3
+     };
+  },
   // IMPORTANTE: Sempre atualize VERSAO_ATUAL quando adicionar uma nova migração!
+
+  // Migração da 6.3 para 7.0 - KARAJ CITY UPDATE
+  // Adiciona todos os novos distritos da cidade de Karaj
+  6.3: (save) => {
+    // Inicializa ascensão se não existir
+    
+    return {
+      ...save,
+      cookiesTotais: save.cookiesTotais ?? 0,
+      cookiesTotaisAscensao: save.cookiesTotaisAscensao ?? 0,
+      ascensao: DEFAULT_ASCENSAO,
+      version: 7.0
+    };
+  }
 };
 
 // Função auxiliar para comparar versões semânticas
@@ -211,10 +274,13 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
   if (!raw) {
     return {
       contagem: 0,
+      cookiesTotais: 0,
+      cookiesTotaisAscensao: 0,
       click: 1,
       construcoes: defaultConstrucoes || DEFAULT_SAVE.construcoes,
       melhorias: defaultMelhorias || DEFAULT_SAVE.melhorias,
-      cookieCoin: DEFAULT_SAVE.cookieCoin
+      cookieCoin: DEFAULT_SAVE.cookieCoin,
+      ascensao: DEFAULT_SAVE.ascensao
     };
   }
 
@@ -226,9 +292,12 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
     // Use provided defaults or fall back to DEFAULT_SAVE
     const construcoesDefaults = defaultConstrucoes || DEFAULT_SAVE.construcoes;
     const melhoriasDefaults = defaultMelhorias || DEFAULT_SAVE.melhorias;
+    
 
     return {
       contagem: migrated.contagem ?? 0,
+      cookiesTotais: migrated.cookiesTotais ?? 0,
+      cookiesTotaisAscensao: migrated.cookiesTotaisAscensao ?? 0,
       click: migrated.click ?? 1,
       construcoes: normalizeConstrucoes(
         migrated.construcoes,
@@ -239,16 +308,20 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
         melhoriasDefaults
       ),
       cookieCoin: normalizeCookieCoin(migrated.cookieCoin),
+      ascensao: normalizeAscensao(migrated.ascensao),
       version: VERSAO_ATUAL
     };
   } catch (error) {
     console.error("Error loading save:", error);
     return {
       contagem: 0,
+      cookiesTotais: 0,
+      cookiesTotaisAscensao: 0,
       click: 1,
       construcoes: defaultConstrucoes || DEFAULT_SAVE.construcoes,
       melhorias: defaultMelhorias || DEFAULT_SAVE.melhorias,
-      cookieCoin: DEFAULT_SAVE.cookieCoin
+      cookieCoin: DEFAULT_SAVE.cookieCoin,
+      ascensao: DEFAULT_SAVE.ascensao
     };
   }
 }
@@ -257,6 +330,8 @@ export function saveGame(state) {
   const save = {
     version: VERSAO_ATUAL,
     contagem: state.contagem,
+    cookiesTotais: state.cookiesTotais,
+    cookiesTotaisAscensao: state.cookiesTotaisAscensao,
     click: state.click,
 
     construcoes: state.construcoes.map(c => ({
@@ -275,7 +350,8 @@ export function saveGame(state) {
       descricao: m.descricao
     })),
 
-    cookieCoin: state.cookieCoin
+    cookieCoin: state.cookieCoin,
+    ascensao: state.ascensao
   };
 
   localStorage.setItem("QuickSave", JSON.stringify(save));
@@ -287,6 +363,8 @@ export function Save(state) {
   const save = {
     version: VERSAO_ATUAL,
     contagem: state.contagem,
+    cookiesTotais: state.cookiesTotais,
+    cookiesTotaisAscensao: state.cookiesTotaisAscensao,
     click: state.click,
 
     construcoes: state.construcoes.map(c => ({
@@ -304,7 +382,9 @@ export function Save(state) {
       descricao: m.descricao
     })),
 
-    cookieCoin: state.cookieCoin
+    cookieCoin: state.cookieCoin,
+    ascensao: state.ascensao
+
   };
 
   return btoa(JSON.stringify(save));
@@ -318,10 +398,13 @@ export function Load(saveString, defaultConstrucoes = null, defaultMelhorias = n
     console.error("Error loading save:", error);
     return {
       contagem: 0,
+      cookiesTotais: 0,
+      cookiesTotaisAscensao: 0,
       click: 1,
       construcoes: defaultConstrucoes || DEFAULT_SAVE.construcoes,
       melhorias: defaultMelhorias || DEFAULT_SAVE.melhorias,
-      cookieCoin: DEFAULT_SAVE.cookieCoin
+      cookieCoin: DEFAULT_SAVE.cookieCoin,
+      ascensao: DEFAULT_SAVE.ascensao
     };
   }
 }
