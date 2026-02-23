@@ -27,7 +27,7 @@ function App() {
   }
 
   // useStates principais
-  const [contagem, setContagem] = useState(9999990); // contagem de cookies
+  const [contagem, setContagem] = useState(0); // contagem de cookies
   const [click, setClick] = useState(1); // valor do click
   const [CPS, setCPS] = useState(0); // CPS
   const [construcoes, setConstrucoes] = useState(DEFAULT_CONSTRUCOES)
@@ -247,11 +247,16 @@ function App() {
     );
   }, [ascensao]) 
 
-
-
   // efeito CPS
   useEffect(() => {
-    const timer = setInterval(() => {    
+
+    let lastUpdate = Date.now();
+
+    const timer = setInterval(() => {
+      // considera tempo com o jogo em outra aba
+      const now = Date.now();
+      const deltaSeconds = (now - lastUpdate) / 1000;
+      lastUpdate = now;  
       // calcula o CPS levando em conta construções e melhorias de construções
       // (pode ser útil para implementar melhorias sem alterar o cps base das construções)
       const producaoBase = construcoes.reduce((soma, c) => {
@@ -262,9 +267,9 @@ function App() {
       const producao = producaoBase * getMultiplicadorP();
 
       setCPS(producao);
-      setContagem((atual) => atual + producao/10);
-      setCookiesTotais((atual) => atual + producao/10);
-      setCookiesTotaisAscensao((atual) => atual + producao/10);
+      setContagem((atual) => atual + (deltaSeconds*producao));
+      setCookiesTotais((atual) => atual + (deltaSeconds*producao));
+      setCookiesTotaisAscensao((atual) => atual + (deltaSeconds*producao));
     }, 100); // a cada 0.1 segundos
     return () => clearInterval(timer); // limpa o timer
   }, [construcoes, melhorias]);
@@ -335,7 +340,7 @@ function App() {
     return multiplicadorBasico * multiplicadorPrestigio;
   }
 
-  // cps da construção
+  // cps da construção (para visualização)
   function CpsConstrucao(c) {
     return c.cps * getMultiplicador(c) * getMultiplicadorP();
   }
@@ -615,14 +620,18 @@ function App() {
       }));
      }    
   }
-
+  // ganho de Cookie Coins
   useEffect(() => {
     if (!cookieCoin.desbloqueado || cookieCoin.level === 0) return;
-    
+    let lastUpdate = Date.now();
     const timer = setInterval(() => {
+
+      const now = Date.now();
+      const deltaSeconds = (now - lastUpdate) / 1000;
+      lastUpdate = now;
       setCookieCoin(prev => ({
         ...prev,
-        coins: prev.coins + prev.level * 0.0003
+        coins: prev.coins + prev.level * 0.003 * deltaSeconds
       }));
     }, 100);
 
@@ -644,7 +653,7 @@ function App() {
     }));
     mostrarAviso(`${moedasInteiras} Cookie Coins vendidas por ${ganhoCookies.toLocaleString()} cookies`);
   }
-
+  // mercado de Cookie Coins
   useEffect(() => {
     if (!cookieCoin.desbloqueado) return;
 
