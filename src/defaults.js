@@ -124,8 +124,8 @@ export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
 
 export const DEFAULT_ASCENSAO = {
       desbloqueado: false,
-      prestigio: 0,
-      prestigioTotal: 0,
+      prestigio: 1,
+      prestigioTotal: 1,
   
       // Distrito dos Templos
       distritotemplo: {
@@ -136,7 +136,8 @@ export const DEFAULT_ASCENSAO = {
         icone: Karaj,
         icone_destruido: Karaj_d,
         upgrades: [
-          {nome: "Conexão", preço: 1, efeito:'ascensao', id: 'ascensaocps', comprado: false, descricao: "Você ganha 1% de cps por nível de prestígio"}
+          {nome: "Conexão Espiritual", preço: 1, efeito:'ascensao', id: 'ascensaocps', comprado: false, descricao: "Você ganha 1% de cps por nível de prestígio"},
+          {nome: "Armazém Temporal", preço: 13, efeito:'offline1', id: 'offline1', comprado: false, descricao: "Você ganha 50% de CPS enquanto o jogo está fechado (por um máximo de 2 horas)"}
         ]
       },
       distritovovo: {

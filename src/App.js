@@ -165,6 +165,7 @@ function App() {
         cookieCoin: cookieCoinRef.current,
         ascensao: ascensaoRef.current,
         cookiesTotais: cookiesTotaisRef.current,
+        lastSavedAt: Date.now()
       };
       saveGame(saveData);
       console.log("jogo salvo", saveData);
@@ -190,9 +191,84 @@ function App() {
       setMelhorias(dados.melhorias ?? DEFAULT_MELHORIAS);
       setCookieCoin(dados.cookieCoin ?? DEFAULT_COOKIE_COIN);
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
+
+      // ganho offline
+      const stats = getOffline(dados.ascensao);
+
+      if (stats.multiplier > 0 && dados.lastSavedAt) {
+        const now = Date.now();
+        const diffSeconds = (now - dados.lastSavedAt) / 1000;
+        // limite de ganho offline (inicial: 2 horas)
+        const capped = Math.min(diffSeconds, stats.capSeconds);
+
+        // Use dados.construcoes instead of state construcoes
+        const producaoBase = dados.construcoes.reduce((soma, c) => {
+          const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
+          return soma + CpsConstrucao(c) * quantidadeTotal;
+        }, 0);
+
+        // Calcula o multiplicador a partir do save
+        const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao);
+
+        const producao = producaoBase * multiplicador;
+
+        const ganho = producao * capped * stats.multiplier;
+
+        setContagem(prev => prev + ganho);
+        setCookiesTotais(prev => prev + ganho);
+        setCookiesTotaisAscensao(prev => prev + ganho);
+
+        mostrarAviso(
+          `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
+        );
+      }
     }
     
+    
   }, []);
+
+  function getOffline(ascensao) {
+
+    const offline1 =
+      ascensao.distritotemplo?.upgrades
+        ?.filter(u => u.efeito === "offline1" && u.comprado)
+        .length || 0;
+
+    const offline2 =
+      ascensao.distritoidle?.upgrades
+        ?.filter(u => u.efeito === "offline2" && u.comprado)
+        .length || 0;
+
+    // Multiplicador offline 
+    const multiplier =
+        offline1 * 0.5 +
+        offline2 * 0.1;
+
+    // Horas máximas offline 
+    const capHours =
+        offline1 * 2 +
+        offline2 * 4;
+
+    return {
+      multiplier,
+      capSeconds: capHours * 3600
+    };
+  }
+
+  // Versão do getMultiplicadorP que usa dados do save (para ganho offline)
+  function getMultiplicadorPFromData(melhorias, ascensao) {
+    const multiplicador1Porcento = melhorias.filter(m => m.efeito === "1porcento" && m.comprado).length;
+    const multiplicador3Porcento = melhorias.filter(m => m.efeito === "3porcento" && m.comprado).length;
+    const multiplicador5Porcento = melhorias.filter(m => m.efeito === "5porcento" && m.comprado).length;
+    const multiplicador10Porcento = melhorias.filter(m => m.efeito === "10porcento" && m.comprado).length;
+
+    const multiplicadorBasico = 1 + multiplicador1Porcento * 0.01 + multiplicador3Porcento * 0.03 + multiplicador5Porcento * 0.05 + multiplicador10Porcento * 0.1
+
+    const CPSAscensaoAtivo = ascensao?.distritotemplo?.upgrades?.some(u => u.id === "ascensaocps" && u.comprado);
+    const multiplicadorPrestigio = CPSAscensaoAtivo ? 1 + (ascensao.prestigioTotal || 0) * 0.01 : 1;
+
+    return multiplicadorBasico * multiplicadorPrestigio;
+  }
 
 
   function ClickPorCPS(melhorias, ascensao) {
@@ -270,6 +346,10 @@ function App() {
       setContagem((atual) => atual + (deltaSeconds*producao));
       setCookiesTotais((atual) => atual + (deltaSeconds*producao));
       setCookiesTotaisAscensao((atual) => atual + (deltaSeconds*producao));
+      if (deltaSeconds > 10) {
+        mostrarAviso(`Bem vindo de volta! +  ${deltaSeconds*producao} cookies`)
+      }
+
     }, 100); // a cada 0.1 segundos
     return () => clearInterval(timer); // limpa o timer
   }, [construcoes, melhorias]);
@@ -471,6 +551,7 @@ function App() {
         cookieCoin: cookieCoinRef.current,
         ascensao: ascensaoRef.current,
         cookiesTotais: cookiesTotaisRef.current,
+        lastSavedAt: Date.now()
       };
     
     const encoded = Save(saveData);  // Uses versioned save system
@@ -495,6 +576,37 @@ function App() {
       setCookiesTotais(dados.cookiesTotais ?? 0);
       setCookiesTotaisAscensao(dados.cookiesTotaisAscensao ?? 0);
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
+
+      // ganho offline
+      const stats = getOffline(dados.ascensao);
+
+      if (stats.multiplier > 0 && dados.lastSavedAt) {
+        const now = Date.now();
+        const diffSeconds = (now - dados.lastSavedAt) / 1000;
+
+        const capped = Math.min(diffSeconds, stats.capSeconds);
+
+        // Usa dados do save em vez do state "construcoes"
+        const producaoBase = dados.construcoes.reduce((soma, c) => {
+          const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
+          return soma + CpsConstrucao(c) * quantidadeTotal;
+        }, 0);
+
+        // Calcula multiplicador
+        const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao);
+
+        const producao = producaoBase * multiplicador;
+
+        const ganho = producao * capped * stats.multiplier;
+
+        setContagem(prev => prev + ganho);
+        setCookiesTotais(prev => prev + ganho);
+        setCookiesTotaisAscensao(prev => prev + ganho);
+
+        mostrarAviso(
+          `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
+        );
+      }
 
       mostrarAviso("Save importado com sucesso!");
     } catch (error) {
@@ -877,7 +989,7 @@ function App() {
       setMelhorias(DEFAULT_MELHORIAS);
       
 
-    // coloca a tela no meio da animação
+    // coloca a tela de ascensão no meio da animação
     setTimeout(() => {
       setTelaAtual("ascensão");
       
