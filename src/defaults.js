@@ -11,6 +11,8 @@ import Mina from './arte/Minas.png';
 import Mina_d from './arte/Minas_d.png';
 import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png';
+import Bancos from './arte/Bancos.png';
+import Bancos_d from './arte/Bancos_d.png';
 
 // Estruturas padrão para construções e melhorias
 export const DEFAULT_CONSTRUCOES = [
@@ -19,7 +21,7 @@ export const DEFAULT_CONSTRUCOES = [
     {nome: "Mina", preço: 1000, cps: 8, quantidade: 0, descricao: "As Minas mineram Cookie Mineral direto da terra!", icone: Mina, icone_pequeno: Mina},
     {nome: "Fábrica", preço: 11000, cps: 45, quantidade: 0, descricao: "As Fábricas produzem cookies em larga escala", icone: Fabrica, icone_pequeno: Fabrica},
     {nome: "Computador", preço: 120_000, cps: 300, quantidade: 0, descricao: "O Computador produz cookies a partir do código do próprio jogo!", icone: PC, icone_pequeno: PC},
-    {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos produzem cookies a partir de empréstimos", icone: PC, icone_pequeno: PC},
+    {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos produzem cookies a partir de empréstimos", icone: Bancos, icone_pequeno: Bancos},
     {nome: "Templo de Karaj", preço: 77_777_000, cps: 7777, quantidade: 0, descricao: "Os Templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!", icone: Karaj, icone_pequeno: Karaj},
     {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: PC, icone_pequeno: PC}
   ];
@@ -98,7 +100,9 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Cookie com Chocolate Branco", preço: 111_111_111, efeito:'3porcento', id: 'cookie7', comprado: false, descricao: "É bom diferenciar. +3% de CPS"},
     {nome: "Cookie de Aveia", preço: 111_111_111, efeito:'3porcento', id: 'cookie8', comprado: false, descricao: "Saudável! +3% de CPS"},
     {nome: "Cookie com Chocolate Meio Amargo", preço: 111_111_111, efeito:'3porcento', id: 'cookie9', comprado: false, descricao: "80% cacau! +3% de CPS"},
-    {nome: "Cookie Recheado", preço: 111_111_111, efeito:'3porcento', id: 'cookie10', comprado: false, descricao: "Qual é o recheio? Ninguém sabe. +3% de CPS"},
+    {nome: "Cookie com nozes", preço: 111_111_111, efeito:'3porcento', id: 'cookie10', comprado: false, descricao: "Crocante! +3% de CPS"},
+    {nome: "Cookie Recheado", preço: 1_111_111_111, efeito:'5porcento', id: 'cookie11', comprado: false, descricao: "Qual é o recheio? Ninguém sabe. +5% de CPS"},
+    {nome: "Cookie com Sorvete", preço: 5_555_555_555, efeito:'3porcento', id: 'cookie12', comprado: false, descricao: "Boa combinação! +3% de CPS"},
 
     // Cookies Caseiros - Vovós
     {nome: "Biscoito Polvilho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo1', comprado: false, descricao: "Salgadinho! +3% de CPS"},
@@ -115,6 +119,42 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Tortinhas de Chocolate", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr5', comprado: false, descricao: "Muito boa. +3% de CPS"},
     {nome: "Tortinhas de Morango", preço: 100_000_000_000_000, efeito:'5porcento', id: 'cookiebr6', comprado: false, descricao: "A Melhor de Todas! +5% de CPS"}
   ];
+
+export const DEFAULT_DOURADO = [
+  {
+    nome: "Sorte pequena",
+    tipo: "CPS",
+    mult: 3,
+    duração:111,
+    peso: 3
+  },
+  {
+    nome: "Sorte média!",
+    tipo:"CPS",
+    mult: 7,
+    duração:77,
+    peso: 5
+  },
+  {
+    nome: "Sorte grande!!",
+    tipo:"CPS",
+    mult: 77,
+    duração:33,
+    peso: 2
+  },
+  {
+    nome: "Frenesi de Clique",
+    tipo:"Click",
+    mult: 777,
+    duração:11,
+    peso: 1
+  },
+  {
+    nome: "Explosão de cookies!",
+    tipo:"Instantaneo",
+    peso: 4
+  }
+]
 
 export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
     level: 0,
@@ -205,8 +245,8 @@ export const DEFAULT_ASCENSAO = {
         construído: false,
         posicao: null,
         aberto: false,
-        icone: PC,
-        icone_destruido:PC,
+        icone: Bancos,
+        icone_destruido: Bancos_d,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Banco",
         upgrades: []

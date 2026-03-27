@@ -683,3 +683,23 @@ body {
 .bounce {
   animation: bounce 0.3s ease;
 }
+
+
+.cookie-dourado {
+  font-size: 48px;
+  animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.seção-buffs {
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px solid gold;
+  padding: 12px;
+
+}
+                    

@@ -1,4 +1,5 @@
 import logo from './arte/PrimeiroCookie.png';
+import dourado from './arte/CookieDourado.png';
 import Vovo1 from './arte/Vovo1.png';
 import Vovo2 from './arte/Vovo2.png';
 import Vovo3 from './arte/Vovo3.png';
@@ -17,7 +18,7 @@ import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
+import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO } from './defaults';
 
 function App() {
 
@@ -40,6 +41,8 @@ function App() {
   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
   const [telaAtual, setTelaAtual] = useState("jogo"); // telas: "jogo", "karaj" (ascensao), "conquistas", "opções"
   const [animandoAscensao, setAnimandoAscensao] = useState(false); // animação da ascensão
+  const [cookieDourado, setCookieDourado] = useState(null);
+  const [buff, setBuff] = useState([]);
 
   // use effect que desbloqueia minigames e distritos
   useEffect(() => {
@@ -227,6 +230,57 @@ function App() {
     
   }, []);
 
+  function SpawnCookieDourado() {
+    const padding = 80; // evita spawn nos cantos
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const x = Math.random() * (width - padding * 2) + padding;
+    const y = Math.random() * (height - padding * 2) + padding;
+
+    const tempodetela = 15000; // fica por 15 segundos
+
+    setCookieDourado({
+      x,
+      y,
+      expira: Date.now() + tempodetela
+    });
+  }
+
+  // invoca cookie dourado
+  // atualmente 25% de chance a cada 30 segundos
+  useEffect(() => {
+    const Intervalo = setInterval(() => {
+      if (Math.random() < 0.25) {
+        SpawnCookieDourado();
+      }
+    }, 30000); 
+    return () => clearInterval(Intervalo);
+  }, []);
+  // some cookie dourado
+  useEffect(() => {
+    if (!cookieDourado) return;
+
+    const timeout = setTimeout(() => {
+      setCookieDourado(null);
+    }, cookieDourado.expira - Date.now());
+
+    return () => clearTimeout(timeout);
+  }, [cookieDourado]);
+
+  function efeitoCookieDourado() {
+  }
+
+  // Limpa efeitos de cookie dourado
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      setBuff(prev => prev.filter(b => b.expira > Date.now()));
+    }, 1000);
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+
   function getOffline(ascensao) {
 
     const offline1 =
@@ -300,14 +354,20 @@ function App() {
     // bônus por CPS
     const percentual = ClickPorCPS(melhorias, ascensao);
     const bonusPorCPS = CPS * percentual;
+ 
+    const clickSemBuff = clickBaseFinal + bonusPorCPS;
+    
+    // Aplica Frenesi de Click
+    const now = Date.now();
+    const clickBuff = buff.find(b => b.tipo === "Click" && b.expira > now);
 
-    const clickFinal = clickBaseFinal + bonusPorCPS;
+    const clickFinal = clickBuff ? clickSemBuff * clickBuff.mult : clickSemBuff;
 
     setClick(clickFinal);
     clickRef.current = clickFinal;
 
 
-  }, [melhorias, ascensao, CPS]);
+  }, [melhorias, ascensao, CPS, buff]);
   // efeitos das melhorias de ascensão
   useEffect(() => {
     
@@ -340,7 +400,9 @@ function App() {
         return soma + CpsConstrucao(c) * quantidadeTotal;
       }, 0);
 
-      const producao = producaoBase * getMultiplicadorP();
+      const producao = CPSBuffado(producaoBase * getMultiplicadorP(), buff);
+
+      
 
       setCPS(producao);
       setContagem((atual) => atual + (deltaSeconds*producao));
@@ -352,7 +414,7 @@ function App() {
 
     }, 100); // a cada 0.1 segundos
     return () => clearInterval(timer); // limpa o timer
-  }, [construcoes, melhorias]);
+  }, [construcoes, melhorias, buff]);
 
   function getMultiplicador(c) {
     if (c.nome === "Vovó") {
@@ -554,7 +616,7 @@ function App() {
         lastSavedAt: Date.now()
       };
     
-    const encoded = Save(saveData);  // Uses versioned save system
+    const encoded = Save(saveData);  // save com versionamento
 
     navigator.clipboard.writeText(encoded).catch(() => {});
     alert("Save copied:\n\n" + encoded);
@@ -1028,11 +1090,75 @@ function App() {
     });
   }
 
+  function rollEfeito() {
+    const PesoTotal = DEFAULT_DOURADO.reduce((s, e) => s + e.peso, 0);
+    let roll = Math.random() * PesoTotal;
+
+    for (const efeito of DEFAULT_DOURADO) {
+      if (roll < efeito.peso) return efeito;
+      roll -= efeito.peso;
+    }
+  }
+
+  
+
+  function efeitoCookieDourado() {
+    setCookieDourado(null);
+    const efeito = rollEfeito();
+    
+
+    if (efeito.tipo === "Instantaneo") {
+      cookieInstaneo(efeito.nome);
+      return;
+    }
+
+    mostrarAviso(`Cookie dourado: ${efeito.nome}`);
+
+    setBuff(prev => [
+      ...prev,
+      {
+        nome: efeito.nome,
+        tipo: efeito.tipo,
+        mult: efeito.mult,
+        expira: Date.now() + efeito.duração * 1000
+      }
+    ]);
+    
+  }
+
+  function CPSBuffado(baseCPS, buff) {
+    const now = Date.now();
+
+    return buff.reduce((cps, buff) => {
+      if (buff.expira < now) return cps;
+
+      if (buff.tipo === "CPS") {
+        return cps * buff.mult;
+      }
+
+      return cps;
+    }, baseCPS);
+  }
+
+  function cookieInstaneo(nome) {
+    const ganhoMinutos = CPS * 60 * 30;
+
+    const ganhoBanco = contagem * 0.1;
+
+    const ganho = Math.max(ganhoMinutos, ganhoBanco);
+
+    mostrarAviso(`Cookie dourado: ${nome}! + ${simplificarNumero(ganho)} cookies`);
+
+    setContagem(v => v + ganho);
+    setCookiesTotais(v => v + ganho);
+    setCookiesTotaisAscensao(v => v + ganho);
+  }
+
   
   return (
     <div className="App">
       
-      {/* Aviso de jogo salvo (pode ser usado para mais avisos no futuro) */}
+      {/* Avisos gerais */}
       <div
         style={{
           position: "fixed",
@@ -1065,11 +1191,61 @@ function App() {
           </motion.div>
         )}
       </div>
+
+      {cookieDourado && telaAtual !== "ascensão" &&
+        <div
+          onClick={efeitoCookieDourado}
+          style={{
+            position: "fixed",
+            left: cookieDourado.x,
+            top: cookieDourado.y,
+            width: "100px",
+            height: "100px",
+            cursor: "pointer",
+            zIndex: 9999,
+          }}
+          className="cookie-dourado"
+        >
+          <img style={{height: "100px", width:"100px"}}
+          src={dourado} alt={"Cookie Dourado"}></img>
+        </div>
+      }
       
       
         <div className="jogo">
           {telaAtual !== "ascensão" && (
           <div className="lado-esquerdo">
+
+
+              {/* Display de buffs */}
+                {buff.filter(b => b.expira > Date.now()).length > 0 && (
+                  <div className="seção-buffs">
+                    <h3 style={{ color: '#ffd700', margin: '0 0 8px 0', fontSize: '16px' }}>Efeitos Ativos</h3>
+                    {buff
+                      .filter(b => b.expira > Date.now())
+                      .map((b, i) => {
+                        const tempoRestante = Math.ceil((b.expira - Date.now()) / 1000);
+                        return (
+                          <div key={i} style={{
+                            background: 'rgba(0,0,0,0.3)',
+                            padding: '6px 8px',
+                            borderRadius: '4px',
+                            marginBottom: '4px',
+                            fontSize: '13px'
+                          }}>
+                            <div style={{ color: '#ffd700', fontWeight: 'bold' }}>{b.nome}</div>
+                            <div style={{ color: '#fff', fontSize: '12px' }}>
+                              {b.tipo === "CPS" && `${b.mult}x CPS`}
+                              {b.tipo === "Click" && `${b.mult}x Clique`}
+                              {' • '}
+                              <span style={{ color: '#aaa' }}>{tempoRestante}s</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+
               {cookieCoin.desbloqueado && (
               <div className="seção-cookie-coin">
                 <h2>Mineração de Cookie Coins</h2>

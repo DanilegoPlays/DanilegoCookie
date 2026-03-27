@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
 
-export const VERSAO_ATUAL = 7.2; // Versão atual do save (V7.2 - Ganho offline)
+export const VERSAO_ATUAL = 7.7; // Versão atual do save (V7.7 - Update da Sorte!)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -179,6 +179,15 @@ const migrations = {
       wasPageClosed: save.wasPageClosed ?? false,
       lastSavedAt: save.lastSavedAt ?? Date.now(),
       version: 7.2
+    };
+  },
+
+  // Migração da 7.2 para 7.7 - A SORTE! (Golden Cookies)
+  // No save structure changes, just version bump for new features
+  7.2: (save) => {
+    return {
+      ...save,
+      version: 7.7
     };
   }
 };
