@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
 
-export const VERSAO_ATUAL = 7.7; // Versão atual do save (V7.7 - Update da Sorte!)
+export const VERSAO_ATUAL = 7.8; // Versão atual do save (V7.8 - Cookies Dourados!)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -14,7 +14,10 @@ export const DEFAULT_SAVE = {
   construcoes: DEFAULT_CONSTRUCOES.map(c => ({ nome: c.nome, quantidade: 0 })),
   melhorias: DEFAULT_MELHORIAS.map(m => ({ id: m.id, comprado: false })),
   cookieCoin: DEFAULT_COOKIE_COIN,
-  ascensao: DEFAULT_ASCENSAO
+  ascensao: DEFAULT_ASCENSAO,
+  sorte: 1, // Luck multiplier from upgrades
+  douradosTotais: 0, // Total golden cookies clicked
+  tempoDourado: null // Time until next golden cookie spawn
 }
  
 // --- MIGRAÇÃO  ---
@@ -189,6 +192,18 @@ const migrations = {
       ...save,
       version: 7.7
     };
+  },
+
+  // Migração da 7.7 para 7.8 - Golden Cookie Stats
+  // Add sorte, douradosTotais, and tempoDourado
+  7.7: (save) => {
+    return {
+      ...save,
+      sorte: save.sorte ?? 1,
+      douradosTotais: save.douradosTotais ?? 0,
+      tempoDourado: save.tempoDourado ?? null,
+      version: 7.8
+    };
   }
 };
  
@@ -261,7 +276,10 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       construcoes: defaultConstrucoes || DEFAULT_CONSTRUCOES,
       melhorias: defaultMelhorias || DEFAULT_MELHORIAS,
       cookieCoin: DEFAULT_COOKIE_COIN,
-      ascensao: DEFAULT_ASCENSAO
+      ascensao: DEFAULT_ASCENSAO,
+      sorte: 1,
+      douradosTotais: 0,
+      tempoDourado: null
     };
   }
  
@@ -289,6 +307,9 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       ascensao: normalizeAscensao(migrated.ascensao),
       lastSavedAt: migrated.lastSavedAt ?? Date.now(),
       wasPageClosed: migrated.wasPageClosed ?? false,
+      sorte: migrated.sorte ?? 1,
+      douradosTotais: migrated.douradosTotais ?? 0,
+      tempoDourado: migrated.tempoDourado ?? null,
       version: VERSAO_ATUAL
     };
   } catch (error) {
@@ -301,7 +322,10 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       construcoes: defaultConstrucoes || DEFAULT_CONSTRUCOES,
       melhorias: defaultMelhorias || DEFAULT_MELHORIAS,
       cookieCoin: DEFAULT_COOKIE_COIN,
-      ascensao: DEFAULT_ASCENSAO
+      ascensao: DEFAULT_ASCENSAO,
+      sorte: 1,
+      douradosTotais: 0,
+      tempoDourado: null
     };
   }
 }
@@ -332,7 +356,10 @@ export function saveGame(state) {
     cookieCoin: state.cookieCoin,
     ascensao: state.ascensao,
     lastSavedAt: state.lastSavedAt ?? Date.now(),
-    wasPageClosed: state.wasPageClosed ?? false
+    wasPageClosed: state.wasPageClosed ?? false,
+    sorte: state.sorte ?? 1,
+    douradosTotais: state.douradosTotais ?? 0,
+    tempoDourado: state.tempoDourado ?? null
   };
  
   localStorage.setItem("QuickSave", JSON.stringify(save));
@@ -365,7 +392,9 @@ export function Save(state) {
     cookieCoin: state.cookieCoin,
     ascensao: state.ascensao,
     lastSavedAt: state.lastSavedAt ?? Date.now(),
- 
+    sorte: state.sorte ?? 1,
+    douradosTotais: state.douradosTotais ?? 0,
+    tempoDourado: state.tempoDourado ?? null
   };
  
   return btoa(JSON.stringify(save));
@@ -385,7 +414,10 @@ export function Load(saveString, defaultConstrucoes = null, defaultMelhorias = n
       construcoes: defaultConstrucoes || DEFAULT_CONSTRUCOES,
       melhorias: defaultMelhorias || DEFAULT_MELHORIAS,
       cookieCoin: DEFAULT_COOKIE_COIN,
-      ascensao: DEFAULT_ASCENSAO
+      ascensao: DEFAULT_ASCENSAO,
+      sorte: 1,
+      douradosTotais: 0,
+      tempoDourado: null
     };
   }
 }

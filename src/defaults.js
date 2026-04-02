@@ -23,7 +23,10 @@ export const DEFAULT_CONSTRUCOES = [
     {nome: "Computador", preço: 120_000, cps: 300, quantidade: 0, descricao: "O Computador produz cookies a partir do código do próprio jogo!", icone: PC, icone_pequeno: PC},
     {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos produzem cookies a partir de empréstimos", icone: Bancos, icone_pequeno: Bancos},
     {nome: "Templo de Karaj", preço: 77_777_000, cps: 7777, quantidade: 0, descricao: "Os Templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!", icone: Karaj, icone_pequeno: Karaj},
-    {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: PC, icone_pequeno: PC}
+    {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: PC, icone_pequeno: PC},
+    {nome: "Torre", preço: 5_100_000_000, cps: 300_000, quantidade: 0, descricao: "As torres criam Cookies usanso magia!", icone: PC, icone_pequeno: PC}
+    //{nome: "Cassino da Sorte", preço: 77_777_777_777, cps: 1_777_777, quantidade: 0, descricao: "Pessoas apostam seus cookies no Cassino da Sorte, e você ganha uma parte! A Casa sempre vence!", icone: PC, icone_pequeno: PC},
+    //{nome: "Portal", preço: 1_000_000_000_000, cps: 10_000_000, quantidade: 0, descricao: "Trazem Cookies de outra dimensão... com certeza nada de ruim pode vir disso...", icone: PC, icone_pequeno: PC}
   ];
 export const DEFAULT_MELHORIAS = [
     // Click
@@ -89,6 +92,7 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Nova fórmula", preço: 3_300_000_000, efeito:'duplicarLab', id: 'lab1', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!"},
     {nome: "Ciência Maluca", preço: 15_000_000_000, efeito:'duplicarLab', id: 'lab2', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!"},
     {nome: "Experimentos", preço: 150_000_000_000, efeito:'duplicarLab', id: 'lab3', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!"},
+    // Torre
 
     // Cookies Normais
     {nome: "Cookie Sem Recheio", preço: 1_111_111, efeito:'1porcento', id: 'cookie1', comprado: false, descricao: "Todos começam em algum lugar... +1% de CPS"},
@@ -117,7 +121,13 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Passatempo", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr3', comprado: false, descricao: "Nostálgico! +3% de CPS"},
     {nome: "Negresco", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr4', comprado: false, descricao: "Melhor que Oreo! +3% de CPS"},
     {nome: "Tortinhas de Chocolate", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr5', comprado: false, descricao: "Muito boa. +3% de CPS"},
-    {nome: "Tortinhas de Morango", preço: 100_000_000_000_000, efeito:'5porcento', id: 'cookiebr6', comprado: false, descricao: "A Melhor de Todas! +5% de CPS"}
+    {nome: "Tortinhas de Morango", preço: 100_000_000_000_000, efeito:'5porcento', id: 'cookiebr6', comprado: false, descricao: "A Melhor de Todas! +5% de CPS"},
+
+    // Sorte
+    {nome: "Trevo de Quatro Folhas", preço: 77_777, efeito:'sorte', id: 'sorte1', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
+    {nome: "Pé de Coelho", preço: 7_777_777, efeito:'sorte', id: 'sorte2', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
+    {nome: "Ferradura Dourada", preço: 777_777_777, efeito:'sorte', id: 'sorte3', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
+    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"}
   ];
 
 export const DEFAULT_DOURADO = [
@@ -161,11 +171,15 @@ export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
     coins: 0,
     mercado: 1
   };
+export const CONFIG_DOURADO = {
+  TMIN: 300, // 5 minutos
+  TMAX: 540, // 9 minutos
+};
 
 export const DEFAULT_ASCENSAO = {
       desbloqueado: false,
-      prestigio: 1,
-      prestigioTotal: 1,
+      prestigio: 0,
+      prestigioTotal: 0,
   
       // Distrito dos Templos
       distritotemplo: {
@@ -177,7 +191,9 @@ export const DEFAULT_ASCENSAO = {
         icone_destruido: Karaj_d,
         upgrades: [
           {nome: "Conexão Espiritual", preço: 1, efeito:'ascensao', id: 'ascensaocps', comprado: false, descricao: "Você ganha 1% de cps por nível de prestígio"},
-          {nome: "Armazém Temporal", preço: 13, efeito:'offline1', id: 'offline1', comprado: false, descricao: "Você ganha 50% de CPS enquanto o jogo está fechado (por um máximo de 2 horas)"}
+          {nome: "Sorte dos Deuses", preço: 7, efeito:'sorte', id: 'ascensaosorte1', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"},
+          {nome: "Armazém Temporal", preço: 13, efeito:'offline1', id: 'offline1', comprado: false, descricao: "Você ganha 50% de CPS enquanto o jogo está fechado (por um máximo de 2 horas)"},
+          
         ]
       },
       distritovovo: {
@@ -191,6 +207,7 @@ export const DEFAULT_ASCENSAO = {
         requisitoConstrucao: "Vovó",
         upgrades: [
           {nome: "Caixa de Cookies da Vovó", preço: 25, efeito:'caixavovo', id: 'vovoascensao1', comprado: false, descricao: "Desbloqueia vários novos cookies de vovó"},
+          {nome: "Sorte no Bingo!", preço: 77, efeito:'sorte', id: 'ascensaosorte2', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"},
           {nome: "Vovós Ancestrais", preço: 100, efeito:'vovoGratis', id: 'vovoascensao2', comprado: false, descricao: "Você começa a próxima ascensão com 10 vovós grátis!"}
         ]
       },

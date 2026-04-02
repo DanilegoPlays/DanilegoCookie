@@ -18,7 +18,7 @@ import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO } from './defaults';
+import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO } from './defaults';
 
 function App() {
 
@@ -41,8 +41,16 @@ function App() {
   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
   const [telaAtual, setTelaAtual] = useState("jogo"); // telas: "jogo", "karaj" (ascensao), "conquistas", "opções"
   const [animandoAscensao, setAnimandoAscensao] = useState(false); // animação da ascensão
+  // sorte
   const [cookieDourado, setCookieDourado] = useState(null);
   const [buff, setBuff] = useState([]);
+  const [sorte, setSorte] = useState(1);
+  const [tempoDourado, setTempoDourado] = useState(() => {
+    // Isso garante que, se não houver save, o jogo já comece com um tempo sorteado
+    const { TMIN, TMAX } = CONFIG_DOURADO;
+    return Math.floor(Math.random() * (TMIN - TMAX) + TMIN);
+  }); // Tempo até o próximo cookie dourado!
+  const [douradosTotais, setDouradosTotais] = useState(0);
 
   // use effect que desbloqueia minigames e distritos
   useEffect(() => {
@@ -194,6 +202,9 @@ function App() {
       setMelhorias(dados.melhorias ?? DEFAULT_MELHORIAS);
       setCookieCoin(dados.cookieCoin ?? DEFAULT_COOKIE_COIN);
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
+      setDouradosTotais(dados.douradosTotais ?? 0);
+      setSorte(dados.sorte ?? 1);
+      setTempoDourado(dados.tempoDourado ?? 300);
 
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -248,16 +259,42 @@ function App() {
     });
   }
 
-  // invoca cookie dourado
-  // atualmente 25% de chance a cada 30 segundos
+  // Função para calcular o próximo cookie dourado
+  const calcularProximoSpawn = () => {
+    const { TMIN, TMAX } = CONFIG_DOURADO;
+    const tempoSorteado = Math.random() * (TMAX - TMIN) + TMIN;
+    const tempoFinal = Math.floor(tempoSorteado / sorte);
+    
+    console.log(`Próximo spawn calculado para daqui a: ${tempoFinal}s`);
+    return tempoFinal;
+  };
+
+  // Inicializa o primeiro timer quando o jogo começa (se não houver um salvo)
+  useEffect(() => {
+    if (tempoDourado === 0 && !cookieDourado) {
+      calcularProximoSpawn();
+    }
+  }, []);
+
   useEffect(() => {
     const Intervalo = setInterval(() => {
-      if (Math.random() < 0.25) {
-        SpawnCookieDourado();
-      }
-    }, 30000); 
+      
+        setTempoDourado((prev) => {
+          if (prev <= 1) {
+            // O Cookie Aparece
+            SpawnCookieDourado(); 
+            
+            // Já calcula e retorna o tempo do PRÓXIMO Cookie
+            return calcularProximoSpawn(); 
+          }
+          return prev - 1;
+        });
+    }, 1000);
+
     return () => clearInterval(Intervalo);
-  }, []);
+  }, [cookieDourado, sorte]);
+    
+
   // some cookie dourado
   useEffect(() => {
     if (!cookieDourado) return;
@@ -269,9 +306,6 @@ function App() {
     return () => clearTimeout(timeout);
   }, [cookieDourado]);
 
-  function efeitoCookieDourado() {
-  }
-
   // Limpa efeitos de cookie dourado
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
@@ -280,6 +314,33 @@ function App() {
     return () => clearInterval(cleanupInterval);
   }, []);
 
+  const totalLuckAnterior = useRef(0);
+  // Melhorias de sorte
+  useEffect(() => {
+    // Upgrades normais
+    const luckUpgrades = melhorias.filter(m => m.efeito === 'sorte' && m.comprado).length;
+    
+    // Upgrades de ascensão
+    let ascensaoLuck = 0;
+    Object.values(ascensao).forEach(distrito => {
+      if (!distrito?.upgrades) return;
+      distrito.upgrades.forEach(u => {
+        if (u.comprado && u.efeito === "sorte") {
+          ascensaoLuck += 1;
+        }
+      });
+    });
+ 
+    // Cada upgrade aumenta a sorte em 1
+    const totalLuck = 1 + luckUpgrades + ascensaoLuck;
+    // invoca um cookie dourado instantaneamente sempre que a sorte aumenta
+    if (totalLuck > totalLuckAnterior.current && totalLuckAnterior.current !== 0) {
+      SpawnCookieDourado();
+    }
+    totalLuckAnterior.current = totalLuck;
+
+    setSorte(totalLuck);
+  }, [melhorias, ascensao]);
 
   function getOffline(ascensao) {
 
@@ -401,7 +462,6 @@ function App() {
       }, 0);
 
       const producao = CPSBuffado(producaoBase * getMultiplicadorP(), buff);
-
       
 
       setCPS(producao);
@@ -638,6 +698,9 @@ function App() {
       setCookiesTotais(dados.cookiesTotais ?? 0);
       setCookiesTotaisAscensao(dados.cookiesTotaisAscensao ?? 0);
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
+      setDouradosTotais(dados.douradosTotais ?? 0);
+      setSorte(dados.sorte ?? 1);
+      setTempoDourado(dados.tempoDourado ?? 300);
 
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -759,6 +822,11 @@ function App() {
     if (m.id === "cookie8" && cookiesTotaisAscensao < 15_000_000) return false;
     if (m.id === "cookie9" && cookiesTotaisAscensao < 15_000_000) return false;
     if (m.id === "cookie10" && cookiesTotaisAscensao < 15_000_000) return false;
+
+    if (m.id === "sorte1" && douradosTotais < 1) return false;
+    if (m.id === "sorte2" && douradosTotais < 7) return false;
+    if (m.id === "sorte3" && douradosTotais < 77) return false;
+    if (m.id === "sorte4" && douradosTotais < 777) return false;
 
     const CaixaVovoAtivo = ascensao.distritovovo.upgrades.some(u => u.id === "vovoascensao1" && u.comprado);
     const CaixaFabricaAtivo = ascensao.distritofabrica.upgrades.some(u => u.id === "fabricaascensao1" && u.comprado);
@@ -979,7 +1047,7 @@ function App() {
     return nomes[key] || key;
   }
 
-  // useStates para arrastar com o mouse
+  // useStates para arrastar com o mouse a cidade
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const startRef = useRef({ x: 0, y: 0 });
@@ -1049,6 +1117,8 @@ function App() {
       setClick(1);
       setConstrucoes(DEFAULT_CONSTRUCOES);
       setMelhorias(DEFAULT_MELHORIAS);
+      setBuff([]);
+      
       
 
     // coloca a tela de ascensão no meio da animação
@@ -1100,9 +1170,8 @@ function App() {
     }
   }
 
-  
-
   function efeitoCookieDourado() {
+    setDouradosTotais(prev => prev + 1);
     setCookieDourado(null);
     const efeito = rollEfeito();
     
@@ -1153,7 +1222,6 @@ function App() {
     setCookiesTotais(v => v + ganho);
     setCookiesTotaisAscensao(v => v + ganho);
   }
-
   
   return (
     <div className="App">
@@ -1561,7 +1629,11 @@ function App() {
                 {telaAtual == "ascensão" && (
                   <button
                     className="portao-karaj"
-                    onClick={() => setTelaAtual("jogo")}
+                    onClick={() => {
+                      setTelaAtual("jogo");
+                      // calcula o próximo spawn do cookie dourado assim que terminar a ascensão
+                      calcularProximoSpawn();
+                    }}
                     style={{
                       margin: 0,
                       position: 'relative',
@@ -1874,6 +1946,8 @@ function App() {
               <div className="seção-opções">
                 <div style={{ fontSize: "15px" }}>{`Cookies assados: ${simplificarNumeroPT(cookiesTotais)}`}</div>
                 <div style={{ fontSize: "15px" }}>{`Cookies assados nessa ascensão: ${simplificarNumeroPT(cookiesTotaisAscensao)}`}</div>
+                <div style={{ fontSize: "15px" }}>{`Cookies dourados: ${simplificarNumeroPT(douradosTotais)}`}</div>
+                <div style={{ fontSize: "15px" }}>{`Sorte: ${simplificarNumeroPT(sorte)}`}</div>
                 <h2> Opções </h2>
                   <button onClick={ExportarSave}>
                     Exportar Save
