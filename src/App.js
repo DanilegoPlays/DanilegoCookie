@@ -13,12 +13,22 @@ import Mina from './arte/Minas.png';
 import Mina_d from './arte/Minas_d.png';
 import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png'
-import {ExplosaoVideo} from './Ascension'
+
+import somClick1 from './arte/click1.mp3';
+import somClick2 from './arte/click2.mp3';
+import somClick3 from './arte/click3.mp3';
+import somClick4 from './arte/click4.mp3';
+import somDourado from './arte/dourado.mp3';
+
+import {ExplosaoVideo, PRIMEIRO_PRESTIGIO, calcularPrestigio, getNomeDistrito, criarAbrirDistrito, criarColocarDistrito, criarComprarUpgradeAscensao, criarAscender, criarOnMouseDown, criarOnMouseMove, criarOnMouseUp} from './Ascension';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO } from './defaults';
+import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, filtrarUpgradesDisponiveis,} from './defaults';
+import {  SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
+import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoCookieCoin} from './minigame';
+import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP} from './helper';
 
 function App() {
 
@@ -51,6 +61,24 @@ function App() {
     return Math.floor(Math.random() * (TMIN - TMAX) + TMIN);
   }); // Tempo até o próximo cookie dourado!
   const [douradosTotais, setDouradosTotais] = useState(0);
+
+  // refs dos sons
+  const clickSonsRef = useRef([]);
+  const douradoSomRef = useRef(null);
+
+  // Inicializa os Audio uma vez só
+  useEffect(() => {
+    clickSonsRef.current = [
+      new Audio(somClick1),
+      new Audio(somClick2),
+      new Audio(somClick3),
+      new Audio(somClick4),
+    ];
+    clickSonsRef.current.forEach(a => { a.volume = 0.5; });
+
+    douradoSomRef.current = new Audio(somDourado);
+    douradoSomRef.current.volume = 0.7;
+  }, []);
 
   // use effect que desbloqueia minigames e distritos
   useEffect(() => {
@@ -138,32 +166,6 @@ function App() {
   useEffect(() => { cookieCoinRef.current = cookieCoin; }, [cookieCoin]);
   useEffect(() => { ascensaoRef.current = ascensao; }, [ascensao]);
 
-  function CasasDecimais(n, casas) {
-    return n.toLocaleString("pt-BR", {
-      minimumFractionDigits: casas,
-      maximumFractionDigits: casas
-    });
-  }
-
-  function simplificarNumero(n) {
-    if (n >= 1_000_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000_000 , 3) + "q";
-    if (n >= 1_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000 , 3) + "T";
-    if (n >= 1_000_000_000) return CasasDecimais(n / 1_000_000_000 , 3) + "B";
-    if (n >= 1_000_000) return CasasDecimais(n / 1_000_000 , 1) + "M";
-    if (n >= 1_000) return CasasDecimais(n / 1_000 , 1) + "k";
-    return Math.floor(n);
-  }
-
-  function simplificarNumeroPT(n) {
-    if (n >= 1_000_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000_000 , 3) + " quadrilhões";
-    if (n >= 1_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000 , 3) + " trilhões";
-    if (n >= 1_000_000_000) return CasasDecimais(n / 1_000_000_000 , 3) + " bilhões";
-    if (n >= 1_000_000) return CasasDecimais(n / 1_000_000 , 3) + " milhões";
-    //if (n >= 1_000) return CasasDecimais(n / 1_000 , 3) + " mil";
-    if (n >= 1_000) return (n/1_000).toFixed(3);
-    if (n <= 10) return Number(n.toFixed(1)).toString();
-    return Math.floor(n);
-  }
 
   // Quicksave
   useEffect(() => {
@@ -242,32 +244,11 @@ function App() {
   }, []);
 
   function SpawnCookieDourado() {
-    const padding = 80; // evita spawn nos cantos
-
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    const x = Math.random() * (width - padding * 2) + padding;
-    const y = Math.random() * (height - padding * 2) + padding;
-
-    const tempodetela = 15000; // fica por 15 segundos
-
-    setCookieDourado({
-      x,
-      y,
-      expira: Date.now() + tempodetela
-    });
+    SpawnCookieDouradoFn(setCookieDourado);
   }
 
   // Função para calcular o próximo cookie dourado
-  const calcularProximoSpawn = () => {
-    const { TMIN, TMAX } = CONFIG_DOURADO;
-    const tempoSorteado = Math.random() * (TMAX - TMIN) + TMIN;
-    const tempoFinal = Math.floor(tempoSorteado / sorte);
-    
-    console.log(`Próximo spawn calculado para daqui a: ${tempoFinal}s`);
-    return tempoFinal;
-  };
+  const calcularProximoSpawn = () => calcularProximoSpawnFn(sorte);
 
   // Inicializa o primeiro timer quando o jogo começa (se não houver um salvo)
   useEffect(() => {
@@ -370,20 +351,9 @@ function App() {
     };
   }
 
-  // Versão do getMultiplicadorP que usa dados do save (para ganho offline)
-  function getMultiplicadorPFromData(melhorias, ascensao) {
-    const multiplicador1Porcento = melhorias.filter(m => m.efeito === "1porcento" && m.comprado).length;
-    const multiplicador3Porcento = melhorias.filter(m => m.efeito === "3porcento" && m.comprado).length;
-    const multiplicador5Porcento = melhorias.filter(m => m.efeito === "5porcento" && m.comprado).length;
-    const multiplicador10Porcento = melhorias.filter(m => m.efeito === "10porcento" && m.comprado).length;
-
-    const multiplicadorBasico = 1 + multiplicador1Porcento * 0.01 + multiplicador3Porcento * 0.03 + multiplicador5Porcento * 0.05 + multiplicador10Porcento * 0.1
-
-    const CPSAscensaoAtivo = ascensao?.distritotemplo?.upgrades?.some(u => u.id === "ascensaocps" && u.comprado);
-    const multiplicadorPrestigio = CPSAscensaoAtivo ? 1 + (ascensao.prestigioTotal || 0) * 0.01 : 1;
-
-    return multiplicadorBasico * multiplicadorPrestigio;
-  }
+  // Versão do getMultiplicadorP que usa dados do save (para ganho offline).
+  // Hoje é apenas um alias — getMultiplicadorP no helper.js já recebe argumentos.
+  const getMultiplicadorPFromData = getMultiplicadorP;
 
 
   function ClickPorCPS(melhorias, ascensao) {
@@ -461,7 +431,7 @@ function App() {
         return soma + CpsConstrucao(c) * quantidadeTotal;
       }, 0);
 
-      const producao = CPSBuffado(producaoBase * getMultiplicadorP(), buff);
+      const producao = CPSBuffado(producaoBase * getMultiplicadorP(melhorias, ascensao), buff);
       
 
       setCPS(producao);
@@ -476,79 +446,22 @@ function App() {
     return () => clearInterval(timer); // limpa o timer
   }, [construcoes, melhorias, buff]);
 
-  function getMultiplicador(c) {
-    if (c.nome === "Vovó") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarVovo" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Fazenda") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarFazenda" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Mina") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarMinas" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Fábrica") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarFabrica" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Banco") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarBanco" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Computador") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarPC" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Templo de Karaj") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarTemplo" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    if (c.nome === "Laboratório") {
-      const mult = melhorias.filter(
-        m => m.efeito === "duplicarLab" && m.comprado
-      ).length;
-      return 2 ** mult;
-    }
-    return 1;
-  }
-  //multiplicador porcentagem
-  function getMultiplicadorP() {
-    const multiplicador1Porcento = melhorias.filter(m =>m.efeito === "1porcento" && m.comprado).length;
-    const multiplicador3Porcento = melhorias.filter(m =>m.efeito === "3porcento" && m.comprado).length;
-    const multiplicador5Porcento = melhorias.filter(m =>m.efeito === "5porcento" && m.comprado).length;
-    const multiplicador10Porcento = melhorias.filter(m =>m.efeito === "10porcento" && m.comprado).length;
-
-    const multiplicadorBasico = 1 + multiplicador1Porcento * 0.01 + multiplicador3Porcento * 0.03 + multiplicador5Porcento * 0.05 + multiplicador10Porcento * 0.1
-
-    const CPSAscensaoAtivo = ascensao.distritotemplo.upgrades.some(u => u.id === "ascensaocps" && u.comprado);
-    const multiplicadorPrestigio = CPSAscensaoAtivo ? 1 + ascensao.prestigioTotal * 0.01 : 1;
-
-    return multiplicadorBasico * multiplicadorPrestigio;
-  }
-
-  // cps da construção (para visualização)
+  // cps da construção (para visualização).
+  // getMultiplicador e getMultiplicadorP vêm de helper.js — recebem
+  // os states (melhorias, ascensao) explicitamente em vez de pegá-los do escopo.
   function CpsConstrucao(c) {
-    return c.cps * getMultiplicador(c) * getMultiplicadorP();
+    return c.cps * getMultiplicador(c, melhorias) * getMultiplicadorP(melhorias, ascensao);
   }
 
   // função click (gera os cookies do click)
   function AssarCookies() {
+    // toca um som de click aleatório
+    const sons = clickSonsRef.current;
+    if (sons.length > 0) {
+      const som = sons[Math.floor(Math.random() * sons.length)];
+      som.currentTime = 0;
+      som.play().catch(() => {});
+    }
     setContagem((anterior) => anterior + clickRef.current);
     setCookiesTotais((anterior) => anterior + clickRef.current);
     setCookiesTotaisAscensao((anterior) => anterior + clickRef.current);
@@ -741,127 +654,32 @@ function App() {
 
   }
 
-  // Condição para desbloquear upgrades
-  const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
-  const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
-  const ContagemMinas = construcoes.find((c) => c.nome === "Mina")?.quantidade || 0;
-  const ContagemFabrica = construcoes.find((c) => c.nome === "Fábrica")?.quantidade || 0;
-  const ContagemBanco = construcoes.find((c) => c.nome === "Banco")?.quantidade || 0;
-  const ContagemComputador = construcoes.find((c) => c.nome === "Computador")?.quantidade || 0;
-  const ContagemTemplo = construcoes.find((c) => c.nome === "Templo de Karaj")?.quantidade || 0;
-  const ContagemLab = construcoes.find((c) => c.nome === "Laboratório")?.quantidade || 0;
-  // filtro que separa somente os upgrades que devem aparecer
-
-  const upgradesDisponiveis = melhorias
-  .map((m, i) => ({ ...m, indiceOriginal: i }))
-  .filter(m => {
-    if (m.comprado) return false;
-
-    if (m.id === "click2" && cookiesTotaisAscensao < 100) return false;
-    if (m.id === "click3" && cookiesTotaisAscensao < 5000) return false;
-
-    if (m.id === "clickcps1" && cookiesTotaisAscensao < 15_000) return false;
-    if (m.id === "clickcps2" && cookiesTotaisAscensao < 1_500_000) return false;
-    if (m.id === "clickcps3" && cookiesTotaisAscensao < 150_000_000) return false;
-    if (m.id === "clickcps4" && cookiesTotaisAscensao < 15_000_000_000) return false;
-    if (m.id === "clickcps5" && cookiesTotaisAscensao < 1_500_000_000_000) return false;
-
-    if (m.id === "vovo1" && ContagemVovo < 1) return false;
-    if (m.id === "vovo2" && ContagemVovo < 10) return false;
-    if (m.id === "vovo3" && ContagemVovo < 25) return false;
-    if (m.id === "vovo4" && ContagemVovo < 50) return false;
-    if (m.id === "vovo5" && ContagemVovo < 100) return false;
-    if (m.id === "vovo6" && ContagemVovo < 150) return false;
-    if (m.id === "fazenda1" && ContagemFazenda < 1) return false;
-    if (m.id === "fazenda2" && ContagemFazenda < 10) return false;
-    if (m.id === "fazenda3" && ContagemFazenda < 25) return false;
-    if (m.id === "fazenda4" && ContagemFazenda < 50) return false;
-    if (m.id === "fazenda5" && ContagemFazenda < 100) return false;
-    if (m.id === "fazenda6" && ContagemFazenda < 150) return false;
-    if (m.id === "mina1" && ContagemMinas < 1) return false;
-    if (m.id === "mina2" && ContagemMinas < 10) return false;
-    if (m.id === "mina3" && ContagemMinas < 25) return false;
-    if (m.id === "mina4" && ContagemMinas < 50) return false;
-    if (m.id === "mina5" && ContagemMinas < 100) return false;
-    if (m.id === "mina6" && ContagemMinas < 150) return false;
-    if (m.id === "fabrica1" && ContagemFabrica < 1) return false;
-    if (m.id === "fabrica2" && ContagemFabrica < 10) return false;
-    if (m.id === "fabrica3" && ContagemFabrica < 25) return false;
-    if (m.id === "fabrica4" && ContagemFabrica < 50) return false;
-    if (m.id === "fabrica5" && ContagemFabrica < 100) return false;
-    if (m.id === "fabrica6" && ContagemFabrica < 150) return false;
-    if (m.id === "PC1" && ContagemComputador < 1) return false;
-    if (m.id === "PC2" && ContagemComputador < 10) return false;
-    if (m.id === "PC3" && ContagemComputador < 25) return false;
-    if (m.id === "PC4" && ContagemComputador < 50) return false;
-    if (m.id === "PC5" && ContagemComputador < 100) return false;
-    if (m.id === "PC6" && ContagemComputador < 150) return false;
-    if (m.id === "banco1" && ContagemBanco < 1) return false;
-    if (m.id === "banco2" && ContagemBanco < 10) return false;
-    if (m.id === "banco3" && ContagemBanco < 25) return false;
-    if (m.id === "banco4" && ContagemBanco < 50) return false;
-    if (m.id === "banco5" && ContagemBanco < 100) return false;
-    if (m.id === "banco6" && ContagemBanco < 150) return false;
-    if (m.id === "karaj1" && ContagemTemplo < 1) return false;
-    if (m.id === "karaj2" && ContagemTemplo < 10) return false;
-    if (m.id === "karaj3" && ContagemTemplo < 25) return false;
-    if (m.id === "karaj4" && ContagemTemplo < 50) return false;
-    if (m.id === "karaj5" && ContagemTemplo < 100) return false;
-    if (m.id === "karaj6" && ContagemTemplo < 150) return false;
-    if (m.id === "lab1" && ContagemLab < 1) return false;
-    if (m.id === "lab2" && ContagemLab < 10) return false;
-    if (m.id === "lab3" && ContagemLab < 25) return false;
-
-    if (m.id === "cookie1" && cookiesTotaisAscensao < 50_000) return false;
-    if (m.id === "cookie2" && cookiesTotaisAscensao < 250_000) return false;
-    if (m.id === "cookie3" && cookiesTotaisAscensao < 500_000) return false;
-    if (m.id === "cookie4" && cookiesTotaisAscensao < 5_000_000) return false;
-    if (m.id === "cookie5" && cookiesTotaisAscensao < 15_000_000) return false;
-    if (m.id === "cookie6" && cookiesTotaisAscensao < 15_000_000) return false;
-    if (m.id === "cookie7" && cookiesTotaisAscensao < 15_000_000) return false;
-    if (m.id === "cookie8" && cookiesTotaisAscensao < 15_000_000) return false;
-    if (m.id === "cookie9" && cookiesTotaisAscensao < 15_000_000) return false;
-    if (m.id === "cookie10" && cookiesTotaisAscensao < 15_000_000) return false;
-
-    if (m.id === "sorte1" && douradosTotais < 1) return false;
-    if (m.id === "sorte2" && douradosTotais < 7) return false;
-    if (m.id === "sorte3" && douradosTotais < 77) return false;
-    if (m.id === "sorte4" && douradosTotais < 777) return false;
-
-    const CaixaVovoAtivo = ascensao.distritovovo.upgrades.some(u => u.id === "vovoascensao1" && u.comprado);
-    const CaixaFabricaAtivo = ascensao.distritofabrica.upgrades.some(u => u.id === "fabricaascensao1" && u.comprado);
-
-    if ((m.id === "cookievovo1" || m.id === "cookievovo2" || m.id === "cookievovo3" || m.id === "cookievovo4" || m.id === "cookievovo5") && CaixaVovoAtivo < 1) return false;
-    if ((m.id === "cookiebr1" || m.id === "cookiebr2" || m.id === "cookiebr3" || m.id === "cookiebr4" || m.id === "cookiebr5" || m.id === "cookiebr6") && CaixaFabricaAtivo<1) return false;
-
-    return true;
-  });
-  // Ordena upgrades do mais barato ao mais caro
-  const upgradesOrdenados = [...upgradesDisponiveis].sort(
-    (a, b) => a.preço - b.preço
+  // Upgrades disponíveis (filtragem implementada em defaults.js)
+  const upgradesOrdenados = filtrarUpgradesDisponiveis(
+    melhorias,
+    construcoes,
+    cookiesTotaisAscensao,
+    douradosTotais,
+    ascensao
   );
 
   // lista de upgrades comprados
   const upgradesComprados = melhorias.filter((m) => m.comprado);
 
 
-  // Minigame Cookie Coin (futuramente pode ser colocado em outro arquivo)
-  const VALOR_BASE = 1_000_000;
+  // Minigame Cookie Coin (implementado em minigame.js)
   const valorAtualCookieCoin = Math.floor(
     VALOR_BASE * cookieCoin.mercado
   );
 
   const precoNvidia = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
 
-  function ComprarCookieCoinNivel() {
-     if (contagem >= precoNvidia) {
-      setContagem(prev => prev - precoNvidia);
-      setCookieCoin(prev => ({
-        ...prev,
-        level: prev.level + 1
-      }));
-     }    
-  }
+  const ComprarCookieCoinNivel = criarComprarCookieCoinNivel({
+    contagem,
+    setContagem,
+    cookieCoin,
+    setCookieCoin,
+  });
   // ganho de Cookie Coins
   useEffect(() => {
     if (!cookieCoin.desbloqueado || cookieCoin.level === 0) return;
@@ -880,21 +698,15 @@ function App() {
     return () => clearInterval(timer);
   }, [cookieCoin.desbloqueado, cookieCoin.level]);
 
-  function VenderCookieCoin() {
-    const moedasInteiras = Math.floor(cookieCoin.coins);
-    if (moedasInteiras < 1) return;
-
-    const ganhoCookies = moedasInteiras * valorAtualCookieCoin;
-
-    setContagem(c => c + ganhoCookies);
-    setCookiesTotais(c => c + ganhoCookies);
-    setCookiesTotaisAscensao(c => c + ganhoCookies);
-    setCookieCoin(prev => ({
-      ...prev,
-      coins: prev.coins - moedasInteiras
-    }));
-    mostrarAviso(`${moedasInteiras} Cookie Coins vendidas por ${ganhoCookies.toLocaleString()} cookies`);
-  }
+  const VenderCookieCoin = criarVenderCookieCoin({
+    cookieCoin,
+    setCookieCoin,
+    valorAtualCookieCoin,
+    setContagem,
+    setCookiesTotais,
+    setCookiesTotaisAscensao,
+    mostrarAviso,
+  });
   // mercado de Cookie Coins
   useEffect(() => {
     if (!cookieCoin.desbloqueado) return;
@@ -920,186 +732,31 @@ function App() {
     
     return () => clearInterval(timer);
   }, [cookieCoin.desbloqueado]);
+  //funções de ascensão (implementadas em Ascension.js)
+  const AbrirDistrito = criarAbrirDistrito(setAscensao);
 
-  function GraficoCookieCoin({ dados }) {
-    const width = 250;
-    const height = 120;
-
-    if (dados.length < 2) return null;
-
-    const min = Math.min(...dados);
-    const max = Math.max(...dados);
-    const range = max - min || 1;
-
-    const color =
-    dados[dados.length - 1] >= dados[dados.length - 2]
-      ? "#4caf50"
-      : "#f44336";
-
-  const points = dados.map((value, i) => ({
-    x: (i / (dados.length - 1)) * width,
-    y: height - ((value - min) / range) * height,
-    value
-  }));
-
-  const labels = [
-    { value: max, y: 12 },
-    { value: (max + min) / 2, y: height / 2 },
-    { value: min, y: height - 4 }
-  ];
-
-    return (
-      <svg width={width + 40} height={height} style={{ background: "white", borderRadius: 6 }}>
-        {/* rotulos do gráfico */}
-        {labels.map((l, i) => (
-          <text
-            key={i}
-            x={2}
-            y={l.y}
-            fill="#aaa"
-            fontSize="10"
-          >
-            {simplificarNumero(l.value)}
-          </text>
-        ))}
-
-        {/* Gráfico formado por linhas */}
-        {points.slice(1).map((p, i) => {
-          const prev = points[i];
-          const color = p.value >= prev.value ? "#4caf50" : "#f44336";
-
-          return (
-            <line
-              key={i}
-              x1={prev.x + 40}
-              y1={prev.y}
-              x2={p.x + 40}
-              y2={p.y}
-              stroke={color}
-              strokeWidth="2"
-            />
-          );
-        })}
-      </svg>
-    );
-  }
-  //funções de ascensão
-  function AbrirDistrito(nome) {
-    setAscensao(prev => ({
-      ...prev,
-      [nome]: {
-        ...prev[nome],
-        aberto: !prev[nome].aberto
-      }
-    }));
-  }
-
-  // Colocar distrito no mapa
-  function ColocarDistrito(e, karajMapaElement) {
-    if (!modoConstrucao.ativo || !modoConstrucao.distrito) return;
-
-    // Pega as coordenadas do click relativas ao karaj-mapa
-    const rect = karajMapaElement.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    // Converte para porcentagem do mapa (0-100%)
-    const mapX = (clickX / rect.width) * 100;
-    const mapY = (clickY / rect.height) * 100;
-
-    // Clamp para garantir que está dentro do mapa
-    const finalX = Math.max(5, Math.min(95, mapX));
-    const finalY = Math.max(5, Math.min(95, mapY));
-
-    // Atualiza o distrito
-    setAscensao(prev => ({
-      ...prev,
-      [modoConstrucao.distrito]: {
-        ...prev[modoConstrucao.distrito],
-        construído: true,
-        posicao: { x: finalX, y: finalY }
-      }
-    }));
-
-    const isMoving = ascensao[modoConstrucao.distrito]?.construído;
-    mostrarAviso(`✅ Distrito ${isMoving ? 'movido' : 'construído'} com sucesso!`);
-    
-    // Desativa seleção do distrito mas mantém modo construção ativo
-    setModoConstrucao(prev => ({
-      ...prev,
-      distrito: null
-    }));
-  }
-
-  // Helper function to get friendly district names
-  function getNomeDistrito(key) {
-    const nomes = {
-      distritotemplo: "Distrito dos Templos",
-      distritovovo: "Distrito das Vovós",
-      distritofazenda: "Distrito das Fazendas",
-      distritomina: "Distrito das Minas",
-      distritofabrica: "Distrito das Fábricas",
-      distritopc: "Distrito dos Computadores",
-      distritobanco: "Distrito dos Bancos",
-      distritoclick: "Distrito do Clique",
-      distritoidle: "Distrito Idle"
-    };
-    return nomes[key] || key;
-  }
+  const ComprarUpgradeAscensao = criarComprarUpgradeAscensao(setAscensao);
 
   // useStates para arrastar com o mouse a cidade
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const startRef = useRef({ x: 0, y: 0 });
   const posRef = useRef({ x: 0, y: 0 });
-  const LARGURA_VISAO = 800;
-  const ALTURA_VISAO = 500;
 
-  const LARGURA_CIDADE = 2000;
-  const ALTURA_CIDADE = 1200;
-  function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value));
-  }
-  function onMouseDown(e) {
-    setDragging(true);
-    startRef.current = {
-      x: e.clientX,
-      y: e.clientY
-    };
-  }
+  const onMouseDown = criarOnMouseDown({ setDragging, startRef });
+  const onMouseMove = criarOnMouseMove({ dragging, startRef, posRef, setPos });
+  const onMouseUp = criarOnMouseUp({ setDragging, posRef, pos });
 
-  function onMouseMove(e) {
-    if (!dragging) return;
+  const ColocarDistrito = criarColocarDistrito({
+    modoConstrucao,
+    setModoConstrucao,
+    setAscensao,
+    ascensao,
+    mostrarAviso,
+  });
 
-    const MIN_X = LARGURA_VISAO - LARGURA_CIDADE;
-    const MAX_X = 0;
-
-    const MIN_Y = ALTURA_VISAO - ALTURA_CIDADE;
-    const MAX_Y = 0;
-    const dx = e.clientX - startRef.current.x;
-    const dy = e.clientY - startRef.current.y;
-
-    const newX = posRef.current.x + dx;
-    const newY = posRef.current.y + dy;
-
-    setPos({
-      x: clamp(newX, MIN_X, MAX_X),
-      y: clamp(newY, MIN_Y, MAX_Y)
-      
-    });
-  }
-
-  function onMouseUp() {
-    setDragging(false);
-    posRef.current = pos;
-  }
-
-  const PRIMEIRO_PRESTIGIO = 1_000_000_000;
-
-  function calcularPrestigio(c) {
-    return Math.floor(Math.sqrt(c / PRIMEIRO_PRESTIGIO));
-  }
-  const PrestigioTotal= calcularPrestigio(cookiesTotais)
+  // Cálculos derivados de prestígio
+  const PrestigioTotal = calcularPrestigio(cookiesTotais);
   const prestigioPossivel = PrestigioTotal - ascensao.prestigioTotal;
 
   // barra de progresso
@@ -1109,6 +766,7 @@ function App() {
 
   const progresso = (cookiesAtual - cookiesPrestigioAtual) / (cookiesProximoPrestigio - cookiesPrestigioAtual);
   const progressoPorcentagem = Math.min(Math.max(progresso, 0), 1);
+
 
   function Ascender(){
     // RESET
@@ -1133,95 +791,29 @@ function App() {
         prestigioTotal: prev.prestigioTotal + prestigioPossivel
       }))
     }, 4000);
-
-    
   }
 
-  function ComprarUpgradeAscensao(distrito, index) {
-    setAscensao(prev => {
-      const upgrade = prev[distrito]?.upgrades[index];
-      if (!upgrade) return prev;
 
-      const prestigioAtual = Number(prev.prestigio) || 0;
-      const preco = Number(upgrade.preço) || 0;
 
-      if (upgrade.comprado || prestigioAtual < preco) return prev;
+  // Funções de cookie dourado (implementadas em sorte.js)
+  const cookieInstaneo = criarCookieInstaneo({
+    CPS,
+    contagem,
+    setContagem,
+    setCookiesTotais,
+    setCookiesTotaisAscensao,
+    mostrarAviso,
+    simplificarNumero,
+  });
 
-      return {
-        ...prev,
-        prestigio: prestigioAtual - preco,
-        [distrito]: {
-          ...prev[distrito],
-          upgrades: prev[distrito].upgrades.map((u, i) =>
-            i === index ? { ...u, comprado: true } : u
-          )
-        }
-      };
-    });
-  }
-
-  function rollEfeito() {
-    const PesoTotal = DEFAULT_DOURADO.reduce((s, e) => s + e.peso, 0);
-    let roll = Math.random() * PesoTotal;
-
-    for (const efeito of DEFAULT_DOURADO) {
-      if (roll < efeito.peso) return efeito;
-      roll -= efeito.peso;
-    }
-  }
-
-  function efeitoCookieDourado() {
-    setDouradosTotais(prev => prev + 1);
-    setCookieDourado(null);
-    const efeito = rollEfeito();
-    
-
-    if (efeito.tipo === "Instantaneo") {
-      cookieInstaneo(efeito.nome);
-      return;
-    }
-
-    mostrarAviso(`Cookie dourado: ${efeito.nome}`);
-
-    setBuff(prev => [
-      ...prev,
-      {
-        nome: efeito.nome,
-        tipo: efeito.tipo,
-        mult: efeito.mult,
-        expira: Date.now() + efeito.duração * 1000
-      }
-    ]);
-    
-  }
-
-  function CPSBuffado(baseCPS, buff) {
-    const now = Date.now();
-
-    return buff.reduce((cps, buff) => {
-      if (buff.expira < now) return cps;
-
-      if (buff.tipo === "CPS") {
-        return cps * buff.mult;
-      }
-
-      return cps;
-    }, baseCPS);
-  }
-
-  function cookieInstaneo(nome) {
-    const ganhoMinutos = CPS * 60 * 30;
-
-    const ganhoBanco = contagem * 0.1;
-
-    const ganho = Math.max(ganhoMinutos, ganhoBanco);
-
-    mostrarAviso(`Cookie dourado: ${nome}! + ${simplificarNumero(ganho)} cookies`);
-
-    setContagem(v => v + ganho);
-    setCookiesTotais(v => v + ganho);
-    setCookiesTotaisAscensao(v => v + ganho);
-  }
+  const efeitoCookieDourado = criarEfeitoCookieDourado({
+    douradoSomRef,
+    setDouradosTotais,
+    setCookieDourado,
+    setBuff,
+    cookieInstaneo,
+    mostrarAviso,
+  });
   
   return (
     <div className="App">
@@ -1336,7 +928,7 @@ function App() {
                       {simplificarNumero(valorAtualCookieCoin).toLocaleString()} cookies
                     </strong>
                   </p>
-                  <GraficoCookieCoin dados={historicoCookieCoin} />
+                  <GraficoCookieCoin dados={historicoCookieCoin} simplificarNumero={simplificarNumero} />
 
                 <button
                   onClick={VenderCookieCoin}
@@ -1775,6 +1367,7 @@ function App() {
                   id="cookie"
                   src={logo}
                   onClick={Clicar}
+                  draggable={false}
                   animate={controls}
                   whileHover={{
                     scale: 1.1,

@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
 
-export const VERSAO_ATUAL = 7.8; // Versão atual do save (V7.8 - Cookies Dourados!)
+export const VERSAO_ATUAL = 7.9; // Versão atual do save (V7.9 - Sons e refatoração de código)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -203,6 +203,15 @@ const migrations = {
       douradosTotais: save.douradosTotais ?? 0,
       tempoDourado: save.tempoDourado ?? null,
       version: 7.8
+    };
+  },
+
+  // Migração da 7.8 para 7.9 - Sons de clique e refatoração de código
+  // Sem mudanças no formato do save, apenas bump de versão
+  7.8: (save) => {
+    return {
+      ...save,
+      version: 7.9
     };
   }
 };

@@ -17,7 +17,7 @@ import Bancos_d from './arte/Bancos_d.png';
 // Estruturas padrão para construções e melhorias
 export const DEFAULT_CONSTRUCOES = [
     {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, quantidadeGratis: 0, descricao: "Uma vovó para assar cookies fresquinhos do forno", icone: Vovo1, icone_pequeno: Vovo3},
-    {nome: "Fazenda", preço: 100, cps: 1.5, quantidade: 0, descricao: "As Fazendas plantam e colhem Pés de Cookie", icone: Fazenda, icone_pequeno: Fazenda},
+    {nome: "Fazenda", preço: 100, cps: 1000000.5, quantidade: 0, descricao: "As Fazendas plantam e colhem Pés de Cookie", icone: Fazenda, icone_pequeno: Fazenda},
     {nome: "Mina", preço: 1000, cps: 8, quantidade: 0, descricao: "As Minas mineram Cookie Mineral direto da terra!", icone: Mina, icone_pequeno: Mina},
     {nome: "Fábrica", preço: 11000, cps: 45, quantidade: 0, descricao: "As Fábricas produzem cookies em larga escala", icone: Fabrica, icone_pequeno: Fabrica},
     {nome: "Computador", preço: 120_000, cps: 300, quantidade: 0, descricao: "O Computador produz cookies a partir do código do próprio jogo!", icone: PC, icone_pequeno: PC},
@@ -291,3 +291,107 @@ export const DEFAULT_ASCENSAO = {
         upgrades: []
       }
   };
+
+// Filtro que decide quais melhorias estão disponíveis para o jogador comprar,
+// baseado em quantos cookies ele já produziu, quantas construções ele tem, etc.
+// Retorna as melhorias já filtradas, ordenadas do mais barato ao mais caro,
+// e com um campo extra `indiceOriginal` que guarda a posição no array original
+// (necessário para a função ComprarMelhoria saber qual melhoria foi comprada).
+export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao) {
+  const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
+  const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
+  const ContagemMinas = construcoes.find((c) => c.nome === "Mina")?.quantidade || 0;
+  const ContagemFabrica = construcoes.find((c) => c.nome === "Fábrica")?.quantidade || 0;
+  const ContagemBanco = construcoes.find((c) => c.nome === "Banco")?.quantidade || 0;
+  const ContagemComputador = construcoes.find((c) => c.nome === "Computador")?.quantidade || 0;
+  const ContagemTemplo = construcoes.find((c) => c.nome === "Templo de Karaj")?.quantidade || 0;
+  const ContagemLab = construcoes.find((c) => c.nome === "Laboratório")?.quantidade || 0;
+
+  const disponiveis = melhorias
+    .map((m, i) => ({ ...m, indiceOriginal: i }))
+    .filter(m => {
+      if (m.comprado) return false;
+
+      if (m.id === "click2" && cookiesTotaisAscensao < 100) return false;
+      if (m.id === "click3" && cookiesTotaisAscensao < 5000) return false;
+
+      if (m.id === "clickcps1" && cookiesTotaisAscensao < 15_000) return false;
+      if (m.id === "clickcps2" && cookiesTotaisAscensao < 1_500_000) return false;
+      if (m.id === "clickcps3" && cookiesTotaisAscensao < 150_000_000) return false;
+      if (m.id === "clickcps4" && cookiesTotaisAscensao < 15_000_000_000) return false;
+      if (m.id === "clickcps5" && cookiesTotaisAscensao < 1_500_000_000_000) return false;
+
+      if (m.id === "vovo1" && ContagemVovo < 1) return false;
+      if (m.id === "vovo2" && ContagemVovo < 10) return false;
+      if (m.id === "vovo3" && ContagemVovo < 25) return false;
+      if (m.id === "vovo4" && ContagemVovo < 50) return false;
+      if (m.id === "vovo5" && ContagemVovo < 100) return false;
+      if (m.id === "vovo6" && ContagemVovo < 150) return false;
+      if (m.id === "fazenda1" && ContagemFazenda < 1) return false;
+      if (m.id === "fazenda2" && ContagemFazenda < 10) return false;
+      if (m.id === "fazenda3" && ContagemFazenda < 25) return false;
+      if (m.id === "fazenda4" && ContagemFazenda < 50) return false;
+      if (m.id === "fazenda5" && ContagemFazenda < 100) return false;
+      if (m.id === "fazenda6" && ContagemFazenda < 150) return false;
+      if (m.id === "mina1" && ContagemMinas < 1) return false;
+      if (m.id === "mina2" && ContagemMinas < 10) return false;
+      if (m.id === "mina3" && ContagemMinas < 25) return false;
+      if (m.id === "mina4" && ContagemMinas < 50) return false;
+      if (m.id === "mina5" && ContagemMinas < 100) return false;
+      if (m.id === "mina6" && ContagemMinas < 150) return false;
+      if (m.id === "fabrica1" && ContagemFabrica < 1) return false;
+      if (m.id === "fabrica2" && ContagemFabrica < 10) return false;
+      if (m.id === "fabrica3" && ContagemFabrica < 25) return false;
+      if (m.id === "fabrica4" && ContagemFabrica < 50) return false;
+      if (m.id === "fabrica5" && ContagemFabrica < 100) return false;
+      if (m.id === "fabrica6" && ContagemFabrica < 150) return false;
+      if (m.id === "PC1" && ContagemComputador < 1) return false;
+      if (m.id === "PC2" && ContagemComputador < 10) return false;
+      if (m.id === "PC3" && ContagemComputador < 25) return false;
+      if (m.id === "PC4" && ContagemComputador < 50) return false;
+      if (m.id === "PC5" && ContagemComputador < 100) return false;
+      if (m.id === "PC6" && ContagemComputador < 150) return false;
+      if (m.id === "banco1" && ContagemBanco < 1) return false;
+      if (m.id === "banco2" && ContagemBanco < 10) return false;
+      if (m.id === "banco3" && ContagemBanco < 25) return false;
+      if (m.id === "banco4" && ContagemBanco < 50) return false;
+      if (m.id === "banco5" && ContagemBanco < 100) return false;
+      if (m.id === "banco6" && ContagemBanco < 150) return false;
+      if (m.id === "karaj1" && ContagemTemplo < 1) return false;
+      if (m.id === "karaj2" && ContagemTemplo < 10) return false;
+      if (m.id === "karaj3" && ContagemTemplo < 25) return false;
+      if (m.id === "karaj4" && ContagemTemplo < 50) return false;
+      if (m.id === "karaj5" && ContagemTemplo < 100) return false;
+      if (m.id === "karaj6" && ContagemTemplo < 150) return false;
+      if (m.id === "lab1" && ContagemLab < 1) return false;
+      if (m.id === "lab2" && ContagemLab < 10) return false;
+      if (m.id === "lab3" && ContagemLab < 25) return false;
+
+      if (m.id === "cookie1" && cookiesTotaisAscensao < 50_000) return false;
+      if (m.id === "cookie2" && cookiesTotaisAscensao < 250_000) return false;
+      if (m.id === "cookie3" && cookiesTotaisAscensao < 500_000) return false;
+      if (m.id === "cookie4" && cookiesTotaisAscensao < 5_000_000) return false;
+      if (m.id === "cookie5" && cookiesTotaisAscensao < 15_000_000) return false;
+      if (m.id === "cookie6" && cookiesTotaisAscensao < 15_000_000) return false;
+      if (m.id === "cookie7" && cookiesTotaisAscensao < 15_000_000) return false;
+      if (m.id === "cookie8" && cookiesTotaisAscensao < 15_000_000) return false;
+      if (m.id === "cookie9" && cookiesTotaisAscensao < 15_000_000) return false;
+      if (m.id === "cookie10" && cookiesTotaisAscensao < 15_000_000) return false;
+
+      if (m.id === "sorte1" && douradosTotais < 1) return false;
+      if (m.id === "sorte2" && douradosTotais < 7) return false;
+      if (m.id === "sorte3" && douradosTotais < 77) return false;
+      if (m.id === "sorte4" && douradosTotais < 777) return false;
+
+      const CaixaVovoAtivo = ascensao.distritovovo.upgrades.some(u => u.id === "vovoascensao1" && u.comprado);
+      const CaixaFabricaAtivo = ascensao.distritofabrica.upgrades.some(u => u.id === "fabricaascensao1" && u.comprado);
+
+      if ((m.id === "cookievovo1" || m.id === "cookievovo2" || m.id === "cookievovo3" || m.id === "cookievovo4" || m.id === "cookievovo5") && CaixaVovoAtivo < 1) return false;
+      if ((m.id === "cookiebr1" || m.id === "cookiebr2" || m.id === "cookiebr3" || m.id === "cookiebr4" || m.id === "cookiebr5" || m.id === "cookiebr6") && CaixaFabricaAtivo < 1) return false;
+
+      return true;
+    });
+
+  // Ordena do mais barato ao mais caro
+  return [...disponiveis].sort((a, b) => a.preço - b.preço);
+}
