@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
 
-export const VERSAO_ATUAL = 7.9; // Versão atual do save (V7.9 - Sons e refatoração de código)
+export const VERSAO_ATUAL = 7.11; // Versão atual do save (V7.11 - Patch: recuperação de cookiesTotaisAscensao)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -206,12 +206,37 @@ const migrations = {
     };
   },
 
-  // Migração da 7.8 para 7.9 - Sons de clique e refatoração de código
-  // Sem mudanças no formato do save, apenas bump de versão
+  // Migração da 7.8 para 7.9 - Sons de clique e refatoração de código.
+  // Apenas bump de versão — essa versão foi publicada sem o fix do
+  // cookiesTotaisAscensao, que ficou pra 7.11.
   7.8: (save) => {
     return {
       ...save,
       version: 7.9
+    };
+  },
+
+  // Migração da 7.9 para 7.11 - Patch: recupera cookiesTotaisAscensao.
+  // Em versões anteriores, esse campo não era incluído no autoSave nem no
+  // ExportarSave, então virava undefined -> sumia do JSON -> voltava como 0
+  // ao carregar. O patch em App.js + version.js agora salva corretamente,
+  // mas saves já corrompidos de 7.8 ou 7.9 precisam dessa recuperação.
+  // Heurística: se o valor está faltando ou é 0 mas o jogador tem cookiesTotais > 0,
+  // usa cookiesTotais como fallback. Preciso pra quem nunca ascendeu; um pouco
+  // inflado pra quem já ascendeu — mas melhor do que zerar os requisitos de upgrade.
+  // (Pulamos 7.10 porque em JS 7.10 === 7.1, que conflita com a migração antiga.)
+  7.9: (save) => {
+    const cta = save.cookiesTotaisAscensao;
+    const ct = save.cookiesTotais ?? 0;
+    const cookiesTotaisAscensaoRecuperado =
+      (cta === undefined || cta === null || cta === 0) && ct > 0
+        ? ct
+        : (cta ?? 0);
+
+    return {
+      ...save,
+      cookiesTotaisAscensao: cookiesTotaisAscensaoRecuperado,
+      version: 7.11
     };
   }
 };
@@ -344,7 +369,7 @@ export function saveGame(state) {
     version: VERSAO_ATUAL,
     contagem: state.contagem,
     cookiesTotais: state.cookiesTotais,
-    cookiesTotaisAscensao: state.cookiesTotaisAscensao,
+    cookiesTotaisAscensao: state.cookiesTotaisAscensao ?? 0,
     click: state.click,
  
     construcoes: state.construcoes.map(c => ({
@@ -380,7 +405,7 @@ export function Save(state) {
     version: VERSAO_ATUAL,
     contagem: state.contagem,
     cookiesTotais: state.cookiesTotais,
-    cookiesTotaisAscensao: state.cookiesTotaisAscensao,
+    cookiesTotaisAscensao: state.cookiesTotaisAscensao ?? 0,
     click: state.click,
  
     construcoes: state.construcoes.map(c => ({

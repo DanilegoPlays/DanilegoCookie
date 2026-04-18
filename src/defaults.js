@@ -17,7 +17,7 @@ import Bancos_d from './arte/Bancos_d.png';
 // Estruturas padrão para construções e melhorias
 export const DEFAULT_CONSTRUCOES = [
     {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, quantidadeGratis: 0, descricao: "Uma vovó para assar cookies fresquinhos do forno", icone: Vovo1, icone_pequeno: Vovo3},
-    {nome: "Fazenda", preço: 100, cps: 1000000.5, quantidade: 0, descricao: "As Fazendas plantam e colhem Pés de Cookie", icone: Fazenda, icone_pequeno: Fazenda},
+    {nome: "Fazenda", preço: 100, cps: 1.5, quantidade: 0, descricao: "As Fazendas plantam e colhem Pés de Cookie", icone: Fazenda, icone_pequeno: Fazenda},
     {nome: "Mina", preço: 1000, cps: 8, quantidade: 0, descricao: "As Minas mineram Cookie Mineral direto da terra!", icone: Mina, icone_pequeno: Mina},
     {nome: "Fábrica", preço: 11000, cps: 45, quantidade: 0, descricao: "As Fábricas produzem cookies em larga escala", icone: Fabrica, icone_pequeno: Fabrica},
     {nome: "Computador", preço: 120_000, cps: 300, quantidade: 0, descricao: "O Computador produz cookies a partir do código do próprio jogo!", icone: PC, icone_pequeno: PC},

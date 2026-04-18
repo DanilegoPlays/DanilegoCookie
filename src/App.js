@@ -31,12 +31,12 @@ import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoC
 import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP} from './helper';
 
 function App() {
-
+ 
   // Função para calcular o preço atual de cada construção baseado no preço base e quantidade
   function getPreçoAtual(preçoBase, quantidade) {
     return Math.floor(preçoBase * Math.pow(1.15, quantidade));
   }
-
+ 
   // useStates principais
   const [contagem, setContagem] = useState(0); // contagem de cookies
   const [click, setClick] = useState(1); // valor do click
@@ -45,7 +45,7 @@ function App() {
   const [melhorias, setMelhorias] = useState(DEFAULT_MELHORIAS)
   const [cookiesTotais, setCookiesTotais] = useState(0); // cookies totais
   const [cookiesTotaisAscensao, setCookiesTotaisAscensao] = useState(0); // cookies totais só durante a ascensão
-
+ 
   // Minigames
   const [cookieCoin, setCookieCoin] = useState(DEFAULT_COOKIE_COIN);
   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
@@ -61,11 +61,11 @@ function App() {
     return Math.floor(Math.random() * (TMIN - TMAX) + TMIN);
   }); // Tempo até o próximo cookie dourado!
   const [douradosTotais, setDouradosTotais] = useState(0);
-
+ 
   // refs dos sons
   const clickSonsRef = useRef([]);
   const douradoSomRef = useRef(null);
-
+ 
   // Inicializa os Audio uma vez só
   useEffect(() => {
     clickSonsRef.current = [
@@ -75,11 +75,11 @@ function App() {
       new Audio(somClick4),
     ];
     clickSonsRef.current.forEach(a => { a.volume = 0.5; });
-
+ 
     douradoSomRef.current = new Audio(somDourado);
     douradoSomRef.current.volume = 0.7;
   }, []);
-
+ 
   // use effect que desbloqueia minigames e distritos
   useEffect(() => {
     const computer = construcoes.find(c => c.nome === "Computador");
@@ -94,7 +94,7 @@ function App() {
         prev.desbloqueado ? prev : { ...prev, desbloqueado: true }
       );
     }
-
+ 
     // Desbloqueia distritos
     const distritosParaVerificar = [
       { key: 'distritovovo', requisito: 'Vovó', quantidade: 100 },
@@ -104,7 +104,7 @@ function App() {
       { key: 'distritopc', requisito: 'Computador', quantidade: 100 },
       { key: 'distritobanco', requisito: 'Banco', quantidade: 100 }
     ];
-
+ 
     distritosParaVerificar.forEach(({ key, requisito, quantidade }) => {
       const building = construcoes.find(c => c.nome === requisito);
       if (building && building.quantidade >= quantidade) {
@@ -124,18 +124,18 @@ function App() {
       }
     });
   }, [construcoes]);
-
+ 
   const [modoConstrucao, setModoConstrucao] = useState({
     ativo: false,
     distrito: null // qual distrito está sendo construído
   });
-
+ 
   // useStates de teste
   const [isVisible, setIsVisible] = useState(false);
   const [numerinhos, setNumerinhos] = useState([]);
   const [aviso, setAviso] = useState(false);
   const [historicoCookieCoin, setHistoricoCookieCoin] = useState([]);
-
+ 
   // Tooltips
   const [hoveredConstrucao, setHoveredConstrucao] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -143,7 +143,7 @@ function App() {
   function mostrarAviso(texto) {
     setAviso({ texto, id: Date.now() });
   }
-
+ 
   // referências
   const contagemRef = useRef(contagem);
   const clickRef = useRef(click);
@@ -153,7 +153,10 @@ function App() {
   const ascensaoRef = useRef(ascensao);
   const cookiesTotaisRef = useRef(cookiesTotais);
   const cookiesTotaisAscensaoRef = useRef(cookiesTotaisAscensao);
-
+  const sorteRef = useRef(sorte);
+  const douradosTotaisRef = useRef(douradosTotais);
+  const tempoDouradoRef = useRef(tempoDourado);
+ 
   // Manter referencias sincronizadas
   useEffect(() => { 
     contagemRef.current = contagem;
@@ -165,37 +168,50 @@ function App() {
   useEffect(() => { melhoriasRef.current = melhorias; }, [melhorias]);
   useEffect(() => { cookieCoinRef.current = cookieCoin; }, [cookieCoin]);
   useEffect(() => { ascensaoRef.current = ascensao; }, [ascensao]);
-
+  useEffect(() => { sorteRef.current = sorte; }, [sorte]);
+  useEffect(() => { douradosTotaisRef.current = douradosTotais; }, [douradosTotais]);
+  useEffect(() => { tempoDouradoRef.current = tempoDourado; }, [tempoDourado]);
+ 
+ 
+  // Monta o objeto de save a partir das refs, para ser passado a saveGame/Save.
+  // Fonte única de verdade — ao adicionar um campo novo ao save, basta incluir aqui.
+  function montarSaveData() {
+    return {
+      contagem: contagemRef.current,
+      click: clickRef.current,
+      construcoes: construcoesRef.current,
+      melhorias: melhoriasRef.current,
+      cookieCoin: cookieCoinRef.current,
+      ascensao: ascensaoRef.current,
+      cookiesTotais: cookiesTotaisRef.current,
+      cookiesTotaisAscensao: cookiesTotaisAscensaoRef.current,
+      sorte: sorteRef.current,
+      douradosTotais: douradosTotaisRef.current,
+      tempoDourado: tempoDouradoRef.current,
+      lastSavedAt: Date.now()
+    };
+  }
 
   // Quicksave
   useEffect(() => {
     const autoSave = setInterval(() => {
-      const saveData = {
-        contagem: contagemRef.current,
-        click: clickRef.current,
-        construcoes: construcoesRef.current,
-        melhorias: melhoriasRef.current,
-        cookieCoin: cookieCoinRef.current,
-        ascensao: ascensaoRef.current,
-        cookiesTotais: cookiesTotaisRef.current,
-        lastSavedAt: Date.now()
-      };
+      const saveData = montarSaveData();
       saveGame(saveData);
       console.log("jogo salvo", saveData);
-
+ 
       mostrarAviso("Jogo Salvo!");
     }, 60000);
-
+ 
     return () => clearInterval(autoSave);
   }, []);
-
+ 
   // Load Quicksave
   useEffect(() => {
     const salvamento = localStorage.getItem("QuickSave");
-
+ 
     if (salvamento) {
       const dados = loadSave(salvamento, DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS);
-
+ 
       setContagem(dados.contagem ?? 0);
       setCookiesTotais(dados.cookiesTotais ?? 0);
       setCookiesTotaisAscensao(dados.cookiesTotaisAscensao ?? 0);
@@ -207,33 +223,33 @@ function App() {
       setDouradosTotais(dados.douradosTotais ?? 0);
       setSorte(dados.sorte ?? 1);
       setTempoDourado(dados.tempoDourado ?? 300);
-
+ 
       // ganho offline
       const stats = getOffline(dados.ascensao);
-
+ 
       if (stats.multiplier > 0 && dados.lastSavedAt) {
         const now = Date.now();
         const diffSeconds = (now - dados.lastSavedAt) / 1000;
         // limite de ganho offline (inicial: 2 horas)
         const capped = Math.min(diffSeconds, stats.capSeconds);
-
+ 
         // Use dados.construcoes instead of state construcoes
         const producaoBase = dados.construcoes.reduce((soma, c) => {
           const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
           return soma + CpsConstrucao(c) * quantidadeTotal;
         }, 0);
-
+ 
         // Calcula o multiplicador a partir do save
         const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao);
-
+ 
         const producao = producaoBase * multiplicador;
-
+ 
         const ganho = producao * capped * stats.multiplier;
-
+ 
         setContagem(prev => prev + ganho);
         setCookiesTotais(prev => prev + ganho);
         setCookiesTotaisAscensao(prev => prev + ganho);
-
+ 
         mostrarAviso(
           `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
         );
@@ -242,21 +258,21 @@ function App() {
     
     
   }, []);
-
+ 
   function SpawnCookieDourado() {
     SpawnCookieDouradoFn(setCookieDourado);
   }
-
+ 
   // Função para calcular o próximo cookie dourado
   const calcularProximoSpawn = () => calcularProximoSpawnFn(sorte);
-
+ 
   // Inicializa o primeiro timer quando o jogo começa (se não houver um salvo)
   useEffect(() => {
     if (tempoDourado === 0 && !cookieDourado) {
       calcularProximoSpawn();
     }
   }, []);
-
+ 
   useEffect(() => {
     const Intervalo = setInterval(() => {
       
@@ -271,22 +287,22 @@ function App() {
           return prev - 1;
         });
     }, 1000);
-
+ 
     return () => clearInterval(Intervalo);
   }, [cookieDourado, sorte]);
     
-
+ 
   // some cookie dourado
   useEffect(() => {
     if (!cookieDourado) return;
-
+ 
     const timeout = setTimeout(() => {
       setCookieDourado(null);
     }, cookieDourado.expira - Date.now());
-
+ 
     return () => clearTimeout(timeout);
   }, [cookieDourado]);
-
+ 
   // Limpa efeitos de cookie dourado
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
@@ -294,7 +310,7 @@ function App() {
     }, 1000);
     return () => clearInterval(cleanupInterval);
   }, []);
-
+ 
   const totalLuckAnterior = useRef(0);
   // Melhorias de sorte
   useEffect(() => {
@@ -319,69 +335,69 @@ function App() {
       SpawnCookieDourado();
     }
     totalLuckAnterior.current = totalLuck;
-
+ 
     setSorte(totalLuck);
   }, [melhorias, ascensao]);
-
+ 
   function getOffline(ascensao) {
-
+ 
     const offline1 =
       ascensao.distritotemplo?.upgrades
         ?.filter(u => u.efeito === "offline1" && u.comprado)
         .length || 0;
-
+ 
     const offline2 =
       ascensao.distritoidle?.upgrades
         ?.filter(u => u.efeito === "offline2" && u.comprado)
         .length || 0;
-
+ 
     // Multiplicador offline 
     const multiplier =
         offline1 * 0.5 +
         offline2 * 0.1;
-
+ 
     // Horas máximas offline 
     const capHours =
         offline1 * 2 +
         offline2 * 4;
-
+ 
     return {
       multiplier,
       capSeconds: capHours * 3600
     };
   }
-
+ 
   // Versão do getMultiplicadorP que usa dados do save (para ganho offline).
   // Hoje é apenas um alias — getMultiplicadorP no helper.js já recebe argumentos.
   const getMultiplicadorPFromData = getMultiplicadorP;
-
-
+ 
+ 
   function ClickPorCPS(melhorias, ascensao) {
     let total = 0;
-
+ 
     // upgrades normais
     total += melhorias.filter(m => m.efeito === 'clickCPS' && m.comprado).length * 0.02;
-
+ 
     // upgrades de ascensão
     Object.values(ascensao).forEach(distrito => {
       if (!distrito?.upgrades) return;
-
+ 
       distrito.upgrades.forEach(u => {
         if (u.comprado && u.efeito === "clickCPS") {
           total += 0.01;
         }
       });
     });
-
+ 
     return total;
   }
   // efeitos das melhorias de click
   useEffect(() => {
-
+ 
     // multiplicadores normais de clique
     const mult_click = melhorias.filter(m => m.efeito === 'duplicarClick' && m.comprado).length;
     const clickBaseFinal = 2 ** mult_click;
-
+ 
     // bônus por CPS
     const percentual = ClickPorCPS(melhorias, ascensao);
     const bonusPorCPS = CPS * percentual;
@@ -391,13 +407,13 @@ function App() {
     // Aplica Frenesi de Click
     const now = Date.now();
     const clickBuff = buff.find(b => b.tipo === "Click" && b.expira > now);
-
+ 
     const clickFinal = clickBuff ? clickSemBuff * clickBuff.mult : clickSemBuff;
-
+ 
     setClick(clickFinal);
     clickRef.current = clickFinal;
-
-
+ 
+ 
   }, [melhorias, ascensao, CPS, buff]);
   // efeitos das melhorias de ascensão
   useEffect(() => {
@@ -413,12 +429,12 @@ function App() {
       })
     );
   }, [ascensao]) 
-
+ 
   // efeito CPS
   useEffect(() => {
-
+ 
     let lastUpdate = Date.now();
-
+ 
     const timer = setInterval(() => {
       // considera tempo com o jogo em outra aba
       const now = Date.now();
@@ -430,10 +446,10 @@ function App() {
         const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
         return soma + CpsConstrucao(c) * quantidadeTotal;
       }, 0);
-
+ 
       const producao = CPSBuffado(producaoBase * getMultiplicadorP(melhorias, ascensao), buff);
       
-
+ 
       setCPS(producao);
       setContagem((atual) => atual + (deltaSeconds*producao));
       setCookiesTotais((atual) => atual + (deltaSeconds*producao));
@@ -441,18 +457,18 @@ function App() {
       if (deltaSeconds > 10) {
         mostrarAviso(`Bem vindo de volta! +  ${deltaSeconds*producao} cookies`)
       }
-
+ 
     }, 100); // a cada 0.1 segundos
     return () => clearInterval(timer); // limpa o timer
   }, [construcoes, melhorias, buff]);
-
+ 
   // cps da construção (para visualização).
   // getMultiplicador e getMultiplicadorP vêm de helper.js — recebem
   // os states (melhorias, ascensao) explicitamente em vez de pegá-los do escopo.
   function CpsConstrucao(c) {
     return c.cps * getMultiplicador(c, melhorias) * getMultiplicadorP(melhorias, ascensao);
   }
-
+ 
   // função click (gera os cookies do click)
   function AssarCookies() {
     // toca um som de click aleatório
@@ -467,15 +483,15 @@ function App() {
     setCookiesTotaisAscensao((anterior) => anterior + clickRef.current);
     //document.querySelectorAll('#Escondido1').forEach((item) => {
     //item.classList.toggle("showing");});
-
+ 
     setIsVisible((prev) => !prev);
-
+ 
     // adiciona animação de CSS ao cookie
     //const cookie = document.getElementById("cookie-img");
     //cookie.classList.add("bounce"); // adiciona efeito "bounce"
     //setTimeout(() => cookie.classList.remove("bounce"), 3000); // remove efeito após um tempo
-
-
+ 
+ 
   }
   // função anti-click
   function DestruirCookies() {
@@ -484,12 +500,12 @@ function App() {
     item.classList.toggle("showing");
   });
   }
-
+ 
   // animação do cookie
   const controls = useAnimation();
   // função click (animação)
   const Clicar = (e) => {
-
+ 
     // --- Animação dos numerinhos
     const id = Date.now(); // Id único para os numerinhos
     // Pega a posição onde o click foi feito
@@ -497,7 +513,7 @@ function App() {
     const y = e.clientY - 20; // posiciona um pouco acima do mouse
     // Adiciona os numerinhos
     setNumerinhos((prev) => [...prev, { id, x, y }]);
-
+ 
     // Animação de clicar
     controls.start({
       scale: [1, 0.9, 1.1, 1],
@@ -511,8 +527,8 @@ function App() {
       setNumerinhos((prev) => prev.filter((t) => t.id !== id));
     }, 2000);
   };
-
-
+ 
+ 
   function ComprarConstrucao(indice) {
     setConstrucoes((anterior) => {
       const novo = anterior.map((c, i) => {
@@ -530,7 +546,7 @@ function App() {
       return novo;
     });
   }
-
+ 
   function ComprarMelhoria(indice) {
     setMelhorias((anterior) =>
       anterior.map((m, i) => {
@@ -543,7 +559,7 @@ function App() {
       })
     );
   }
-
+ 
   // aplicar efeito das melhorias (não funcionando)
   function AplicarEfeito(efeito) {
     if (efeito === "duplicarClick") {
@@ -564,45 +580,34 @@ function App() {
       );
     }
   }
-
+ 
   function DeletarSave() {
     const confirmar = window.confirm(
     "Tem certeza que quer deletar o save? \n\nEsta ação não pode ser desfeita!"
   );
-
+ 
   if (!confirmar) return;
-
+ 
     localStorage.removeItem("QuickSave");
     window.location.reload();
-
+ 
   }
-
+ 
   function ExportarSave() {
-    const saveData = {
-        contagem: contagemRef.current,
-        click: clickRef.current,
-        construcoes: construcoesRef.current,
-        melhorias: melhoriasRef.current,
-        cookieCoin: cookieCoinRef.current,
-        ascensao: ascensaoRef.current,
-        cookiesTotais: cookiesTotaisRef.current,
-        lastSavedAt: Date.now()
-      };
-    
-    const encoded = Save(saveData);  // save com versionamento
+    const encoded = Save(montarSaveData());  // save com versionamento
 
     navigator.clipboard.writeText(encoded).catch(() => {});
     alert("Save copied:\n\n" + encoded);
   }
-
+ 
   function ImportarSave() {
     const input = prompt("Coloque seu save aqui:");
-
+ 
     if (!input) return;
-
+ 
     try {
       const dados = Load(input, DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS);
-
+ 
       setContagem(dados.contagem ?? 0);
       setClick(dados.click ?? 1);
       setConstrucoes(dados.construcoes ?? DEFAULT_CONSTRUCOES);
@@ -614,46 +619,46 @@ function App() {
       setDouradosTotais(dados.douradosTotais ?? 0);
       setSorte(dados.sorte ?? 1);
       setTempoDourado(dados.tempoDourado ?? 300);
-
+ 
       // ganho offline
       const stats = getOffline(dados.ascensao);
-
+ 
       if (stats.multiplier > 0 && dados.lastSavedAt) {
         const now = Date.now();
         const diffSeconds = (now - dados.lastSavedAt) / 1000;
-
+ 
         const capped = Math.min(diffSeconds, stats.capSeconds);
-
+ 
         // Usa dados do save em vez do state "construcoes"
         const producaoBase = dados.construcoes.reduce((soma, c) => {
           const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
           return soma + CpsConstrucao(c) * quantidadeTotal;
         }, 0);
-
+ 
         // Calcula multiplicador
         const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao);
-
+ 
         const producao = producaoBase * multiplicador;
-
+ 
         const ganho = producao * capped * stats.multiplier;
-
+ 
         setContagem(prev => prev + ganho);
         setCookiesTotais(prev => prev + ganho);
         setCookiesTotaisAscensao(prev => prev + ganho);
-
+ 
         mostrarAviso(
           `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
         );
       }
-
+ 
       mostrarAviso("Save importado com sucesso!");
     } catch (error) {
       console.error("Error importing save:", error);
       alert("Erro ao carregar o save. Verifique se o save está correto.");
     }
-
+ 
   }
-
+ 
   // Upgrades disponíveis (filtragem implementada em defaults.js)
   const upgradesOrdenados = filtrarUpgradesDisponiveis(
     melhorias,
@@ -662,18 +667,18 @@ function App() {
     douradosTotais,
     ascensao
   );
-
+ 
   // lista de upgrades comprados
   const upgradesComprados = melhorias.filter((m) => m.comprado);
-
-
+ 
+ 
   // Minigame Cookie Coin (implementado em minigame.js)
   const valorAtualCookieCoin = Math.floor(
     VALOR_BASE * cookieCoin.mercado
   );
-
+ 
   const precoNvidia = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
-
+ 
   const ComprarCookieCoinNivel = criarComprarCookieCoinNivel({
     contagem,
     setContagem,
@@ -685,7 +690,7 @@ function App() {
     if (!cookieCoin.desbloqueado || cookieCoin.level === 0) return;
     let lastUpdate = Date.now();
     const timer = setInterval(() => {
-
+ 
       const now = Date.now();
       const deltaSeconds = (now - lastUpdate) / 1000;
       lastUpdate = now;
@@ -694,10 +699,10 @@ function App() {
         coins: prev.coins + prev.level * 0.003 * deltaSeconds
       }));
     }, 100);
-
+ 
     return () => clearInterval(timer);
   }, [cookieCoin.desbloqueado, cookieCoin.level]);
-
+ 
   const VenderCookieCoin = criarVenderCookieCoin({
     cookieCoin,
     setCookieCoin,
@@ -710,19 +715,19 @@ function App() {
   // mercado de Cookie Coins
   useEffect(() => {
     if (!cookieCoin.desbloqueado) return;
-
+ 
     const timer = setInterval(() => {
       const mudanca = (Math.random() - 0.5)*0.2;
       let NovoMercado = cookieCoin.mercado + mudanca;
-
+ 
       NovoMercado = Math.max(0.01, Math.min(100, NovoMercado))
       setCookieCoin(prev => {
-
+ 
       return {
         ...prev,
         mercado: Number(NovoMercado.toFixed(2))
       }})
-
+ 
       let Valor = NovoMercado * VALOR_BASE
       setHistoricoCookieCoin(h => {
         const novo = [...h, Valor];
@@ -734,19 +739,19 @@ function App() {
   }, [cookieCoin.desbloqueado]);
   //funções de ascensão (implementadas em Ascension.js)
   const AbrirDistrito = criarAbrirDistrito(setAscensao);
-
+ 
   const ComprarUpgradeAscensao = criarComprarUpgradeAscensao(setAscensao);
-
+ 
   // useStates para arrastar com o mouse a cidade
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const startRef = useRef({ x: 0, y: 0 });
   const posRef = useRef({ x: 0, y: 0 });
-
+ 
   const onMouseDown = criarOnMouseDown({ setDragging, startRef });
   const onMouseMove = criarOnMouseMove({ dragging, startRef, posRef, setPos });
   const onMouseUp = criarOnMouseUp({ setDragging, posRef, pos });
-
+ 
   const ColocarDistrito = criarColocarDistrito({
     modoConstrucao,
     setModoConstrucao,
@@ -754,19 +759,22 @@ function App() {
     ascensao,
     mostrarAviso,
   });
-
-  // Cálculos derivados de prestígio
+ 
+  // Cálculos derivados de prestígio.
+  // Math.max(0, ...) protege contra saves antigos/inconsistentes em que
+  // ascensao.prestigioTotal > PrestigioTotal (cookiesTotais nem sempre foi
+  // salvo corretamente em versões antigas) — nunca se perde prestígio ascendendo.
   const PrestigioTotal = calcularPrestigio(cookiesTotais);
-  const prestigioPossivel = PrestigioTotal - ascensao.prestigioTotal;
-
+  const prestigioPossivel = Math.max(0, PrestigioTotal - ascensao.prestigioTotal);
+ 
   // barra de progresso
   const cookiesAtual = cookiesTotais;
   const cookiesPrestigioAtual = PRIMEIRO_PRESTIGIO * (PrestigioTotal ** 2);
   const cookiesProximoPrestigio = PRIMEIRO_PRESTIGIO * ((PrestigioTotal + 1) ** 2);
-
+ 
   const progresso = (cookiesAtual - cookiesPrestigioAtual) / (cookiesProximoPrestigio - cookiesPrestigioAtual);
   const progressoPorcentagem = Math.min(Math.max(progresso, 0), 1);
-
+ 
 
   function Ascender(){
     // RESET
