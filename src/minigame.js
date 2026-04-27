@@ -34,7 +34,8 @@ export function criarVenderCookieCoin({
   setContagem,
   setCookiesTotais,
   setCookiesTotaisAscensao,
-  mostrarAviso,
+  mostrarAvisoPersistente,
+  iconeCookieCoin,
 }) {
   return function VenderCookieCoin() {
     const moedasInteiras = Math.floor(cookieCoin.coins);
@@ -49,7 +50,10 @@ export function criarVenderCookieCoin({
       ...prev,
       coins: prev.coins - moedasInteiras
     }));
-    mostrarAviso(`${moedasInteiras} Cookie Coins vendidas por ${ganhoCookies.toLocaleString()} cookies`);
+    mostrarAvisoPersistente(
+      `${moedasInteiras} Cookie Coins vendidas por ${ganhoCookies.toLocaleString()} cookies`,
+      iconeCookieCoin
+    );
   };
 }
 

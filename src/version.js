@@ -1,8 +1,8 @@
 // Módulo para permitir usar saves antigos em novas versões (para não ser necessário recomeçar a cada update)
 
-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO } from './defaults';
+import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS } from './defaults';
 
-export const VERSAO_ATUAL = 7.11; // Versão atual do save (V7.11 - Patch: recuperação de cookiesTotaisAscensao)
+export const VERSAO_ATUAL = 8.0; // Versão atual do save (V8.0 - Reforma de UI: menus Opções/Conquistas, minimizar produção)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -17,7 +17,10 @@ export const DEFAULT_SAVE = {
   ascensao: DEFAULT_ASCENSAO,
   sorte: 1, // Luck multiplier from upgrades
   douradosTotais: 0, // Total golden cookies clicked
-  tempoDourado: null // Time until next golden cookie spawn
+  tempoDourado: null, // Time until next golden cookie spawn
+  producaoMinimizada: false, // Se a seção "Sua Produção" está minimizada
+  // Conquistas: só persistimos `id` + `obtido` (resto vem de DEFAULT_CONQUISTAS).
+  conquistas: DEFAULT_CONQUISTAS.map(c => ({ id: c.id, obtido: false }))
 }
  
 // --- MIGRAÇÃO  ---
@@ -49,6 +52,19 @@ function normalizeMelhorias(saved = [], defaults) {
       };
     }
     return def;
+  });
+}
+
+// Combina os metadados estáticos das conquistas (do DEFAULT_CONQUISTAS) com o
+// estado persistido (só `id` + `obtido`). Conquistas adicionadas em versões
+// futuras entram automaticamente como `obtido: false`.
+function normalizeConquistas(saved = [], defaults) {
+  return defaults.map(def => {
+    const found = saved.find(s => s.id === def.id);
+    return {
+      ...def,
+      obtido: found?.obtido ?? false
+    };
   });
 }
  
@@ -238,6 +254,19 @@ const migrations = {
       cookiesTotaisAscensao: cookiesTotaisAscensaoRecuperado,
       version: 7.11
     };
+  },
+
+  // Migração da 7.11 para 8.0 - Reforma de UI (menus de opções/conquistas
+  // na coluna esquerda, botão de minimizar produção) + Sistema de Conquistas.
+  // Adiciona producaoMinimizada e conquistas (todas como obtido:false; o checker
+  // do App.js dispara avisos pras que já bateriam o critério no carregamento).
+  7.11: (save) => {
+    return {
+      ...save,
+      producaoMinimizada: save.producaoMinimizada ?? false,
+      conquistas: save.conquistas ?? DEFAULT_CONQUISTAS.map(c => ({ id: c.id, obtido: false })),
+      version: 8.0
+    };
   }
 };
  
@@ -313,7 +342,9 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       ascensao: DEFAULT_ASCENSAO,
       sorte: 1,
       douradosTotais: 0,
-      tempoDourado: null
+      tempoDourado: null,
+      producaoMinimizada: false,
+      conquistas: DEFAULT_CONQUISTAS
     };
   }
  
@@ -344,6 +375,8 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       sorte: migrated.sorte ?? 1,
       douradosTotais: migrated.douradosTotais ?? 0,
       tempoDourado: migrated.tempoDourado ?? null,
+      producaoMinimizada: migrated.producaoMinimizada ?? false,
+      conquistas: normalizeConquistas(migrated.conquistas, DEFAULT_CONQUISTAS),
       version: VERSAO_ATUAL
     };
   } catch (error) {
@@ -359,7 +392,9 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       ascensao: DEFAULT_ASCENSAO,
       sorte: 1,
       douradosTotais: 0,
-      tempoDourado: null
+      tempoDourado: null,
+      producaoMinimizada: false,
+      conquistas: DEFAULT_CONQUISTAS
     };
   }
 }
@@ -393,7 +428,9 @@ export function saveGame(state) {
     wasPageClosed: state.wasPageClosed ?? false,
     sorte: state.sorte ?? 1,
     douradosTotais: state.douradosTotais ?? 0,
-    tempoDourado: state.tempoDourado ?? null
+    tempoDourado: state.tempoDourado ?? null,
+    producaoMinimizada: state.producaoMinimizada ?? false,
+    conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false }))
   };
  
   localStorage.setItem("QuickSave", JSON.stringify(save));
@@ -428,7 +465,9 @@ export function Save(state) {
     lastSavedAt: state.lastSavedAt ?? Date.now(),
     sorte: state.sorte ?? 1,
     douradosTotais: state.douradosTotais ?? 0,
-    tempoDourado: state.tempoDourado ?? null
+    tempoDourado: state.tempoDourado ?? null,
+    producaoMinimizada: state.producaoMinimizada ?? false,
+    conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false }))
   };
  
   return btoa(JSON.stringify(save));
@@ -451,7 +490,9 @@ export function Load(saveString, defaultConstrucoes = null, defaultMelhorias = n
       ascensao: DEFAULT_ASCENSAO,
       sorte: 1,
       douradosTotais: 0,
-      tempoDourado: null
+      tempoDourado: null,
+      producaoMinimizada: false,
+      conquistas: DEFAULT_CONQUISTAS
     };
   }
 }

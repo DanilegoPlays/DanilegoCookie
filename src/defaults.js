@@ -13,6 +13,7 @@ import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png';
 import Bancos from './arte/Bancos.png';
 import Bancos_d from './arte/Bancos_d.png';
+import Lab from './arte/Lab.png';
 
 // Estruturas padrão para construções e melhorias
 export const DEFAULT_CONSTRUCOES = [
@@ -23,7 +24,7 @@ export const DEFAULT_CONSTRUCOES = [
     {nome: "Computador", preço: 120_000, cps: 300, quantidade: 0, descricao: "O Computador produz cookies a partir do código do próprio jogo!", icone: PC, icone_pequeno: PC},
     {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos produzem cookies a partir de empréstimos", icone: Bancos, icone_pequeno: Bancos},
     {nome: "Templo de Karaj", preço: 77_777_000, cps: 7777, quantidade: 0, descricao: "Os Templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!", icone: Karaj, icone_pequeno: Karaj},
-    {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: PC, icone_pequeno: PC},
+    {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: Lab, icone_pequeno: Lab},
     {nome: "Torre", preço: 5_100_000_000, cps: 300_000, quantidade: 0, descricao: "As torres criam Cookies usanso magia!", icone: PC, icone_pequeno: PC}
     //{nome: "Cassino da Sorte", preço: 77_777_777_777, cps: 1_777_777, quantidade: 0, descricao: "Pessoas apostam seus cookies no Cassino da Sorte, e você ganha uma parte! A Casa sempre vence!", icone: PC, icone_pequeno: PC},
     //{nome: "Portal", preço: 1_000_000_000_000, cps: 10_000_000, quantidade: 0, descricao: "Trazem Cookies de outra dimensão... com certeza nada de ruim pode vir disso...", icone: PC, icone_pequeno: PC}
@@ -40,32 +41,32 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Mouse de Ouro", preço: 30_000_000_000, efeito:'clickCPS', id: 'clickcps4', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n O Clique ganha 2% do seu CPS"},
     {nome: "Mouse de Vibrânio", preço: 3_000_000_000_000, efeito:'clickCPS', id: 'clickcps5', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n O Clique ganha 2% do seu CPS"},
     // Vovó
-    {nome: "Treinamento da Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
-    {nome: "Fornos de Cookie", preço: 500, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
-    {nome: "Dentaduras Novas", preço: 10000, efeito:'duplicarVovo', id: 'vovo3', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
-    {nome: "Vovós Extra Velhas", preço: 100_000, efeito:'duplicarVovo', id: 'vovo4', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
-    {nome: "Vovós Unidas", preço: 10_000_000, efeito:'duplicarVovo', id: 'vovo5', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Treinamento da Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 0, spriteY: 2},
+    {nome: "Fornos de Cookie", preço: 500, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 2, spriteY: 2},
+    {nome: "Dentaduras Novas", preço: 10000, efeito:'duplicarVovo', id: 'vovo3', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 3, spriteY: 2},
+    {nome: "Vovós Extra Velhas", preço: 100_000, efeito:'duplicarVovo', id: 'vovo4', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 4, spriteY: 2},
+    {nome: "Vovós Unidas", preço: 10_000_000, efeito:'duplicarVovo', id: 'vovo5', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 5, spriteY: 2},
     {nome: "Vovós... Vovós?", preço: 100_000_000, efeito:'duplicarVovo', id: 'vovo6', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
     // Fazenda
-    {nome: "Enxada de Pedra", preço: 1000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
-    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
-    {nome: "Enxada de Ferro", preço: 50_000, efeito:'duplicarFazenda', id: 'fazenda3', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
-    {nome: "Mais Hectares", preço: 5_000_000, efeito:'duplicarFazenda', id: 'fazenda4', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
-    {nome: "Novos Tratores", preço: 500_000_000, efeito:'duplicarFazenda', id: 'fazenda5', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Enxada de Pedra", preço: 1000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 0, spriteY: 3},
+    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 1, spriteY: 3},
+    {nome: "Enxada de Ferro", preço: 50_000, efeito:'duplicarFazenda', id: 'fazenda3', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 2, spriteY: 3},
+    {nome: "Mais Hectares", preço: 5_000_000, efeito:'duplicarFazenda', id: 'fazenda4', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 3, spriteY: 3},
+    {nome: "Novos Tratores", preço: 500_000_000, efeito:'duplicarFazenda', id: 'fazenda5', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 4, spriteY: 3},
     {nome: "Monocultura", preço: 50_000_000_000, efeito:'duplicarFazenda', id: 'fazenda6', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
     // Minas
-    {nome: "Picareta de Madeira", preço: 11_000, efeito:'duplicarMinas', id: 'mina1', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
-    {nome: "Picareta de Pedra", preço: 55_000, efeito:'duplicarMinas', id: 'mina2', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
-    {nome: "Picareta de Ouro", preço: 555_000, efeito:'duplicarMinas', id: 'mina3', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
-    {nome: "Picareta de Ferro", preço: 55_000_000, efeito:'duplicarMinas', id: 'mina4', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
-    {nome: "Picareta de Diamante", preço: 5_500_000_000, efeito:'duplicarMinas', id: 'mina5', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
+    {nome: "Picareta de Madeira", preço: 11_000, efeito:'duplicarMinas', id: 'mina1', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 0, spriteY: 4},
+    {nome: "Picareta de Pedra", preço: 55_000, efeito:'duplicarMinas', id: 'mina2', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 1, spriteY: 4},
+    {nome: "Picareta de Ouro", preço: 555_000, efeito:'duplicarMinas', id: 'mina3', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 2, spriteY: 4},
+    {nome: "Picareta de Ferro", preço: 55_000_000, efeito:'duplicarMinas', id: 'mina4', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 3, spriteY: 4},
+    {nome: "Picareta de Diamante", preço: 5_500_000_000, efeito:'duplicarMinas', id: 'mina5', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 4, spriteY: 4},
     {nome: "Picareta de Diamante", preço: 550_000_000_000, efeito:'duplicarMinas', id: 'mina6', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
     // Fábrica
-    {nome: "Engrenagens Melhores", preço: 120_000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
-    {nome: "Energia Sustentável", preço: 600_000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
-    {nome: "Trabalhadores Rápidos", preço: 6_000_000, efeito:'duplicarFabrica', id: 'fabrica3', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
-    {nome: "Super Fábrica", preço: 600_000_000, efeito:'duplicarFabrica', id: 'fabrica4', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
-    {nome: "Automação", preço: 60_000_000_000, efeito:'duplicarFabrica', id: 'fabrica5', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
+    {nome: "Engrenagens Melhores", preço: 120_000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 0, spriteY: 5},
+    {nome: "Energia Sustentável", preço: 600_000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 1, spriteY: 5},
+    {nome: "Trabalhadores Rápidos", preço: 6_000_000, efeito:'duplicarFabrica', id: 'fabrica3', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 2, spriteY: 5},
+    {nome: "Super Fábrica", preço: 600_000_000, efeito:'duplicarFabrica', id: 'fabrica4', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 3, spriteY: 5},
+    {nome: "Automação", preço: 60_000_000_000, efeito:'duplicarFabrica', id: 'fabrica5', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 4, spriteY: 5},
     {nome: "Automação", preço: 6_000_000_000_000, efeito:'duplicarFabrica', id: 'fabrica6', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
     // Computador
     {nome: "Refrigeração", preço: 1_300_000, efeito:'duplicarPC', id: 'PC1', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
@@ -75,12 +76,12 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Formatação", preço: 650_000_000_000, efeito:'duplicarPC', id: 'PC5', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
     {nome: "Mais Memória RAM", preço: 65_000_000_000_000, efeito:'duplicarPC', id: 'PC6', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
     // Banco
-    {nome: "Cartão Sem Anuidade", preço: 14_000_000, efeito:'duplicarBanco', id: 'banco1', comprado: false, descricao: "Bancos 2 vezes mais eficientes!"},
-    {nome: "Cofres de Cookie", preço: 70_000_000, efeito:'duplicarBanco', id: 'banco2', comprado: false, descricao: "Bancos 2 vezes mais eficientes!"},
-    {nome: "Juros Compostos", preço: 700_000_000, efeito:'duplicarBanco', id: 'banco3', comprado: false, descricao: "Bancos 2 vezes mais eficientes!"},
-    {nome: "Super Banco", preço: 70_000_000_000, efeito:'duplicarBanco', id: 'banco4', comprado: false, descricao: "Bancos 2 vezes mais eficientes!"},
-    {nome: "Corretores Corredores", preço: 7_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!"},
-    {nome: "Corretores Corredores", preço: 700_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!"},
+    {nome: "Cartão Sem Anuidade", preço: 14_000_000, efeito:'duplicarBanco', id: 'banco1', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 0, spriteY: 7},
+    {nome: "Cofres de Cookie", preço: 70_000_000, efeito:'duplicarBanco', id: 'banco2', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 1, spriteY: 7},
+    {nome: "Juros Compostos", preço: 700_000_000, efeito:'duplicarBanco', id: 'banco3', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 2, spriteY: 7},
+    {nome: "Super Banco", preço: 70_000_000_000, efeito:'duplicarBanco', id: 'banco4', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 3, spriteY: 7},
+    {nome: "Corretores Corredores", preço: 7_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 4, spriteY: 7},
+    {nome: "Corretores Corredores", preço: 700_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 4, spriteY: 7},
     // Karaj
     {nome: "Torres mais Pontudas", preço: 177_777_777, efeito:'duplicarTemplo', id: 'karaj1', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
     {nome: "Festival do Sol", preço: 777_777_777, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
@@ -89,9 +90,9 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Santo Padeiro", preço: 77_777_777_777_777, efeito:'duplicarTemplo', id: 'karaj5', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
     {nome: "Café Salgado", preço: 7_777_777_777_777_777, efeito:'duplicarTemplo', id: 'karaj6', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
     // Laboratórios
-    {nome: "Nova fórmula", preço: 3_300_000_000, efeito:'duplicarLab', id: 'lab1', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!"},
-    {nome: "Ciência Maluca", preço: 15_000_000_000, efeito:'duplicarLab', id: 'lab2', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!"},
-    {nome: "Experimentos", preço: 150_000_000_000, efeito:'duplicarLab', id: 'lab3', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!"},
+    {nome: "Nova fórmula", preço: 3_300_000_000, efeito:'duplicarLab', id: 'lab1', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 0, spriteY: 9},
+    {nome: "Ciência Maluca", preço: 15_000_000_000, efeito:'duplicarLab', id: 'lab2', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 1, spriteY: 9},
+    {nome: "Experimentos", preço: 150_000_000_000, efeito:'duplicarLab', id: 'lab3', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 2, spriteY: 9},
     // Torre
 
     // Cookies Normais
@@ -165,6 +166,200 @@ export const DEFAULT_DOURADO = [
     peso: 4
   }
 ]
+
+// Configuração do sprite sheet das conquistas. Use esses valores no JSX
+// pra calcular o background-position de cada conquista, sem precisar
+// repetir os números mágicos pelos arquivos.
+//   tamanho: dimensão de cada slot em pixels
+//   colunas/linhas: dimensão total da sprite
+export const CONQUISTA_SPRITE = {
+  tamanho: 64,
+  colunas: 16,
+  linhas: 16,
+};
+
+export const DEFAULT_CONQUISTAS = [
+    // Sprite sheet 16x16 (cada slot = 64x64). Coordenadas 0-based.
+    // Layout por linha:
+    //   0  CPS + cookiesTotais  (compartilham os mesmos ícones, igual Cookie Clicker)
+    //   1  valorClick           (5)
+    //   2  Vovó                 (6, com Doublevó)
+    //   3  Fazenda              (5)
+    //   4  Mina                 (5)
+    //   5  Fábrica              (5)
+    //   6  Computador           (5)
+    //   7  Banco                (5)
+    //   8  Templo de Karaj      (5)
+    //   9  Laboratório          (5)
+    //  10  Torre                (5)
+    //  11-13  livre pra crescer
+    //  14  Cookie Coin (cols 0-3) + Const. totais (cols 4-5) + Distritos (cols 6-7)
+    //  15  secretas
+
+    
+
+    
+    // número de cookies obtidos no total
+    {nome: "O Primeiro", tipo: 'cookiesTotais', quantidade: 1, id: 'assar1', obtido: false, descricao: "Asse 1 cookie. Para quem nunca assou, que jogue a primeira pedra", spriteX: 0, spriteY: 0},
+    {nome: "Assador Iniciante", tipo: 'cookiesTotais', quantidade: 1_000, id: 'assar2', obtido: false, descricao: "Asse 1.000 cookies", spriteX: 1, spriteY: 0},
+    {nome: "Padaria de Esquina", tipo: 'cookiesTotais', quantidade: 100_000, id: 'assar3', obtido: false, descricao: "Asse 100.000 cookies", spriteX: 2, spriteY: 0},
+    {nome: "Fornada Incansável", tipo: 'cookiesTotais', quantidade: 10_000_000, id: 'assar4', obtido: false, descricao: "Asse 10 milhões de cookies", spriteX: 3, spriteY: 0},
+    {nome: "Bilionário do Açúcar", tipo: 'cookiesTotais', quantidade: 1_000_000_000, id: 'assar5', obtido: false, descricao: "Asse 1 bilhão de cookies", spriteX: 4, spriteY: 0},
+    {nome: "Monopólio Doce", tipo: 'cookiesTotais', quantidade: 100_000_000_000, id: 'assar6', obtido: false, descricao: "Asse 100 bilhões de cookies", spriteX: 5, spriteY: 0},
+    {nome: "Clica, clica, e clica...", tipo: 'cookiesTotais', quantidade: 10_000_000_000_000, id: 'assar7', obtido: false, descricao: "Asse 10 trilhões de cookies", spriteX: 6, spriteY: 0},
+    {nome: "Economia Paralela", tipo: 'cookiesTotais', quantidade: 1_000_000_000_000_000, id: 'assar8', obtido: false, descricao: "Asse 1 quadrilhão de cookies", spriteX: 7, spriteY: 0},
+    {nome: "Dimensão dos Cookies", tipo: 'cookiesTotais', quantidade: 100_000_000_000_000_000, id: 'assar9', obtido: false, descricao: "Asse 100 quadrilhões de cookies", spriteX: 8, spriteY: 0},
+    {nome: "O Universo é Feito de Cookies", tipo: 'cookiesTotais', quantidade: 10_000_000_000_000_000_000, id: 'assar10', obtido: false, descricao: "Asse 10 quintilhões de cookies", spriteX: 9, spriteY: 0},
+    {nome: "Multiverso Açucarado", tipo: 'cookiesTotais', quantidade: 100_000_000_000_000_000_000, id: 'assar11', obtido: false, descricao: "Asse 100 quintilhões de cookies", spriteX: 10, spriteY: 0},
+    {nome: "A Imortalidade do Cookie", tipo: 'cookiesTotais', quantidade: 1_000_000_000_000_000_000_000, id: 'assar12', obtido: false, descricao: "Asse 1 sextilhão de cookies", spriteX: 11, spriteY: 0},
+    {nome: "Eternidade Açucarada", tipo: 'cookiesTotais', quantidade: 100_000_000_000_000_000_000_000, id: 'assar13', obtido: false, descricao: "Asse 100 sextilhões de cookies", spriteX: 12, spriteY: 0},
+
+    // CPS
+    {nome: "Assando devagarinho", tipo: 'cps', quantidade: 1, id: 'cps1', obtido: false, descricao: "Faça 1 cookie por segundo. Todos tem que começar em algum lugar!", spriteX: 0, spriteY: 0},
+    {nome: "Esquenta o Forno", tipo: 'cps', quantidade: 10, id: 'cps2', obtido: false, descricao: "Faça 10 cookies por segundo", spriteX: 1, spriteY: 0},
+    {nome: "Assando normal", tipo: 'cps', quantidade: 100, id: 'cps3', obtido: false, descricao: "Faça 100 cookies por segundo", spriteX: 2, spriteY: 0},
+    {nome: "Linha de Produção", tipo: 'cps', quantidade: 1_000, id: 'cps4', obtido: false, descricao: "Faça 1.000 cookies por segundo", spriteX: 3, spriteY: 0},
+    {nome: "Indústria Pesada", tipo: 'cps', quantidade: 10_000, id: 'cps5', obtido: false, descricao: "Faça 10.000 cookies por segundo", spriteX: 4, spriteY: 0},
+    {nome: "Escala Absurda", tipo: 'cps', quantidade: 100_000, id: 'cps6', obtido: false, descricao: "Faça 100.000 cookies por segundo", spriteX: 5, spriteY: 0},
+    {nome: "Fábrica de Fábricas", tipo: 'cps', quantidade: 1_000_000, id: 'cps7', obtido: false, descricao: "Faça 1 milhão de cookies por segundo", spriteX: 6, spriteY: 0},
+    {nome: "Velocidade da Luz Açucarada", tipo: 'cps', quantidade: 10_000_000, id: 'cps8', obtido: false, descricao: "Faça 10 milhões de cookies por segundo", spriteX: 7, spriteY: 0},
+    {nome: "Supernova de Chocolate", tipo: 'cps', quantidade: 100_000_000, id: 'cps9', obtido: false, descricao: "Faça 100 milhões de cookies por segundo", spriteX: 8, spriteY: 0},
+    {nome: "Big Bang de Cookie", tipo: 'cps', quantidade: 1_000_000_000, id: 'cps10', obtido: false, descricao: "Faça 1 bilhão de cookies por segundo", spriteX: 9, spriteY: 0},
+    {nome: "Inflação Cósmica", tipo: 'cps', quantidade: 10_000_000_000, id: 'cps11', obtido: false, descricao: "Faça 10 bilhões de cookies por segundo", spriteX: 10, spriteY: 0},
+    {nome: "Buraco Negro de Cookies", tipo: 'cps', quantidade: 100_000_000_000, id: 'cps12', obtido: false, descricao: "Faça 100 bilhões de cookies por segundo", spriteX: 11, spriteY: 0},
+    {nome: "Infinito Açucarado", tipo: 'cps', quantidade: 1_000_000_000_000, id: 'cps13', obtido: false, descricao: "Faça 1 trilhão de cookies por segundo", spriteX: 12, spriteY: 0},
+
+    // número de cookies obtidos por click
+    {nome: "Click", tipo: 'click', quantidade: 1, id: 'click1', obtido: false, descricao: "Clique no cookie 1 vez", spriteX: 0, spriteY: 1},
+    {nome: "Clique de Gente Grande", tipo: 'valorClick', quantidade: 1_000, id: 'click2', obtido: false, descricao: "Faça 1.000 cookies em um único clique", spriteX: 1, spriteY: 1},
+    {nome: "Punho de Ferro", tipo: 'valorClick', quantidade: 1_000_000, id: 'click3', obtido: false, descricao: "Faça 1 milhão de cookies em um único clique", spriteX: 2, spriteY: 1},
+    {nome: "Clique Atômico", tipo: 'valorClick', quantidade: 1_000_000_000, id: 'click4', obtido: false, descricao: "Faça 1 bilhão de cookies em um único clique", spriteX: 3, spriteY: 1},
+    {nome: "Dedo de Deus", tipo: 'valorClick', quantidade: 1_000_000_000_000, id: 'click5', obtido: false, descricao: "Faça 1 trilhão de cookies em um único clique", spriteX: 4, spriteY: 1},
+
+    // número de cookies obtidos no total
+    // Vovó
+    {nome: "Simples Vovó", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 1, id: 'vovo1', obtido: false, descricao: "Tenha 1 vovó", spriteX: 0, spriteY: 2},
+    {nome: "Doublevó", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 2, id: 'vovod', obtido: false, descricao: "Tenha 2 vovós", spriteX: 1, spriteY: 2},
+    {nome: "Ancestrais", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 50, id: 'vovo2', obtido: false, descricao: "Tenha 50 vovós", spriteX: 2, spriteY: 2},
+    {nome: "Asilo Industrial", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 100, id: 'vovo3', obtido: false, descricao: "Tenha 100 vovós", spriteX: 3, spriteY: 2},
+    {nome: "Conselho das Matriarcas", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 150, id: 'vovo4', obtido: false, descricao: "Tenha 150 vovós", spriteX: 4, spriteY: 2},
+    {nome: "Vovocracia", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 200, id: 'vovo5', obtido: false, descricao: "Tenha 200 vovós", spriteX: 5, spriteY: 2},
+
+    // Fazenda
+    {nome: "Fazenda Feliz", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 1, id: 'fazenda1', obtido: false, descricao: "Tenha 1 fazenda", spriteX: 0, spriteY: 3},
+    {nome: "Vale do Orvalho", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 50, id: 'fazenda2', obtido: false, descricao: "Tenha 50 fazendas", spriteX: 1, spriteY: 3},
+    {nome: "Agronegócio", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 100, id: 'fazenda3', obtido: false, descricao: "Tenha 100 fazendas", spriteX: 2, spriteY: 3},
+    {nome: "Latifúndio Doce", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 150, id: 'fazenda4', obtido: false, descricao: "Tenha 150 fazendas", spriteX: 3, spriteY: 3},
+    {nome: "Reforma Agrária do Cookie", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 200, id: 'fazenda5', obtido: false, descricao: "Tenha 200 fazendas", spriteX: 4, spriteY: 3},
+
+    // Mina
+    {nome: "Minerar e Craftar", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 1, id: 'mina1', obtido: false, descricao: "Tenha 1 mina", spriteX: 0, spriteY: 4},
+    {nome: "Achou diamante", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 50, id: 'mina2', obtido: false, descricao: "Tenha 50 minas", spriteX: 1, spriteY: 4},
+    {nome: "Subsolo Explorado", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 100, id: 'mina3', obtido: false, descricao: "Tenha 100 minas", spriteX: 2, spriteY: 4},
+    {nome: "Núcleo da Terra", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 150, id: 'mina4', obtido: false, descricao: "Tenha 150 minas", spriteX: 3, spriteY: 4},
+    {nome: "Cavou até a China", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 200, id: 'mina5', obtido: false, descricao: "Tenha 200 minas", spriteX: 4, spriteY: 4},
+
+    // Fábrica
+    {nome: "Revolução Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 1, id: 'fabrica1', obtido: false, descricao: "Tenha 1 fábrica", spriteX: 0, spriteY: 5},
+    {nome: "Parque Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 50, id: 'fabrica2', obtido: false, descricao: "Tenha 50 fábricas", spriteX: 1, spriteY: 5},
+    {nome: "Polo Produtivo", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 100, id: 'fabrica3', obtido: false, descricao: "Tenha 100 fábricas", spriteX: 2, spriteY: 5},
+    {nome: "Complexo Fabril", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 150, id: 'fabrica4', obtido: false, descricao: "Tenha 150 fábricas", spriteX: 3, spriteY: 5},
+    {nome: "Nação Industrializada", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 200, id: 'fabrica5', obtido: false, descricao: "Tenha 200 fábricas", spriteX: 4, spriteY: 5},
+
+    // Computador
+    {nome: "Liga o PC", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 1, id: 'pc1', obtido: false, descricao: "Tenha 1 computador", spriteX: 0, spriteY: 6},
+    {nome: "LAN House", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 50, id: 'pc2', obtido: false, descricao: "Tenha 50 computadores", spriteX: 1, spriteY: 6},
+    {nome: "Data Center", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 100, id: 'pc3', obtido: false, descricao: "Tenha 100 computadores", spriteX: 2, spriteY: 6},
+    {nome: "Nuvem Particular", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 150, id: 'pc4', obtido: false, descricao: "Tenha 150 computadores", spriteX: 3, spriteY: 6},
+    {nome: "Fazenda de Servidores", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 200, id: 'pc5', obtido: false, descricao: "Tenha 200 computadores", spriteX: 4, spriteY: 6},
+
+    // Banco
+    {nome: "Primeiro Depósito", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 1, id: 'banco1', obtido: false, descricao: "Tenha 1 banco", spriteX: 0, spriteY: 7},
+    {nome: "Correspondente Bancário", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 50, id: 'banco2', obtido: false, descricao: "Tenha 50 bancos", spriteX: 1, spriteY: 7},
+    {nome: "Juros Compostos", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 100, id: 'banco3', obtido: false, descricao: "Tenha 100 bancos", spriteX: 2, spriteY: 7},
+    {nome: "Cartel Financeiro", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 150, id: 'banco4', obtido: false, descricao: "Tenha 150 bancos", spriteX: 3, spriteY: 7},
+    {nome: "Banco Central dos Cookies", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 200, id: 'banco5', obtido: false, descricao: "Tenha 200 bancos", spriteX: 4, spriteY: 7},
+
+    // Templo de Karaj
+    {nome: "Fiel Dedicado", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 1, id: 'templo1', obtido: false, descricao: "Tenha 1 Templo de Karaj", spriteX: 0, spriteY: 8},
+    {nome: "Ordem Religiosa", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 50, id: 'templo2', obtido: false, descricao: "Tenha 50 Templos de Karaj", spriteX: 1, spriteY: 8},
+    {nome: "Cidade Sagrada", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 100, id: 'templo3', obtido: false, descricao: "Tenha 100 Templos de Karaj", spriteX: 2, spriteY: 8},
+    {nome: "Panteão Caseiro", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 150, id: 'templo4', obtido: false, descricao: "Tenha 150 Templos de Karaj", spriteX: 3, spriteY: 8},
+    {nome: "Teocracia Absoluta", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 200, id: 'templo5', obtido: false, descricao: "Tenha 200 Templos de Karaj", spriteX: 4, spriteY: 8},
+
+    // Laboratório
+    {nome: "Experimento Inicial", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 1, id: 'lab1', obtido: false, descricao: "Tenha 1 laboratório", spriteX: 0, spriteY: 9},
+    {nome: "Método Científico", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 50, id: 'lab2', obtido: false, descricao: "Tenha 50 laboratórios", spriteX: 1, spriteY: 9},
+    {nome: "Instituto de Pesquisa", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 100, id: 'lab3', obtido: false, descricao: "Tenha 100 laboratórios", spriteX: 2, spriteY: 9},
+    {nome: "Nobel de Química", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 150, id: 'lab4', obtido: false, descricao: "Tenha 150 laboratórios", spriteX: 3, spriteY: 9},
+    {nome: "Teoria Geral dos Cookies", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 200, id: 'lab5', obtido: false, descricao: "Tenha 200 laboratórios", spriteX: 4, spriteY: 9},
+
+    // Torre
+    {nome: "Você é um bruxo!", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 1, id: 'torre1', obtido: false, descricao: "Tenha 1 torre", spriteX: 0, spriteY: 10},
+    {nome: "Escola de magia", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 50, id: 'torre2', obtido: false, descricao: "Tenha 50 torres", spriteX: 1, spriteY: 10},
+    {nome: "Grimório", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 100, id: 'torre3', obtido: false, descricao: "Tenha 100 torres", spriteX: 2, spriteY: 10},
+    {nome: "Torre de Marfim", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 150, id: 'torre4', obtido: false, descricao: "Tenha 150 torres", spriteX: 3, spriteY: 10},
+    {nome: "Guilda Arcana", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 200, id: 'torre5', obtido: false, descricao: "Tenha 200 torres", spriteX: 4, spriteY: 10},
+
+    // Secretas (linha 15)
+    // um dos templos de karaj na "sua produção" vai ter um icone diferente, se você clicar ganha uma conquista
+
+    // clique no cookie pequeno (ícone pequeno ao lado do contador de cookies nas estatísticas)
+    {nome: "Cookie Pequeno", id: 'sec_cookiepequeno', obtido: false,
+     descricao: "Achou o cookie pequeno escondido nas estatísticas!",
+     spriteX: 0, spriteY: 15,
+     check: (s) => s.cookiePequenoClicado === true},
+
+    // Clique na madeleine escondida (na cidade de Karaj)
+    {nome: "Madalena Perdida", id: 'sec_madalena', obtido: false,
+     descricao: "Encontrou a madalena escondida no canto da cidade de Karaj!",
+     spriteX: 1, spriteY: 15,
+     check: (s) => s.madalenaClicada === true},
+
+    // Clique no ícone secreto atrás de um dos Templos de Karaj
+    {nome: "Templo Esquecido", id: 'sec_templo', obtido: false,
+     descricao: "Encontrou o templo esquecido escondido atrás de outro templo!",
+     spriteX: 2, spriteY: 15,
+     check: (s) => s.temploSecretoClicado === true},
+
+
+
+    // Conquistas de cookie coins (linha 14, cols 0-3)
+    {nome: "Primeiro Minerador", id: 'cc1', obtido: false, descricao: "Tenha 1 Cookie Coin",
+     check: (s) => s.cookieCoin?.coins >= 1, spriteX: 0, spriteY: 14},
+    {nome: "HODL", id: 'cc2', obtido: false, descricao: "Tenha 1.000 Cookie Coins ao mesmo tempo",
+     check: (s) => s.cookieCoin?.coins >= 1000, spriteX: 1, spriteY: 14},
+    {nome: "Todas que existem?", id: 'cc3', obtido: false, descricao: "Tenha 21.000.000 Cookie Coins ao mesmo tempo",
+     check: (s) => s.cookieCoin?.coins >= 21_000_000, spriteX: 2, spriteY: 14},
+    {nome: "Especialista em Hardware", id: 'cc4', obtido: false, descricao: "Tenha uma placa de vídeo nível 100",
+     check: (s) => s.cookieCoin?.level >= 100, spriteX: 3, spriteY: 14},
+
+
+    // tenha 100 construções no total (linha 14, cols 4-5)
+    {nome: "Pequeno Império", id: 'const_total_100', obtido: false, descricao: "Tenha 100 construções no total",
+     check: (s) => s.construcoes?.reduce((soma, c) => soma + c.quantidade, 0) >= 100, spriteX: 4, spriteY: 14},
+    {nome: "Grande Construtor", id: 'const_total_1000', obtido: false, descricao: "Tenha 1000 construções no total",
+     check: (s) => s.construcoes?.reduce((soma, c) => soma + c.quantidade, 0) >= 1000, spriteX: 5, spriteY: 14},
+
+    // distritos de Karaj (linha 14, cols 6-7)
+    {nome: "Urbanista", id: 'distritos5', obtido: false, descricao: "Desbloqueie 5 distritos de Karaj",
+     check: (s) => {
+       if (!s.ascensao) return false;
+       const chaves = ['distritotemplo','distritovovo','distritofazenda','distritomina',
+                       'distritofabrica','distritopc','distritobanco','distritoclick','distritoidle'];
+       return chaves.filter(k => s.ascensao[k]?.desbloqueado).length >= 5;
+     }, spriteX: 6, spriteY: 14},
+    {nome: "Metrópole Sagrada", id: 'distritos_todos', obtido: false, descricao: "Desbloqueie todos os distritos de Karaj",
+     check: (s) => {
+       if (!s.ascensao) return false;
+       const chaves = ['distritotemplo','distritovovo','distritofazenda','distritomina',
+                       'distritofabrica','distritopc','distritobanco','distritoclick','distritoidle'];
+       return chaves.every(k => s.ascensao[k]?.desbloqueado);
+     }, spriteX: 7, spriteY: 14},
+
+
+
+];
 
 export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
     level: 0,
@@ -243,7 +438,8 @@ export const DEFAULT_ASCENSAO = {
         requisitoQuantidade: 100,
         requisitoConstrucao: "Fábrica",
         upgrades: [
-          {nome: "Caixa de Cookies Brasileiros", preço: 250, efeito:'caixafabricas', id: 'fabricaascensao1', comprado: false, descricao: "Desbloqueia vários Cookies Clássicos!"}
+          {nome: "Caixa de Cookies Brasileiros", preço: 250, efeito:'caixafabricas', id: 'fabricaascensao1', comprado: false, descricao: "Desbloqueia vários Cookies Clássicos!"},
+          {nome: "Sino da Fábrica", preço: 777, efeito:'somDourado', id: 'fabricaascensao2', comprado: false, descricao: "Avisa todos os trabalhadores que um Cookie Dourado apareceu, mesmo se você estiver em outra aba!"}
         ]
       },
       distritopc: {

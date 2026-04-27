@@ -13,20 +13,27 @@ import Mina from './arte/Minas.png';
 import Mina_d from './arte/Minas_d.png';
 import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png'
+import Lab from './arte/Lab.png'
 
 import somClick1 from './arte/click1.mp3';
 import somClick2 from './arte/click2.mp3';
 import somClick3 from './arte/click3.mp3';
 import somClick4 from './arte/click4.mp3';
 import somDourado from './arte/dourado.mp3';
+import somSpawn from './arte/spawn.mp3';
 
 import {ExplosaoVideo, PRIMEIRO_PRESTIGIO, calcularPrestigio, getNomeDistrito, criarAbrirDistrito, criarColocarDistrito, criarComprarUpgradeAscensao, criarAscender, criarOnMouseDown, criarOnMouseMove, criarOnMouseUp} from './Ascension';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, filtrarUpgradesDisponiveis,} from './defaults';
-import {  SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
+import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, CONQUISTA_SPRITE, filtrarUpgradesDisponiveis} from './defaults';
+import conquistasSprite from './arte/conquistas.png';
+import tinyCookie from './arte/TinyCookie.png';
+import madalenaIcon from './arte/Madalena.png';
+import temploSecretoIcon from './arte/MarioL.png';
+import cookieCoinIcon from './arte/CookieCoin.png';
+import {SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
 import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoCookieCoin} from './minigame';
 import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP} from './helper';
 
@@ -45,6 +52,17 @@ function App() {
   const [melhorias, setMelhorias] = useState(DEFAULT_MELHORIAS)
   const [cookiesTotais, setCookiesTotais] = useState(0); // cookies totais
   const [cookiesTotaisAscensao, setCookiesTotaisAscensao] = useState(0); // cookies totais só durante a ascensão
+  const [conquistas, setConquistas] = useState(DEFAULT_CONQUISTAS)
+  // Flag pra disparar a conquista secreta do cookie pequeno (não persiste).
+  const [cookiePequenoClicado, setCookiePequenoClicado] = useState(false)
+  // Flag pra disparar a conquista secreta da madalena perdida (não persiste).
+  const [madalenaClicada, setMadalenaClicada] = useState(false)
+  // Flag pra disparar a conquista secreta do templo (não persiste).
+  const [temploSecretoClicado, setTemploSecretoClicado] = useState(false)
+  // Qual índice do templo (em "Sua Produção") tem o ícone secreto escondido.
+  // Escolhido aleatoriamente na primeira render, mantém na sessão.
+  const temploSecretoIndexRef = useRef(null);
+ 
  
   // Minigames
   const [cookieCoin, setCookieCoin] = useState(DEFAULT_COOKIE_COIN);
@@ -58,15 +76,17 @@ function App() {
   const [tempoDourado, setTempoDourado] = useState(() => {
     // Isso garante que, se não houver save, o jogo já comece com um tempo sorteado
     const { TMIN, TMAX } = CONFIG_DOURADO;
-    return Math.floor(Math.random() * (TMIN - TMAX) + TMIN);
+    const tempoSort = Math.floor(Math.random() * (TMAX - TMIN) + TMIN);
+    return Date.now() + (tempoSort * 1000);
   }); // Tempo até o próximo cookie dourado!
-  const [douradosTotais, setDouradosTotais] = useState(0);
+  const [douradosTotais, setDouradosTotais] = useState(770);
  
   // refs dos sons
   const clickSonsRef = useRef([]);
   const douradoSomRef = useRef(null);
+  const spawnSomRef = useRef(null);
  
-  // Inicializa os Audio uma vez só
+  // Inicializa os audios uma vez só
   useEffect(() => {
     clickSonsRef.current = [
       new Audio(somClick1),
@@ -78,6 +98,9 @@ function App() {
  
     douradoSomRef.current = new Audio(somDourado);
     douradoSomRef.current.volume = 0.7;
+ 
+    spawnSomRef.current = new Audio(somSpawn);
+    spawnSomRef.current.volume = 0.6;
   }, []);
  
   // use effect que desbloqueia minigames e distritos
@@ -108,9 +131,15 @@ function App() {
     distritosParaVerificar.forEach(({ key, requisito, quantidade }) => {
       const building = construcoes.find(c => c.nome === requisito);
       if (building && building.quantidade >= quantidade) {
+        // Aviso só dispara se o distrito ainda não foi desbloqueado
+        if (!ascensao[key]?.desbloqueado && !ascensao[key]?.construído) {
+          const iconeDistrito = ascensao[key]?.icone ? (
+            <img src={ascensao[key].icone} alt="" style={{ width: 64, height: 64, flexShrink: 0 }} />
+          ) : null;
+          mostrarAvisoPersistente(`🏗️ Distrito desbloqueado! Você pode construir o Distrito ${requisito} em Karaj!`, iconeDistrito);
+        }
         setAscensao(prev => {
           if (!prev[key]?.desbloqueado && !prev[key]?.construído) {
-            mostrarAviso(`🏗️ Distrito desbloqueado! Você pode construir o Distrito de ${requisito} em Karaj!`);
             return {
               ...prev,
               [key]: {
@@ -131,10 +160,11 @@ function App() {
   });
  
   // useStates de teste
-  const [isVisible, setIsVisible] = useState(false);
   const [numerinhos, setNumerinhos] = useState([]);
   const [aviso, setAviso] = useState(false);
   const [historicoCookieCoin, setHistoricoCookieCoin] = useState([]);
+  // Se a seção "Sua Produção" está minimizada. Persistido no save.
+  const [producaoMinimizada, setProducaoMinimizada] = useState(false);
  
   // Tooltips
   const [hoveredConstrucao, setHoveredConstrucao] = useState(null);
@@ -142,6 +172,24 @@ function App() {
   // Avisos gerais
   function mostrarAviso(texto) {
     setAviso({ texto, id: Date.now() });
+  }
+ 
+  // Sistema de avisos persistentes: ficam na tela até o jogador clicar pra fechar.
+  // Usado para eventos importantes que o jogador não deveria perder
+  // (ganho offline, venda de Cookie Coin, distrito desbloqueado, etc).
+  // Estrutura: array de { id, texto }. Cada um vira uma caixinha embaixo da tela.
+  const [avisosPersistentes, setAvisosPersistentes] = useState([]);
+ 
+  function mostrarAvisoPersistente(texto, icone = null) {
+    setAvisosPersistentes(prev => [...prev, { texto, icone, id: Date.now() + Math.random() }]);
+  }
+ 
+  function fecharAvisoPersistente(id) {
+    setAvisosPersistentes(prev => prev.filter(a => a.id !== id));
+  }
+ 
+  function limparAvisosPersistentes() {
+    setAvisosPersistentes([]);
   }
  
   // referências
@@ -156,6 +204,8 @@ function App() {
   const sorteRef = useRef(sorte);
   const douradosTotaisRef = useRef(douradosTotais);
   const tempoDouradoRef = useRef(tempoDourado);
+  const producaoMinimizadaRef = useRef(producaoMinimizada);
+  const conquistasRef = useRef(conquistas);
  
   // Manter referencias sincronizadas
   useEffect(() => { 
@@ -171,10 +221,60 @@ function App() {
   useEffect(() => { sorteRef.current = sorte; }, [sorte]);
   useEffect(() => { douradosTotaisRef.current = douradosTotais; }, [douradosTotais]);
   useEffect(() => { tempoDouradoRef.current = tempoDourado; }, [tempoDourado]);
+  useEffect(() => { producaoMinimizadaRef.current = producaoMinimizada; }, [producaoMinimizada]);
+  useEffect(() => { conquistasRef.current = conquistas; }, [conquistas]);
+ 
+ 
+  useEffect(() => {
+    
+    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado}))
+ 
+    if (novasConquistas.length === 0) return;
+ 
+    novasConquistas.forEach(c => {
+      const T = CONQUISTA_SPRITE.tamanho;
+      const icone = (
+        <div
+          style={{
+            width: T,
+            height: T,
+            backgroundImage: `url(${conquistasSprite})`,
+            backgroundPosition: `-${c.spriteX * T}px -${c.spriteY * T}px`,
+            imageRendering: 'pixelated',
+            flexShrink: 0,
+          }}
+        />
+      );
+      mostrarAvisoPersistente(`Nova Conquista: ${c.nome}`, icone);
+    });
+ 
+    const idsObtidos = new Set(novasConquistas.map(c => c.id));
+    setConquistas(prev => prev.map(c => 
+      idsObtidos.has(c.id) ? {...c, obtido: true} : c));
+ 
+  }, [cookiesTotais, CPS, cookiePequenoClicado, madalenaClicada, temploSecretoClicado]);
+ 
+ 
+ 
+  function checkConquista(conquista, state) {
+    if (conquista.check) return conquista.check(state);
+ 
+    switch (conquista.tipo) {
+      case 'cookiesTotais':
+        return state.cookiesTotais >= conquista.quantidade;
+      case 'cps':
+        return state.CPS >= conquista.quantidade;
+      case 'construcao':
+        return (state.construcoes.find(c => c.nome === conquista.params.nome)?.quantidade ?? 0) >= conquista.quantidade;
+      case 'valorClick':
+        return state.click >= conquista.quantidade;
+      default:
+        return false; // tipo não implementado ainda
+    }
+  }
  
  
   // Monta o objeto de save a partir das refs, para ser passado a saveGame/Save.
-  // Fonte única de verdade — ao adicionar um campo novo ao save, basta incluir aqui.
   function montarSaveData() {
     return {
       contagem: contagemRef.current,
@@ -188,10 +288,12 @@ function App() {
       sorte: sorteRef.current,
       douradosTotais: douradosTotaisRef.current,
       tempoDourado: tempoDouradoRef.current,
+      producaoMinimizada: producaoMinimizadaRef.current,
+      conquistas: conquistasRef.current,
       lastSavedAt: Date.now()
     };
   }
-
+ 
   // Quicksave
   useEffect(() => {
     const autoSave = setInterval(() => {
@@ -222,7 +324,21 @@ function App() {
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
       setDouradosTotais(dados.douradosTotais ?? 0);
       setSorte(dados.sorte ?? 1);
-      setTempoDourado(dados.tempoDourado ?? 300);
+      // Se tempoDourado salvo já passou (ex: jogador ficou offline), recalcula
+      // pra evitar spawn imediato no carregamento. Senão usa o salvo (caso do
+      // jogador recarregar a página rapidamente sem ter passado do timer).
+      {
+        const tempoSalvo = dados.tempoDourado;
+        if (typeof tempoSalvo === 'number' && tempoSalvo > Date.now()) {
+          setTempoDourado(tempoSalvo);
+        } else {
+          const { TMIN, TMAX } = CONFIG_DOURADO;
+          const tempoSort = Math.floor(Math.random() * (TMAX - TMIN) + TMIN);
+          setTempoDourado(Date.now() + (tempoSort * 1000));
+        }
+      }
+      setProducaoMinimizada(dados.producaoMinimizada ?? false);
+      if (dados.conquistas) setConquistas(dados.conquistas);
  
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -250,7 +366,7 @@ function App() {
         setCookiesTotais(prev => prev + ganho);
         setCookiesTotaisAscensao(prev => prev + ganho);
  
-        mostrarAviso(
+        mostrarAvisoPersistente(
           `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
         );
       }
@@ -259,8 +375,19 @@ function App() {
     
   }, []);
  
+  // Wrapper do spawn: além de criar o cookie, toca o sino se o upgrade
+  // "Sino da Fábrica" foi comprado. Centraliza aqui pra que *qualquer* spawn
+  // (natural ou de upgrade) toque o som, sem precisar duplicar a lógica.
   function SpawnCookieDourado() {
     SpawnCookieDouradoFn(setCookieDourado);
+
+    const temSino = ascensao?.distritofabrica?.upgrades?.some(
+      u => u.id === "fabricaascensao2" && u.comprado
+    );
+    if (temSino && spawnSomRef.current) {
+      spawnSomRef.current.currentTime = 0;
+      spawnSomRef.current.play().catch(() => {});
+    }
   }
  
   // Função para calcular o próximo cookie dourado
@@ -272,24 +399,45 @@ function App() {
       calcularProximoSpawn();
     }
   }, []);
- 
+  // Título original da aba, pra conseguir restaurar depois.
+  const tituloOriginalRef = useRef(typeof document !== 'undefined' ? document.title : '');
+
+  // Restaura o título original da aba. Chamada quando o jogador interage
+  // com o cookie dourado (clica ou deixa expirar) ou volta pra aba.
+  function restaurarTitulo() {
+    if (tituloOriginalRef.current) {
+      document.title = tituloOriginalRef.current;
+    }
+  }
+
+  // Quando o jogador volta pra aba (visibilitychange), limpa o título de aviso.
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (!document.hidden) restaurarTitulo();
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
+  // faz o cookie dourado aparecer
   useEffect(() => {
     const Intervalo = setInterval(() => {
-      
-        setTempoDourado((prev) => {
-          if (prev <= 1) {
-            // O Cookie Aparece
-            SpawnCookieDourado(); 
-            
-            // Já calcula e retorna o tempo do PRÓXIMO Cookie
-            return calcularProximoSpawn(); 
-          }
-          return prev - 1;
-        });
+
+      const agora = Date.now();
+      // hora do cookie dourado aparecer!
+      if (agora >= tempoDourado) {
+        SpawnCookieDourado();
+        setTempoDourado(calcularProximoSpawn());
+
+        // Aviso no título da aba: sempre que spawna com aba escondida.
+        if (document.hidden) {
+          document.title = "✨ Cookie Dourado!";
+        }
+      }
     }, 1000);
  
     return () => clearInterval(Intervalo);
-  }, [cookieDourado, sorte]);
+  }, [cookieDourado, tempoDourado, sorte, ascensao]);
     
  
   // some cookie dourado
@@ -302,17 +450,32 @@ function App() {
  
     return () => clearTimeout(timeout);
   }, [cookieDourado]);
+
+  // Quando o cookie dourado some (clicado, expirou, ou ascensão), limpa
+  // o aviso do título da aba — não faz sentido manter "✨ Cookie Dourado!"
+  // se o cookie nem existe mais.
+  useEffect(() => {
+    if (!cookieDourado) restaurarTitulo();
+  }, [cookieDourado]);
  
-  // Limpa efeitos de cookie dourado
+  // Limpa efeitos de cookie dourado expirados.
+  // Só chama setBuff se algo efetivamente expirou — senão criaria uma nova
+  // referência de array toda vez, disparando re-renders à toa.
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      setBuff(prev => prev.filter(b => b.expira > Date.now()));
+      setBuff(prev => {
+        const now = Date.now();
+        const filtrado = prev.filter(b => b.expira > now);
+        return filtrado.length === prev.length ? prev : filtrado;
+      });
     }, 1000);
     return () => clearInterval(cleanupInterval);
   }, []);
  
-  const totalLuckAnterior = useRef(0);
-  // Melhorias de sorte
+  // Melhorias de sorte: recalcula a sorte total quando upgrades mudam.
+  // O spawn de cookie dourado em compra de upgrade de sorte foi movido pras
+  // funções ComprarMelhoria e ComprarUpgradeAscensao — fazer aqui causava
+  // spawn falso ao carregar saves com upgrades de sorte já comprados.
   useEffect(() => {
     // Upgrades normais
     const luckUpgrades = melhorias.filter(m => m.efeito === 'sorte' && m.comprado).length;
@@ -330,12 +493,6 @@ function App() {
  
     // Cada upgrade aumenta a sorte em 1
     const totalLuck = 1 + luckUpgrades + ascensaoLuck;
-    // invoca um cookie dourado instantaneamente sempre que a sorte aumenta
-    if (totalLuck > totalLuckAnterior.current && totalLuckAnterior.current !== 0) {
-      SpawnCookieDourado();
-    }
-    totalLuckAnterior.current = totalLuck;
- 
     setSorte(totalLuck);
   }, [melhorias, ascensao]);
  
@@ -430,37 +587,54 @@ function App() {
     );
   }, [ascensao]) 
  
-  // efeito CPS
-  useEffect(() => {
+  // Mantém a produção atual numa ref pra não remontar o timer a cada mudança.
+  // O effect abaixo recalcula sempre que as deps relevantes mudam.
+  const producaoRef = useRef(0);
  
+  useEffect(() => {
+    const producaoBase = construcoes.reduce((soma, c) => {
+      const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0);
+      return soma + CpsConstrucao(c) * quantidadeTotal;
+    }, 0);
+    const multiplicador = getMultiplicadorP(melhorias, ascensao);
+    const producao = CPSBuffado(producaoBase * multiplicador, buff);
+ 
+    producaoRef.current = producao;
+    setCPS(producao); // atualiza display só quando algo realmente mudou
+  }, [construcoes, melhorias, ascensao, buff]);
+ 
+  // Timer único que nunca remonta. Lê produção da ref.
+  useEffect(() => {
     let lastUpdate = Date.now();
+    let ganhoAcumulado = 0;
+    let ticksDesdeUltimoFlush = 0;
  
     const timer = setInterval(() => {
-      // considera tempo com o jogo em outra aba
       const now = Date.now();
       const deltaSeconds = (now - lastUpdate) / 1000;
-      lastUpdate = now;  
-      // calcula o CPS levando em conta construções e melhorias de construções
-      // (pode ser útil para implementar melhorias sem alterar o cps base das construções)
-      const producaoBase = construcoes.reduce((soma, c) => {
-        const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
-        return soma + CpsConstrucao(c) * quantidadeTotal;
-      }, 0);
+      lastUpdate = now;
+      const ganho = deltaSeconds * producaoRef.current;
  
-      const producao = CPSBuffado(producaoBase * getMultiplicadorP(melhorias, ascensao), buff);
-      
+      ganhoAcumulado += ganho;
+      setContagem(atual => atual + ganho);
  
-      setCPS(producao);
-      setContagem((atual) => atual + (deltaSeconds*producao));
-      setCookiesTotais((atual) => atual + (deltaSeconds*producao));
-      setCookiesTotaisAscensao((atual) => atual + (deltaSeconds*producao));
-      if (deltaSeconds > 10) {
-        mostrarAviso(`Bem vindo de volta! +  ${deltaSeconds*producao} cookies`)
+      // A cada 10 ticks (~1s), aplica o ganho acumulado nos totais.
+      ticksDesdeUltimoFlush++;
+      if (ticksDesdeUltimoFlush >= 10 && ganhoAcumulado > 0) {
+        const ganhoTotal = ganhoAcumulado;
+        ganhoAcumulado = 0;
+        ticksDesdeUltimoFlush = 0;
+        setCookiesTotais(atual => atual + ganhoTotal);
+        setCookiesTotaisAscensao(atual => atual + ganhoTotal);
       }
  
-    }, 100); // a cada 0.1 segundos
-    return () => clearInterval(timer); // limpa o timer
-  }, [construcoes, melhorias, buff]);
+      if (deltaSeconds > 10) {
+        mostrarAviso(`Bem vindo de volta! +  ${simplificarNumero(ganho)} cookies`);
+      }
+    }, 100);
+ 
+    return () => clearInterval(timer);
+  }, []); // nunca remonta
  
   // cps da construção (para visualização).
   // getMultiplicador e getMultiplicadorP vêm de helper.js — recebem
@@ -481,17 +655,6 @@ function App() {
     setContagem((anterior) => anterior + clickRef.current);
     setCookiesTotais((anterior) => anterior + clickRef.current);
     setCookiesTotaisAscensao((anterior) => anterior + clickRef.current);
-    //document.querySelectorAll('#Escondido1').forEach((item) => {
-    //item.classList.toggle("showing");});
- 
-    setIsVisible((prev) => !prev);
- 
-    // adiciona animação de CSS ao cookie
-    //const cookie = document.getElementById("cookie-img");
-    //cookie.classList.add("bounce"); // adiciona efeito "bounce"
-    //setTimeout(() => cookie.classList.remove("bounce"), 3000); // remove efeito após um tempo
- 
- 
   }
   // função anti-click
   function DestruirCookies() {
@@ -548,16 +711,21 @@ function App() {
   }
  
   function ComprarMelhoria(indice) {
-    setMelhorias((anterior) =>
-      anterior.map((m, i) => {
-        if (contagem >= m.preço && i === indice && !m.comprado) {
-          setContagem(contagem - m.preço);
-          //AplicarEfeito(m.efeito);
-          return { ...m, comprado: true };
-        }
-        return m;
-      })
-    );
+    const m = melhorias[indice];
+    if (!m || m.comprado || contagem < m.preço) return;
+
+    setContagem(contagem - m.preço);
+    setMelhorias(anterior => anterior.map((u, i) =>
+      i === indice ? { ...u, comprado: true } : u
+    ));
+
+    // Spawn imediato de cookie dourado quando o upgrade comprado é de sorte.
+    // (Antes era no useEffect da sorte, mas isso causava spawn falso ao
+    // carregar saves com upgrades de sorte já comprados — o effect rodava
+    // depois do load e detectava "aumento" no totalLuck.)
+    if (m.efeito === 'sorte') {
+      SpawnCookieDourado();
+    }
   }
  
   // aplicar efeito das melhorias (não funcionando)
@@ -595,7 +763,7 @@ function App() {
  
   function ExportarSave() {
     const encoded = Save(montarSaveData());  // save com versionamento
-
+ 
     navigator.clipboard.writeText(encoded).catch(() => {});
     alert("Save copied:\n\n" + encoded);
   }
@@ -618,7 +786,21 @@ function App() {
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
       setDouradosTotais(dados.douradosTotais ?? 0);
       setSorte(dados.sorte ?? 1);
-      setTempoDourado(dados.tempoDourado ?? 300);
+      // Se tempoDourado salvo já passou (ex: jogador ficou offline), recalcula
+      // pra evitar spawn imediato no carregamento. Senão usa o salvo (caso do
+      // jogador recarregar a página rapidamente sem ter passado do timer).
+      {
+        const tempoSalvo = dados.tempoDourado;
+        if (typeof tempoSalvo === 'number' && tempoSalvo > Date.now()) {
+          setTempoDourado(tempoSalvo);
+        } else {
+          const { TMIN, TMAX } = CONFIG_DOURADO;
+          const tempoSort = Math.floor(Math.random() * (TMAX - TMIN) + TMIN);
+          setTempoDourado(Date.now() + (tempoSort * 1000));
+        }
+      }
+      setProducaoMinimizada(dados.producaoMinimizada ?? false);
+      if (dados.conquistas) setConquistas(dados.conquistas);
  
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -646,12 +828,12 @@ function App() {
         setCookiesTotais(prev => prev + ganho);
         setCookiesTotaisAscensao(prev => prev + ganho);
  
-        mostrarAviso(
+        mostrarAvisoPersistente(
           `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
         );
       }
  
-      mostrarAviso("Save importado com sucesso!");
+      mostrarAvisoPersistente("Save importado com sucesso!");
     } catch (error) {
       console.error("Error importing save:", error);
       alert("Erro ao carregar o save. Verifique se o save está correto.");
@@ -710,7 +892,8 @@ function App() {
     setContagem,
     setCookiesTotais,
     setCookiesTotaisAscensao,
-    mostrarAviso,
+    mostrarAvisoPersistente,
+    iconeCookieCoin: <img src={cookieCoinIcon} alt="" style={{ width: 64, height: 64, flexShrink: 0 }} />,
   });
   // mercado de Cookie Coins
   useEffect(() => {
@@ -740,7 +923,22 @@ function App() {
   //funções de ascensão (implementadas em Ascension.js)
   const AbrirDistrito = criarAbrirDistrito(setAscensao);
  
-  const ComprarUpgradeAscensao = criarComprarUpgradeAscensao(setAscensao);
+  // Wrapper do ComprarUpgradeAscensao que dispara cookie dourado se o upgrade
+  // comprado for de sorte. Decisão é feita ANTES de chamar a função interna,
+  // que valida (preço, comprado já, etc.) — então só spawna se a compra
+  // realmente aconteceu (verificamos o estado pré-compra).
+  const ComprarUpgradeAscensaoBase = criarComprarUpgradeAscensao(setAscensao);
+  function ComprarUpgradeAscensao(distrito, index) {
+    const upgrade = ascensao[distrito]?.upgrades[index];
+    const eraDeSorte = upgrade && !upgrade.comprado && upgrade.efeito === 'sorte' &&
+                       (Number(ascensao.prestigio) || 0) >= (Number(upgrade.preço) || 0);
+
+    ComprarUpgradeAscensaoBase(distrito, index);
+
+    if (eraDeSorte) {
+      SpawnCookieDourado();
+    }
+  }
  
   // useStates para arrastar com o mouse a cidade
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -752,13 +950,7 @@ function App() {
   const onMouseMove = criarOnMouseMove({ dragging, startRef, posRef, setPos });
   const onMouseUp = criarOnMouseUp({ setDragging, posRef, pos });
  
-  const ColocarDistrito = criarColocarDistrito({
-    modoConstrucao,
-    setModoConstrucao,
-    setAscensao,
-    ascensao,
-    mostrarAviso,
-  });
+  const ColocarDistrito = criarColocarDistrito({modoConstrucao,setModoConstrucao,setAscensao,ascensao,mostrarAviso});
  
   // Cálculos derivados de prestígio.
   // Math.max(0, ...) protege contra saves antigos/inconsistentes em que
@@ -775,7 +967,7 @@ function App() {
   const progresso = (cookiesAtual - cookiesPrestigioAtual) / (cookiesProximoPrestigio - cookiesPrestigioAtual);
   const progressoPorcentagem = Math.min(Math.max(progresso, 0), 1);
  
-
+ 
   function Ascender(){
     // RESET
       setContagem(0);
@@ -786,7 +978,7 @@ function App() {
       setBuff([]);
       
       
-
+ 
     // coloca a tela de ascensão no meio da animação
     setTimeout(() => {
       setTelaAtual("ascensão");
@@ -800,45 +992,20 @@ function App() {
       }))
     }, 4000);
   }
-
-
-
+ 
+ 
+ 
   // Funções de cookie dourado (implementadas em sorte.js)
-  const cookieInstaneo = criarCookieInstaneo({
-    CPS,
-    contagem,
-    setContagem,
-    setCookiesTotais,
-    setCookiesTotaisAscensao,
-    mostrarAviso,
-    simplificarNumero,
-  });
-
-  const efeitoCookieDourado = criarEfeitoCookieDourado({
-    douradoSomRef,
-    setDouradosTotais,
-    setCookieDourado,
-    setBuff,
-    cookieInstaneo,
-    mostrarAviso,
-  });
+  const cookieInstaneo = criarCookieInstaneo({CPS, contagem, setContagem, setCookiesTotais, setCookiesTotaisAscensao, mostrarAviso, simplificarNumero});
+ 
+  const efeitoCookieDourado = criarEfeitoCookieDourado({douradoSomRef, setDouradosTotais, setCookieDourado, setBuff, cookieInstaneo, mostrarAviso});
   
   return (
     <div className="App">
       
       {/* Avisos gerais */}
       <div
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 18,
-          pointerEvents: "none",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 9999,
-        }}
+        style={{position: "fixed", left: 0, right: 0, bottom: 200, pointerEvents: "none", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999}}
       >
         {aviso && (
           <motion.div
@@ -846,19 +1013,75 @@ function App() {
             initial={{ opacity: 1, y: 0 }}
             animate={{ opacity: 0, y: -30 }}
             transition={{ duration: 3.0 }}
-            style={{
-              position: "absolute",
-              width: "100%",
-              textAlign: "center",
-              fontSize: "20px",
-              fontWeight: "bold",
-              pointerEvents: "none",
-            }}
+            style={{position: "absolute",width: "100%",textAlign: "center",fontSize: "20px",fontWeight: "bold",pointerEvents: "none"}}
           >
             {aviso.texto}
           </motion.div>
         )}
       </div>
+ 
+      {/* Avisos persistentes: ficam até o jogador clicar. Colados na parte
+          de baixo da tela; novos avisos empilham pra cima (column-reverse) */}
+        <div
+          style={{position: "fixed",left: 0,right: 0,bottom: 0,padding: "10px 0",display: "flex",flexDirection: "column-reverse",alignItems: "center",gap: "8px",zIndex: 9998,pointerEvents: "none"}}
+        >
+          {(() => {
+            // Mostra só os 3 mais antigos. Os novos esperam na fila; fechar um dos visíveis revela o próximo. Nunca some sem ser visto.
+            const MAX_VISIVEIS = 3;
+            const visiveis = avisosPersistentes.slice(0, MAX_VISIVEIS);
+            const esperando = avisosPersistentes.length - visiveis.length;
+            // Botão aparece quando há 2+ avisos OU há fila esperando.
+            return (
+              <>
+                {visiveis.map(a => (
+            <div
+              key={a.id}
+              onClick={() => fecharAvisoPersistente(a.id)}
+              style={{pointerEvents: "auto", background: "rgba(0, 0, 0, 0.85)", color: "#ffd700", border: "2px solid #ffd700", borderRadius: "8px", padding: "12px 40px 12px 16px",
+                fontSize: "15px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                maxWidth: "600px",
+                position: "relative",
+                boxShadow: "0 0 10px rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                gap: "14px",
+              }}
+              title="Clique para fechar"
+            >
+              {a.icone}
+              <span>{a.texto}</span>
+              <span style={{position: "absolute",right: 10,top: "50%",transform: "translateY(-50%)",fontSize: "18px",color: "#aaa"}}>×</span>
+            </div>
+          ))}
+ 
+                {(avisosPersistentes.length >= 2 || esperando > 0) && (
+                  <button
+                    onClick={limparAvisosPersistentes}
+                    style={{
+                      pointerEvents: "auto",
+                      background: "rgba(0, 0, 0, 0.85)",
+                      color: "#fff",
+                      border: "2px solid #888",
+                      borderRadius: "6px",
+                      padding: "6px 14px",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      boxShadow: "0 0 8px rgba(0,0,0,0.4)",
+                    }}
+                    title="Fecha todos os avisos"
+                  >
+                    {esperando > 0
+                      ? `Limpar notificações, +${esperando} na fila`
+                      : `Limpar notificações`}
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </div>
 
       {cookieDourado && telaAtual !== "ascensão" &&
         <div
@@ -914,11 +1137,29 @@ function App() {
                   </div>
                 )}
 
+              {/* Botões para abrir menus de opções e conquistas */}
+              <div className="seção-menus">
+                <button
+                  className="portao-karaj"
+                  onClick={() => setTelaAtual(telaAtual === "opções" ? "jogo" : "opções")}
+                >
+                  Opções
+                </button>
+                <button
+                  className="portao-karaj"
+                  onClick={() => setTelaAtual(telaAtual === "conquistas" ? "jogo" : "conquistas")}
+                >
+                  Conquistas
+                </button>
+              </div>
+
               {cookieCoin.desbloqueado && (
               <div className="seção-cookie-coin">
                 <h2>Mineração de Cookie Coins</h2>
 
-                <p>Coins: {CasasDecimais(cookieCoin.coins, 3)}</p>
+                <p>
+                  <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)} 
+                </p>
                 <p>Level: {cookieCoin.level}</p>
 
                 <button
@@ -1001,6 +1242,91 @@ function App() {
               )}
 
           </div>
+          )}
+
+          {/* Tela de Opções (aparece no meio quando telaAtual === "opções") */}
+          {telaAtual === "opções" && (
+            <div className="tela-menu">
+              <h2>Opções</h2>
+              <div className="menu-botoes">
+                <button onClick={ExportarSave}>
+                  Exportar Save
+                </button>
+                <button onClick={ImportarSave}>
+                  Importar Save
+                </button>
+                <button onClick={DeletarSave}>
+                  Resetar Jogo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tela de Conquistas e estatísticas do jogador */}
+          {telaAtual === "conquistas" && (
+            <div className="tela-menu">
+              <h3 style={{ marginTop: 0 }}>Estatísticas</h3>
+              <div className="menu-estatisticas">
+                <div>
+                  {`Cookies assados: `}
+                  <img
+                    src={tinyCookie}
+                    alt="cookie"
+                    className="tiny-cookie"
+                    onClick={() => setCookiePequenoClicado(true)}
+                    title="Hmm... clica em mim?"
+                  />
+                  {` ${simplificarNumero(cookiesTotais)}`}
+                </div>
+                <div>
+                  {`Cookies assados nessa ascensão: `}
+                  <img
+                    src={tinyCookie}
+                    alt="cookie"
+                    className="tiny-cookie"
+                    onClick={() => setCookiePequenoClicado(true)}
+                    title="Hmm... clica em mim?"
+                  />
+                  {` ${simplificarNumero(cookiesTotaisAscensao)}`}
+                </div>
+                <div>{`Cookies dourados: ${simplificarNumero(douradosTotais)}`}</div>
+                <div>{`Sorte: ${simplificarNumero(sorte)}`}</div>
+              </div>
+
+              <h3 style={{ marginTop: 30 }}>Conquistas</h3>
+              <div className="menu-estatisticas" style={{ marginTop: 0, marginBottom: 10 }}>
+                <div>{`Obtidas: ${conquistas.filter(c => c.obtido).length} / ${conquistas.length}`}</div>
+              </div>
+
+              {/* Grade de "troféus": cada conquista é uma caixa preta.
+                  Quando obtida, aparece o sprite correspondente. Hover mostra
+                  nome + descrição; não obtidas mostram "???" pra dar mistério. */}
+              <div className="conquistas-grade">
+                {conquistas.map((c) => {
+                  const T = CONQUISTA_SPRITE.tamanho;
+                  return (
+                    <div
+                      key={c.id}
+                      className={`conquista-caixa ${c.obtido ? 'obtida' : 'bloqueada'}`}
+                    >
+                      {c.obtido && (
+                        <div
+                          className="conquista-icone"
+                          style={{
+                            backgroundImage: `url(${conquistasSprite})`,
+                            backgroundPosition: `-${c.spriteX * T}px -${c.spriteY * T}px`,
+                          }}
+                        />
+                      )}
+                      <div className="conquista-tooltip">
+                        <strong>{c.obtido ? c.nome : '???'}</strong>
+                        <div>{c.obtido ? c.descricao : '???'}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {(telaAtual === "karaj" || telaAtual === "ascensão") && (
@@ -1355,6 +1681,20 @@ function App() {
                       </div>
                     );
                   })}
+
+                  {/* Madalena perdida — conquista secreta. Fica no canto inferior
+                      direito do mapa de Karaj (2400x1600), bem escondida.
+                      O ícone é pequeno (24px) pra dificultar achar de relance. */}
+                  <img
+                    src={madalenaIcon}
+                    alt=""
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMadalenaClicada(true);
+                    }}
+                    style={{position: 'absolute', right: '1000px', bottom: '100px', width: '32px', height: '32px', cursor: 'pointer', imageRendering: 'pixelated',opacity: 0.85,zIndex: 10}}
+                    title="?"
+                  />
                 </div>
               </div>
             </div>
@@ -1394,17 +1734,7 @@ function App() {
                     initial={{ opacity: 1, y: 0 }}
                     animate={{ opacity: 0, y: -50 }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    style={{
-                      position: "absolute",
-                      left: text.x,
-                      top: text.y,
-                      transform: "translate(-50%, -50%)",
-                      color: "#fff",
-                      fontSize: "30px",
-                      fontWeight: "bold",
-                      textShadow: "0 0 5px black",
-                      pointerEvents: "none",
-                    }}
+                    style={{position: "absolute",left: text.x,top: text.y,transform: "translate(-50%, -50%)",color: "#fff",fontSize: "30px",fontWeight: "bold",textShadow: "0 0 5px black",pointerEvents: "none"}}
                   >
                     +{simplificarNumero(click)}
                   </motion.div>
@@ -1422,40 +1752,79 @@ function App() {
               </div>
               {telaAtual === "jogo" && (
                 <div className="seção-coleção">
-                  <h2>Sua Produção</h2>
+                  <div className="coleção-header">
+                    <h2>Sua Produção</h2>
+                    <button
+                      style={{cursor: "pointer"}}
+                      className="btn-minimizar"
+                      onClick={() => setProducaoMinimizada(p => !p)}
+                      title={producaoMinimizada ? "Mostrar produção" : "Minimizar produção"}
+                    >
+                      {producaoMinimizada ? "▼" : "▲"}
+                    </button>
+                  </div>
 
-                  {construcoes.map((c) => (
-                    c.quantidade > 0 && (
+                  {!producaoMinimizada && construcoes.map((c) => {
+                    if (c.quantidade <= 0) return null;
+                    
+                    // Inicializar ref do templo secreto (só uma vez)
+                    if (c.nome === "Templo de Karaj" && temploSecretoIndexRef.current === null && c.quantidade > 20) {
+                      temploSecretoIndexRef.current = Math.floor(Math.random() * Math.min(c.quantidade, 22));
+                    }
+
+                    // Calcula uma vez por construção, não por ícone renderizado.
+                    const cpsAtual = CpsConstrucao(c);
+                    const cpsTotal = cpsAtual * c.quantidade;
+                    // Limita a 22 ícones na tela (~2 linhas) pra não virar centenas de DOM
+                    // nodes quando o jogador tem muitas construções. O número real
+                    // continua aparecendo no tooltip ("Quantidade: X").
+                    const MAX_ICONES = 22;
+                    const iconesExibidos = Math.min(c.quantidade, MAX_ICONES);
+                    return (
                       <div key={c.nome} className="colecao-grupo">
                         <div className="colecao-icones">
-                          {Array.from({ length: c.quantidade }).map((_, i) => {
-                            const cpsAtual = CpsConstrucao(c);
-                            const cpsTotal = cpsAtual * c.quantidade;
+                          {Array.from({ length: iconesExibidos }).map((_, i) => {
+                            const temploSecretaObtida = conquistas.find(c => c.id === 'sec_templo')?.obtido;
+                            const temTemploSecreto = c.nome === "Templo de Karaj" && c.quantidade > 20 && i === temploSecretoIndexRef.current && !temploSecretaObtida;
+                            
                             return (
-                              <div key={i} className="icone-wrapper" style={{cursor: "pointer" }}>
-                                <motion.img
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ duration: 0.2 }}
-                                  src={c.icone_pequeno}
-                                  alt={c.nome}
-                                  className="icone-pequeno"
+                            <div key={i} className="icone-wrapper" style={{cursor: "pointer", position: "relative" }}>
+                              {/* Ícone secreto atrás do templo escolhido */}
+                              {temTemploSecreto && (
+                                <img
+                                  src={temploSecretoIcon}
+                                  alt=""
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setTemploSecretoClicado(true);
+                                  }}
+                                  style={{position: 'absolute',width: '80%',height: '80%',bottom: '-5px',right: '-5px',cursor: 'pointer',zIndex: 5}}
+                                  title="?"
                                 />
-                                <div className="info">
-                                  <strong>{c.nome}</strong><br />
-                                    Quantidade: {c.quantidade} <br />
-                                    Cada {c.nome} está produzindo {simplificarNumeroPT(cpsAtual)} CPS,<br />
-                                    para um total de {simplificarNumeroPT(cpsTotal)} CPS
-                                </div>
-
+                              )}
+                              
+                              <motion.img
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ duration: 0.2 }}
+                                src={c.icone_pequeno}
+                                alt={c.nome}
+                                className="icone-pequeno"
+                                style={{ position: "relative", zIndex: 10 }}
+                              />
+                              <div className="info">
+                                <strong>{c.nome}</strong><br />
+                                  Quantidade: {c.quantidade} <br />
+                                  Cada {c.nome} está produzindo {simplificarNumeroPT(cpsAtual)} CPS,<br />
+                                  para um total de {simplificarNumeroPT(cpsTotal)} CPS
                               </div>
-                            );
-
+                            </div>
+                          );
                           })}
                         </div>
                       </div>
-                    )
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -1543,26 +1912,6 @@ function App() {
                   CPS: {simplificarNumeroPT(CpsConstrucao(hoveredConstrucao))}
                 </div>
               )}
-
-              <div className="seção-opções">
-                <div style={{ fontSize: "15px" }}>{`Cookies assados: ${simplificarNumeroPT(cookiesTotais)}`}</div>
-                <div style={{ fontSize: "15px" }}>{`Cookies assados nessa ascensão: ${simplificarNumeroPT(cookiesTotaisAscensao)}`}</div>
-                <div style={{ fontSize: "15px" }}>{`Cookies dourados: ${simplificarNumeroPT(douradosTotais)}`}</div>
-                <div style={{ fontSize: "15px" }}>{`Sorte: ${simplificarNumeroPT(sorte)}`}</div>
-                <h2> Opções </h2>
-                  <button onClick={ExportarSave}>
-                    Exportar Save
-                  </button>
-
-                  <button onClick={ImportarSave}>
-                    Importar Save
-                  </button>
-
-                  <button onClick={DeletarSave}>
-                    Resetar Jogo
-                  </button>
-
-              </div>
 
             </div>
           )}

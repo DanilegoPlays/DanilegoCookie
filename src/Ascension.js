@@ -95,8 +95,8 @@ export const PRIMEIRO_PRESTIGIO = 1_000_000_000;
 // Dimensões da viewport e do mapa da cidade (para calcular limites do drag).
 export const LARGURA_VISAO = 800;
 export const ALTURA_VISAO = 500;
-export const LARGURA_CIDADE = 2000;
-export const ALTURA_CIDADE = 1200;
+export const LARGURA_CIDADE = 2400;
+export const ALTURA_CIDADE = 1600;
 
 // Fórmula do prestígio: raiz quadrada de (cookies / bilhão), arredondada pra baixo.
 export function calcularPrestigio(cookiesTotais) {

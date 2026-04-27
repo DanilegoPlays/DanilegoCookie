@@ -34,7 +34,8 @@ export function calcularProximoSpawn(sorte) {
   const tempoFinal = Math.floor(tempoSorteado / sorte);
 
   console.log(`Próximo spawn calculado para daqui a: ${tempoFinal}s`);
-  return tempoFinal;
+  const timestampFuturo = Date.now() + (tempoFinal * 1000);
+  return timestampFuturo;
 }
 
 // Sorteia qual efeito o cookie dourado vai dar, usando os pesos definidos

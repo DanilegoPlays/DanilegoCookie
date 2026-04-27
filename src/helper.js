@@ -20,9 +20,9 @@ export function CasasDecimais(n, casas) {
 
 // Versão "curta": 1.5M, 2.3B, 4.7T, etc. Usada em rótulos compactos.
 export function simplificarNumero(n) {
-  if (n >= 1_000_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000_000, 3) + "q";
-  if (n >= 1_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000, 3) + "T";
-  if (n >= 1_000_000_000) return CasasDecimais(n / 1_000_000_000, 3) + "B";
+  if (n >= 1_000_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000_000, 1) + "q";
+  if (n >= 1_000_000_000_000) return CasasDecimais(n / 1_000_000_000_000, 1) + "T";
+  if (n >= 1_000_000_000) return CasasDecimais(n / 1_000_000_000, 1) + "B";
   if (n >= 1_000_000) return CasasDecimais(n / 1_000_000, 1) + "M";
   if (n >= 1_000) return CasasDecimais(n / 1_000, 1) + "k";
   return Math.floor(n);

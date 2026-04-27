@@ -363,13 +363,13 @@
   left: 0;
   cursor: grab;
   user-select: none;
-  width: 3000px;
-  height: 2000px;
+  width: 2000px;
+  height: 1200px;
 
   background-image: url("./arte/Mahabre.png");
   background-repeat: no-repeat;
 
-  background-size: 3000px 2000px;
+  background-size: 2000px 1200px;
   background-position: top left;
 }
 
@@ -504,13 +504,13 @@
   left: 0;
   cursor: grab;
   user-select: none;
-  width: 3000px;
-  height: 2000px;
+  width: 2000px;
+  height: 1200px;
 
   background-image: url("./arte/Mahabre.png");
   background-repeat: no-repeat;
 
-  background-size: 3000px 2000px;
+  background-size: 2000px 1200px;
   background-position: top left;
 }
 
@@ -702,4 +702,244 @@ body {
   padding: 12px;
 
 }
-                    
+
+/* Caixa com os botões Opções e Conquistas na coluna esquerda,
+   entre o display de buffs e o minigame Cookie Coin. */
+.seção-menus {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+/* Tela central compartilhada pelos menus de opções e conquistas.
+   Ocupa o lugar do "lado-meio" quando um desses menus está aberto,
+   no mesmo espírito de quando Karaj abre (o cookie/direita somem). */
+.tela-menu {
+  width: 600px;
+  min-height: 400px;
+  max-height: 80vh;
+  background-color: #fffae0;
+  padding: 30px;
+  border-radius: 20px;
+  border: 4px solid #000;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  overflow-y: auto;
+}
+
+.tela-menu h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 32px;
+}
+
+/* Grade de troféus (conquistas). Se ajusta sozinha à largura disponível.
+   Cada caixa é um slot 64x64 que mostra o ícone só quando a conquista
+   foi obtida — caixa preta vazia caso contrário. */
+.conquistas-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 64px);
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.conquista-caixa {
+  width: 64px;
+  height: 64px;
+  background: #1a1a1a;
+  border: 2px solid #000;
+  border-radius: 6px;
+  position: relative;
+  cursor: help;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.conquista-caixa.obtida {
+  background: #2a1f0a;
+  border-color: #c9a14a;
+  box-shadow: 0 0 6px rgba(201, 161, 74, 0.5);
+}
+
+.conquista-caixa:hover {
+  transform: scale(1.1);
+  z-index: 5;
+}
+
+.conquista-caixa.obtida:hover {
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+}
+
+.conquista-icone {
+  width: 64px;
+  height: 64px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Tooltip que aparece ao passar o mouse na caixa. */
+.conquista-tooltip {
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.92);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  width: 200px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.conquista-tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #ffd700;
+}
+
+.conquista-caixa:hover .conquista-tooltip {
+  opacity: 1;
+}
+
+/* Pilha de botões no menu Opções (Exportar/Importar/Resetar). */
+.menu-botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.menu-botoes button {
+  font-size: 16px;
+  padding: 10px 20px;
+  background-color: #f06d06;
+  color: #fff;
+  border: 3px solid #000;
+  border-radius: 10px;
+  cursor: pointer;
+  min-width: 200px;
+  transition: transform 0.15s ease;
+}
+
+.menu-botoes button:hover {
+  transform: scale(1.05);
+}
+
+/* Lista de estatísticas no menu Conquistas. */
+.menu-estatisticas {
+  font-size: 18px;
+  line-height: 1.8;
+  text-align: left;
+  display: inline-block;
+  margin-top: 20px;
+}
+
+/* Cookie pequeno escondido nas estatísticas — clicar desbloqueia conquista secreta. */
+.tiny-cookie {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  cursor: pointer;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  margin: 0 2px;
+  transition: transform 0.15s ease;
+}
+
+.tiny-cookie:hover {
+  transform: scale(1.4) rotate(15deg);
+}
+
+/* Ícone do Cookie Coin na seção de mineração — não é clicável, só decorativo. */
+.cookie-coin-icon {
+  width: 64px;
+  height: 64px;
+  vertical-align: middle;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  margin: 0 4px;
+}
+
+/* Cabeçalho da seção "Sua Produção" — título + botão de minimizar lado a lado. */
+.coleção-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.btn-minimizar {
+  background: #f06d06;
+  color: #fff;
+  border: 2px solid #000;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.btn-minimizar:hover {
+  transform: scale(1.1);
+}
+
+/* Sistema de avisos persistentes: caixinhas empilhadas embaixo da tela,
+   logo acima dos avisos efêmeros. Clicar na caixa fecha. */
+.avisos-persistentes {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 9998;
+  pointer-events: none; /* só as caixas recebem clique, não o container */
+}
+
+.aviso-persistente {
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffd700;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 10px 36px 10px 16px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  max-width: 500px;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.aviso-persistente:hover {
+  transform: scale(1.02);
+  background: rgba(30, 30, 30, 0.9);
+}
+
+.aviso-persistente-x {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #aaa;
+}
