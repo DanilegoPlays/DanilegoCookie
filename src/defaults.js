@@ -53,7 +53,7 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Enxada de Ferro", preço: 50_000, efeito:'duplicarFazenda', id: 'fazenda3', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 2, spriteY: 3},
     {nome: "Mais Hectares", preço: 5_000_000, efeito:'duplicarFazenda', id: 'fazenda4', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 3, spriteY: 3},
     {nome: "Novos Tratores", preço: 500_000_000, efeito:'duplicarFazenda', id: 'fazenda5', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 4, spriteY: 3},
-    {nome: "Monocultura", preço: 50_000_000_000, efeito:'duplicarFazenda', id: 'fazenda6', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Aspersores de Irídio", preço: 50_000_000_000, efeito:'duplicarFazenda', id: 'fazenda6', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
     // Minas
     {nome: "Picareta de Madeira", preço: 11_000, efeito:'duplicarMinas', id: 'mina1', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 0, spriteY: 4},
     {nome: "Picareta de Pedra", preço: 55_000, efeito:'duplicarMinas', id: 'mina2', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 1, spriteY: 4},
@@ -249,21 +249,21 @@ export const DEFAULT_CONQUISTAS = [
     {nome: "Fazenda Feliz", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 1, id: 'fazenda1', obtido: false, descricao: "Tenha 1 fazenda", spriteX: 0, spriteY: 3},
     {nome: "Vale do Orvalho", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 50, id: 'fazenda2', obtido: false, descricao: "Tenha 50 fazendas", spriteX: 1, spriteY: 3},
     {nome: "Agronegócio", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 100, id: 'fazenda3', obtido: false, descricao: "Tenha 100 fazendas", spriteX: 2, spriteY: 3},
-    {nome: "Latifúndio Doce", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 150, id: 'fazenda4', obtido: false, descricao: "Tenha 150 fazendas", spriteX: 3, spriteY: 3},
-    {nome: "Reforma Agrária do Cookie", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 200, id: 'fazenda5', obtido: false, descricao: "Tenha 200 fazendas", spriteX: 4, spriteY: 3},
+    {nome: "Fazenda Automática", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 150, id: 'fazenda4', obtido: false, descricao: "Tenha 150 fazendas", spriteX: 3, spriteY: 3},
+    {nome: "Reforma Agrária", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 200, id: 'fazenda5', obtido: false, descricao: "Tenha 200 fazendas", spriteX: 4, spriteY: 3},
 
     // Mina
     {nome: "Minerar e Craftar", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 1, id: 'mina1', obtido: false, descricao: "Tenha 1 mina", spriteX: 0, spriteY: 4},
     {nome: "Achou diamante", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 50, id: 'mina2', obtido: false, descricao: "Tenha 50 minas", spriteX: 1, spriteY: 4},
-    {nome: "Subsolo Explorado", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 100, id: 'mina3', obtido: false, descricao: "Tenha 100 minas", spriteX: 2, spriteY: 4},
-    {nome: "Núcleo da Terra", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 150, id: 'mina4', obtido: false, descricao: "Tenha 150 minas", spriteX: 3, spriteY: 4},
+    {nome: "Mina das Caveiras", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 100, id: 'mina3', obtido: false, descricao: "Tenha 100 minas", spriteX: 2, spriteY: 4},
+    {nome: "Chegou no Nether", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 150, id: 'mina4', obtido: false, descricao: "Tenha 150 minas", spriteX: 3, spriteY: 4},
     {nome: "Cavou até a China", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 200, id: 'mina5', obtido: false, descricao: "Tenha 200 minas", spriteX: 4, spriteY: 4},
 
     // Fábrica
     {nome: "Revolução Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 1, id: 'fabrica1', obtido: false, descricao: "Tenha 1 fábrica", spriteX: 0, spriteY: 5},
     {nome: "Parque Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 50, id: 'fabrica2', obtido: false, descricao: "Tenha 50 fábricas", spriteX: 1, spriteY: 5},
-    {nome: "Polo Produtivo", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 100, id: 'fabrica3', obtido: false, descricao: "Tenha 100 fábricas", spriteX: 2, spriteY: 5},
-    {nome: "Complexo Fabril", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 150, id: 'fabrica4', obtido: false, descricao: "Tenha 150 fábricas", spriteX: 3, spriteY: 5},
+    {nome: "", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 100, id: 'fabrica3', obtido: false, descricao: "Tenha 100 fábricas", spriteX: 2, spriteY: 5},
+    {nome: "Polo Produtivo", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 150, id: 'fabrica4', obtido: false, descricao: "Tenha 150 fábricas", spriteX: 3, spriteY: 5},
     {nome: "Nação Industrializada", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 200, id: 'fabrica5', obtido: false, descricao: "Tenha 200 fábricas", spriteX: 4, spriteY: 5},
 
     // Computador
@@ -275,7 +275,7 @@ export const DEFAULT_CONQUISTAS = [
 
     // Banco
     {nome: "Primeiro Depósito", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 1, id: 'banco1', obtido: false, descricao: "Tenha 1 banco", spriteX: 0, spriteY: 7},
-    {nome: "Correspondente Bancário", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 50, id: 'banco2', obtido: false, descricao: "Tenha 50 bancos", spriteX: 1, spriteY: 7},
+    {nome: "Bote seus Cookies para render!", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 50, id: 'banco2', obtido: false, descricao: "Tenha 50 bancos", spriteX: 1, spriteY: 7},
     {nome: "Juros Compostos", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 100, id: 'banco3', obtido: false, descricao: "Tenha 100 bancos", spriteX: 2, spriteY: 7},
     {nome: "Cartel Financeiro", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 150, id: 'banco4', obtido: false, descricao: "Tenha 150 bancos", spriteX: 3, spriteY: 7},
     {nome: "Banco Central dos Cookies", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 200, id: 'banco5', obtido: false, descricao: "Tenha 200 bancos", spriteX: 4, spriteY: 7},
@@ -285,7 +285,7 @@ export const DEFAULT_CONQUISTAS = [
     {nome: "Ordem Religiosa", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 50, id: 'templo2', obtido: false, descricao: "Tenha 50 Templos de Karaj", spriteX: 1, spriteY: 8},
     {nome: "Cidade Sagrada", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 100, id: 'templo3', obtido: false, descricao: "Tenha 100 Templos de Karaj", spriteX: 2, spriteY: 8},
     {nome: "Panteão Caseiro", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 150, id: 'templo4', obtido: false, descricao: "Tenha 150 Templos de Karaj", spriteX: 3, spriteY: 8},
-    {nome: "Teocracia Absoluta", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 200, id: 'templo5', obtido: false, descricao: "Tenha 200 Templos de Karaj", spriteX: 4, spriteY: 8},
+    {nome: "Café + Sal = ?", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 200, id: 'templo5', obtido: false, descricao: "Tenha 200 Templos de Karaj", spriteX: 4, spriteY: 8},
 
     // Laboratório
     {nome: "Experimento Inicial", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 1, id: 'lab1', obtido: false, descricao: "Tenha 1 laboratório", spriteX: 0, spriteY: 9},
@@ -306,19 +306,19 @@ export const DEFAULT_CONQUISTAS = [
 
     // clique no cookie pequeno (ícone pequeno ao lado do contador de cookies nas estatísticas)
     {nome: "Cookie Pequeno", id: 'sec_cookiepequeno', obtido: false,
-     descricao: "Achou o cookie pequeno escondido nas estatísticas!",
+     descricao: "Ei, esse é o cookie errado!",
      spriteX: 0, spriteY: 15,
      check: (s) => s.cookiePequenoClicado === true},
 
     // Clique na madeleine escondida (na cidade de Karaj)
     {nome: "Madalena Perdida", id: 'sec_madalena', obtido: false,
-     descricao: "Encontrou a madalena escondida no canto da cidade de Karaj!",
+     descricao: "Encontrou a madalena predida em Karaj!",
      spriteX: 1, spriteY: 15,
      check: (s) => s.madalenaClicada === true},
 
     // Clique no ícone secreto atrás de um dos Templos de Karaj
-    {nome: "Templo Esquecido", id: 'sec_templo', obtido: false,
-     descricao: "Encontrou o templo esquecido escondido atrás de outro templo!",
+    {nome: "Encontrou!", id: 'sec_templo', obtido: false,
+     descricao: "Encontrou o personagem escondido no templo",
      spriteX: 2, spriteY: 15,
      check: (s) => s.temploSecretoClicado === true},
 
