@@ -68,6 +68,9 @@ function App() {
   const [cookieCoin, setCookieCoin] = useState(DEFAULT_COOKIE_COIN);
   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
   const [telaAtual, setTelaAtual] = useState("jogo"); // telas: "jogo", "karaj" (ascensao), "conquistas", "opções"
+  // Tooltip da grade de conquistas — position: fixed pra escapar do overflow
+  // do container. Posição calculada dinamicamente no onMouseEnter da caixa.
+  const [tooltipConquista, setTooltipConquista] = useState(null);
   const [animandoAscensao, setAnimandoAscensao] = useState(false); // animação da ascensão
   // sorte
   const [cookieDourado, setCookieDourado] = useState(null);
@@ -1020,6 +1023,24 @@ function App() {
         )}
       </div>
  
+      {/* Tooltip flutuante das conquistas — renderizado fora da grade pra
+          escapar do overflow do container. position: fixed + transform pra
+          centralizar horizontalmente e ficar acima da caixa. */}
+      {tooltipConquista && (
+        <div
+          className="conquista-tooltip-fixo"
+          style={{
+            position: 'fixed',
+            left: tooltipConquista.x,
+            top: tooltipConquista.y,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <strong>{tooltipConquista.conquista.obtido ? tooltipConquista.conquista.nome : '???'}</strong>
+          <div>{tooltipConquista.conquista.obtido ? tooltipConquista.conquista.descricao : '???'}</div>
+        </div>
+      )}
+
       {/* Avisos persistentes: ficam até o jogador clicar. Colados na parte
           de baixo da tela; novos avisos empilham pra cima (column-reverse) */}
         <div
@@ -1158,7 +1179,7 @@ function App() {
                 <h2>Mineração de Cookie Coins</h2>
 
                 <p>
-                  <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)} 
+                   <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)}
                 </p>
                 <p>Level: {cookieCoin.level}</p>
 
@@ -1300,7 +1321,8 @@ function App() {
 
               {/* Grade de "troféus": cada conquista é uma caixa preta.
                   Quando obtida, aparece o sprite correspondente. Hover mostra
-                  nome + descrição; não obtidas mostram "???" pra dar mistério. */}
+                  nome + descrição num tooltip flutuante (renderizado fora da
+                  grade pra escapar do overflow do container). */}
               <div className="conquistas-grade">
                 {conquistas.map((c) => {
                   const T = CONQUISTA_SPRITE.tamanho;
@@ -1308,6 +1330,17 @@ function App() {
                     <div
                       key={c.id}
                       className={`conquista-caixa ${c.obtido ? 'obtida' : 'bloqueada'}`}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setTooltipConquista({
+                          conquista: c,
+                          // Centralizado horizontalmente em cima da caixa.
+                          x: rect.left + rect.width / 2,
+                          // Logo acima da caixa, com pequena margem.
+                          y: rect.top - 10,
+                        });
+                      }}
+                      onMouseLeave={() => setTooltipConquista(null)}
                     >
                       {c.obtido && (
                         <div
@@ -1318,10 +1351,6 @@ function App() {
                           }}
                         />
                       )}
-                      <div className="conquista-tooltip">
-                        <strong>{c.obtido ? c.nome : '???'}</strong>
-                        <div>{c.obtido ? c.descricao : '???'}</div>
-                      </div>
                     </div>
                   );
                 })}

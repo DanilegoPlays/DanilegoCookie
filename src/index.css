@@ -743,6 +743,8 @@ body {
   gap: 6px;
   justify-content: center;
   margin-bottom: 20px;
+  max-height: 50vh;
+  padding: 4px;
 }
 
 .conquista-caixa {
@@ -779,36 +781,29 @@ body {
   image-rendering: crisp-edges;
 }
 
-/* Tooltip que aparece ao passar o mouse na caixa. */
-.conquista-tooltip {
-  position: absolute;
-  bottom: 110%;
-  left: 50%;
-  transform: translateX(-50%);
+/* Tooltip flutuante das conquistas. Renderizado uma vez só no root do app,
+   posicionado dinamicamente via inline style (position: fixed + coordenadas
+   da viewport). Não está dentro do .tela-menu nem da .conquistas-grade,
+   então nunca é cortado por overflow. */
+.conquista-tooltip-fixo {
   background: rgba(0, 0, 0, 0.92);
   color: #fff;
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 12px;
   width: 200px;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 100;
+  z-index: 10000;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.2);
   text-align: center;
   line-height: 1.4;
 }
 
-.conquista-tooltip strong {
+.conquista-tooltip-fixo strong {
   display: block;
   margin-bottom: 4px;
   color: #ffd700;
-}
-
-.conquista-caixa:hover .conquista-tooltip {
-  opacity: 1;
 }
 
 /* Pilha de botões no menu Opções (Exportar/Importar/Resetar). */
@@ -863,8 +858,8 @@ body {
 
 /* Ícone do Cookie Coin na seção de mineração — não é clicável, só decorativo. */
 .cookie-coin-icon {
-  width: 64px;
-  height: 64px;
+  width: 24px;
+  height: 24px;
   vertical-align: middle;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
