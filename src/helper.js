@@ -91,3 +91,4 @@ export function getMultiplicadorP(melhorias, ascensao) {
 
   return multiplicadorBasico * multiplicadorPrestigio;
 }
+

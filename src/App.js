@@ -39,16 +39,14 @@ import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador,
 
 function App() {
  
-  // Função para calcular o preço atual de cada construção baseado no preço base e quantidade
-  function getPreçoAtual(preçoBase, quantidade) {
-    return Math.floor(preçoBase * Math.pow(1.15, quantidade));
-  }
+
  
   // useStates principais
   const [contagem, setContagem] = useState(0); // contagem de cookies
   const [click, setClick] = useState(1); // valor do click
   const [CPS, setCPS] = useState(0); // CPS
   const [construcoes, setConstrucoes] = useState(DEFAULT_CONSTRUCOES)
+  const [multiplicador, setMultiplicador] = useState(1);
   const [melhorias, setMelhorias] = useState(DEFAULT_MELHORIAS)
   const [cookiesTotais, setCookiesTotais] = useState(0); // cookies totais
   const [cookiesTotaisAscensao, setCookiesTotaisAscensao] = useState(0); // cookies totais só durante a ascensão
@@ -76,13 +74,15 @@ function App() {
   const [cookieDourado, setCookieDourado] = useState(null);
   const [buff, setBuff] = useState([]);
   const [sorte, setSorte] = useState(1);
-  const [tempoDourado, setTempoDourado] = useState(() => {
+  const [tempoDourado, setTempoDourado] = useState(() => { // Tempo até o próximo cookie dourado!
     // Isso garante que, se não houver save, o jogo já comece com um tempo sorteado
     const { TMIN, TMAX } = CONFIG_DOURADO;
     const tempoSort = Math.floor(Math.random() * (TMAX - TMIN) + TMIN);
     return Date.now() + (tempoSort * 1000);
-  }); // Tempo até o próximo cookie dourado!
-  const [douradosTotais, setDouradosTotais] = useState(770);
+  }); 
+  const [douradosTotais, setDouradosTotais] = useState(0);
+  // IDs dos upgrades de sorte que já deram o cookie dourado gratuito.
+  const [sorteUpgradesAtivados, setSorteUpgradesAtivados] = useState([]);
  
   // refs dos sons
   const clickSonsRef = useRef([]);
@@ -105,6 +105,30 @@ function App() {
     spawnSomRef.current = new Audio(somSpawn);
     spawnSomRef.current.volume = 0.6;
   }, []);
+
+  // Função para calcular o preço atual de cada construção baseado no preço base e quantidade
+  function getPreçoAtual(preçoBase, quantidade) {
+    return Math.floor(preçoBase * Math.pow(1.15, quantidade));
+  }
+  function preverCustoMultiplo(precoBase, quantidadeAtual, saldoCookies, quantidadeDesejada) {
+  let custoSimulado = 0;
+  let quantPossivel = 0;
+  let nivel = quantidadeAtual;
+
+  for (let i = 0; i < quantidadeDesejada; i++) {
+    // Utiliza a sua função original para manter a consistência matemática
+    const preco = getPreçoAtual(precoBase, nivel); 
+    
+    if (saldoCookies >= custoSimulado + preco) {
+      custoSimulado += preco;
+      quantPossivel++;
+      nivel++;
+    } else {
+      break;
+    }
+  }
+  return { custoSimulado, quantPossivel };
+}
  
   // use effect que desbloqueia minigames e distritos
   useEffect(() => {
@@ -207,6 +231,7 @@ function App() {
   const sorteRef = useRef(sorte);
   const douradosTotaisRef = useRef(douradosTotais);
   const tempoDouradoRef = useRef(tempoDourado);
+  const sorteUpgradesAtivadosRef = useRef(sorteUpgradesAtivados);
   const producaoMinimizadaRef = useRef(producaoMinimizada);
   const conquistasRef = useRef(conquistas);
  
@@ -224,6 +249,7 @@ function App() {
   useEffect(() => { sorteRef.current = sorte; }, [sorte]);
   useEffect(() => { douradosTotaisRef.current = douradosTotais; }, [douradosTotais]);
   useEffect(() => { tempoDouradoRef.current = tempoDourado; }, [tempoDourado]);
+  useEffect(() => { sorteUpgradesAtivadosRef.current = sorteUpgradesAtivados; }, [sorteUpgradesAtivados]);
   useEffect(() => { producaoMinimizadaRef.current = producaoMinimizada; }, [producaoMinimizada]);
   useEffect(() => { conquistasRef.current = conquistas; }, [conquistas]);
  
@@ -291,6 +317,7 @@ function App() {
       sorte: sorteRef.current,
       douradosTotais: douradosTotaisRef.current,
       tempoDourado: tempoDouradoRef.current,
+      sorteUpgradesAtivados: sorteUpgradesAtivadosRef.current,
       producaoMinimizada: producaoMinimizadaRef.current,
       conquistas: conquistasRef.current,
       lastSavedAt: Date.now()
@@ -327,6 +354,7 @@ function App() {
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
       setDouradosTotais(dados.douradosTotais ?? 0);
       setSorte(dados.sorte ?? 1);
+      setSorteUpgradesAtivados(dados.sorteUpgradesAtivados ?? []);
       // Se tempoDourado salvo já passou (ex: jogador ficou offline), recalcula
       // pra evitar spawn imediato no carregamento. Senão usa o salvo (caso do
       // jogador recarregar a página rapidamente sem ter passado do timer).
@@ -378,9 +406,7 @@ function App() {
     
   }, []);
  
-  // Wrapper do spawn: além de criar o cookie, toca o sino se o upgrade
-  // "Sino da Fábrica" foi comprado. Centraliza aqui pra que *qualquer* spawn
-  // (natural ou de upgrade) toque o som, sem precisar duplicar a lógica.
+  // Wrapper do spawn: além de criar o cookie, toca o sino se o upgrade "Sino da Fábrica" foi comprado
   function SpawnCookieDourado() {
     SpawnCookieDouradoFn(setCookieDourado);
 
@@ -454,16 +480,12 @@ function App() {
     return () => clearTimeout(timeout);
   }, [cookieDourado]);
 
-  // Quando o cookie dourado some (clicado, expirou, ou ascensão), limpa
-  // o aviso do título da aba — não faz sentido manter "✨ Cookie Dourado!"
-  // se o cookie nem existe mais.
+  // Quando o cookie dourado some (clicado, expirou, ou ascensão), limpa o aviso do título da aba
   useEffect(() => {
     if (!cookieDourado) restaurarTitulo();
   }, [cookieDourado]);
  
   // Limpa efeitos de cookie dourado expirados.
-  // Só chama setBuff se algo efetivamente expirou — senão criaria uma nova
-  // referência de array toda vez, disparando re-renders à toa.
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
       setBuff(prev => {
@@ -476,9 +498,6 @@ function App() {
   }, []);
  
   // Melhorias de sorte: recalcula a sorte total quando upgrades mudam.
-  // O spawn de cookie dourado em compra de upgrade de sorte foi movido pras
-  // funções ComprarMelhoria e ComprarUpgradeAscensao — fazer aqui causava
-  // spawn falso ao carregar saves com upgrades de sorte já comprados.
   useEffect(() => {
     // Upgrades normais
     const luckUpgrades = melhorias.filter(m => m.efeito === 'sorte' && m.comprado).length;
@@ -591,7 +610,6 @@ function App() {
   }, [ascensao]) 
  
   // Mantém a produção atual numa ref pra não remontar o timer a cada mudança.
-  // O effect abaixo recalcula sempre que as deps relevantes mudam.
   const producaoRef = useRef(0);
  
   useEffect(() => {
@@ -695,23 +713,50 @@ function App() {
   };
  
  
-  function ComprarConstrucao(indice) {
+function comprarConstrucao(indice, quantidadeDesejada = 1) {
+  // 1. Pegamos os dados da construção específica antes de mexer no estado
+  const construcaoAlvo = construcoes[indice];
+  
+  let custoTotal = 0;
+  let quantidadeComprada = 0;
+  let nivelSimulado = construcaoAlvo.quantidade;
+  let cookiesRestantes = contagem; // Usamos o seu estado de cookies atual
+
+  // 2. Simulamos a compra 1 por 1 até bater a quantidade desejada ou acabar o dinheiro
+  while (quantidadeComprada < quantidadeDesejada) {
+    // Usamos a sua função getPreçoAtual normalmente
+    const precoAtual = getPreçoAtual(construcaoAlvo.preço, nivelSimulado);
+
+    if (cookiesRestantes >= precoAtual) {
+      cookiesRestantes -= precoAtual; // Desconta o valor do "bolso" provisório
+      custoTotal += precoAtual;       // Soma na nota fiscal
+      quantidadeComprada++;           // Adiciona 1 no carrinho
+      nivelSimulado++;                // Aumenta o nível para o próximo cálculo ficar mais caro
+    } else {
+      // Se não tem dinheiro para o próximo, interrompe o loop
+      break; 
+    }
+  }
+
+  // 3. Se o loop terminou e o jogador conseguiu comprar pelo menos 1 item:
+  if (quantidadeComprada > 0) {
+    // Deduz o custo total de uma vez só da sua contagem
+    setContagem(contagem - custoTotal);
+
+    // Atualiza a quantidade da construção alvo usando o map (sem side-effects dentro)
     setConstrucoes((anterior) => {
-      const novo = anterior.map((c, i) => {
-        const preçoAtual = getPreçoAtual(c.preço, c.quantidade);
-        if (contagem >= preçoAtual && i === indice) {
-          setContagem(contagem - preçoAtual);
+      return anterior.map((c, i) => {
+        if (i === indice) {
           return {
             ...c,
-            quantidade: c.quantidade + 1
-            // Preço não é mais modificado, é calculado dinamicamente
+            quantidade: c.quantidade + quantidadeComprada
           };
         }
-        return c;
+        return c; // As outras construções ficam intocadas
       });
-      return novo;
     });
   }
+}
  
   function ComprarMelhoria(indice) {
     const m = melhorias[indice];
@@ -722,14 +767,17 @@ function App() {
       i === indice ? { ...u, comprado: true } : u
     ));
 
-    // Spawn imediato de cookie dourado quando o upgrade comprado é de sorte.
-    // (Antes era no useEffect da sorte, mas isso causava spawn falso ao
-    // carregar saves com upgrades de sorte já comprados — o effect rodava
-    // depois do load e detectava "aumento" no totalLuck.)
-    if (m.efeito === 'sorte') {
+    // Spawn imediato de cookie dourado quando o upgrade comprado é de sorte —
+    // mas só na primeira vez que ESSE upgrade específico (por id) é comprado.
+    // Sem essa checagem, como "melhorias" reseta a cada ascensão, o jogador
+    // ganharia um cookie dourado grátis de novo a cada ascensão só por
+    // recomprar o mesmo upgrade de sorte, o que é OP demais.
+    if (m.efeito === 'sorte' && !sorteUpgradesAtivados.includes(m.id)) {
       SpawnCookieDourado();
+      setSorteUpgradesAtivados(prev => [...prev, m.id]);
     }
   }
+
  
   // aplicar efeito das melhorias (não funcionando)
   function AplicarEfeito(efeito) {
@@ -789,6 +837,7 @@ function App() {
       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
       setDouradosTotais(dados.douradosTotais ?? 0);
       setSorte(dados.sorte ?? 1);
+      setSorteUpgradesAtivados(dados.sorteUpgradesAtivados ?? []);
       // Se tempoDourado salvo já passou (ex: jogador ficou offline), recalcula
       // pra evitar spawn imediato no carregamento. Senão usa o salvo (caso do
       // jogador recarregar a página rapidamente sem ter passado do timer).
@@ -926,10 +975,6 @@ function App() {
   //funções de ascensão (implementadas em Ascension.js)
   const AbrirDistrito = criarAbrirDistrito(setAscensao);
  
-  // Wrapper do ComprarUpgradeAscensao que dispara cookie dourado se o upgrade
-  // comprado for de sorte. Decisão é feita ANTES de chamar a função interna,
-  // que valida (preço, comprado já, etc.) — então só spawna se a compra
-  // realmente aconteceu (verificamos o estado pré-compra).
   const ComprarUpgradeAscensaoBase = criarComprarUpgradeAscensao(setAscensao);
   function ComprarUpgradeAscensao(distrito, index) {
     const upgrade = ascensao[distrito]?.upgrades[index];
@@ -1887,8 +1932,37 @@ function App() {
                   ))}
               </div>
               <div className="seção-construções">
+
+                {/* OS BOTÕES DE MULTIPLICADOR */}
+              <div className="controles-multiplicador" style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+                <span>Comprar:</span>
+                <button 
+                  onClick={() => setMultiplicador(1)} 
+                  style={{ fontWeight: multiplicador === 1 ? 'bold' : 'normal', backgroundColor: multiplicador === 1 ? '#ddd' : '#fff' }}
+                >
+                  x1
+                </button>
+                <button 
+                  onClick={() => setMultiplicador(10)} 
+                  style={{ fontWeight: multiplicador === 10 ? 'bold' : 'normal', backgroundColor: multiplicador === 10 ? '#ddd' : '#fff' }}
+                >
+                  x10
+                </button>
+                <button 
+                  onClick={() => setMultiplicador(100)} 
+                  style={{ fontWeight: multiplicador === 100 ? 'bold' : 'normal', backgroundColor: multiplicador === 100 ? '#ddd' : '#fff' }}
+                >
+                  x100
+                </button>
+              </div>
                 {construcoes.map((c, i) => {
-                  const preçoAtual = getPreçoAtual(c.preço, c.quantidade);
+                  // Preço base para de 1 construção
+                  const precoAtualUm = getPreçoAtual(c.preço, c.quantidade);
+                  // máximo que o jogador consegue comprar baseado no multiplicador
+                  const { custoSimulado, quantPossivel } = preverCustoMultiplo(c.preço, c.quantidade, contagem, multiplicador);
+                  // sem dinheiro pra comprar 1
+                  const naoPodeComprarNada = quantPossivel === 0;
+
                   return (
                     <div key={c.indiceOriginal} className="construção-wrapper">
                       <button 
@@ -1904,23 +1978,37 @@ function App() {
                         }}
                         onMouseLeave={() => setHoveredConstrucao(null)}
                         id={c.nome} 
-                        onClick={() => ComprarConstrucao(i)} 
-                        disabled={contagem < preçoAtual}
+                        onClick={() => comprarConstrucao(i, multiplicador)} 
+                        // O botão desativa se ele não puder comprar nem 1 unidade
+                        disabled={naoPodeComprarNada}
                         style={{
-                          cursor: contagem < preçoAtual ? "auto" : "pointer",
-                          opacity: contagem < preçoAtual ? 0.6 : 1
+                          cursor: naoPodeComprarNada ? "auto" : "pointer",
+                          opacity: naoPodeComprarNada ? 0.6 : 1
                         }}
                       >
                         <div className="construções-icone">
                           <img src={c.icone} alt={c.nome}></img>
                         </div>
+                        
                         <div className="construções-info">
                           <div className="construções-nome">{c.nome}</div>
-                          <div className="construções-preco">Preço: {simplificarNumeroPT(preçoAtual)}</div>
+                          
+                          {/* exibição dinâmica do preço */}
+                          <div className="construções-preco">
+                            {multiplicador === 1 ? (// Modo padrão x1
+                              <>Preço: {simplificarNumeroPT(precoAtualUm)}</>
+                            ) : naoPodeComprarNada ? (// Modo múltiplo ativo, mas sem dinheiro pra comprar 1
+                              <>Preço: {simplificarNumeroPT(precoAtualUm)}</>
+                            ) : quantPossivel < multiplicador ? (// Sem dinheiro pra comprar tudo (ex: 47 de 100)
+                              <>Preço ({quantPossivel}): {simplificarNumeroPT(custoSimulado)}</>
+                            ) : (// Com dinheiro pra comprar tudo
+                              <>Preço ({multiplicador}): {simplificarNumeroPT(custoSimulado)}</>
+                            )}
+                          </div>
                         </div>
+                        
                         <div className="construções-quantidade">{c.quantidade + (c.quantidadeGratis || 0)}</div>
                       </button>
-
                     </div>
                   );
                 })}

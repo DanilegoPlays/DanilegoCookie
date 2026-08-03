@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS } from './defaults';
 
-export const VERSAO_ATUAL = 8.0; // Versão atual do save (V8.0 - Reforma de UI: menus Opções/Conquistas, minimizar produção)
+export const VERSAO_ATUAL = 8.1; // Versão atual do save (V8.1 - Pequenas mudanças)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -20,7 +20,11 @@ export const DEFAULT_SAVE = {
   tempoDourado: null, // Time until next golden cookie spawn
   producaoMinimizada: false, // Se a seção "Sua Produção" está minimizada
   // Conquistas: só persistimos `id` + `obtido` (resto vem de DEFAULT_CONQUISTAS).
-  conquistas: DEFAULT_CONQUISTAS.map(c => ({ id: c.id, obtido: false }))
+  conquistas: DEFAULT_CONQUISTAS.map(c => ({ id: c.id, obtido: false })),
+  // IDs dos upgrades de sorte que já concederam o cookie dourado gratuito.
+  // Persiste através de ascensões (não reseta), pra evitar farm de cookies
+  // dourados grátis recomprando o mesmo upgrade de sorte toda ascensão.
+  sorteUpgradesAtivados: []
 }
  
 // --- MIGRAÇÃO  ---
@@ -267,6 +271,33 @@ const migrations = {
       conquistas: save.conquistas ?? DEFAULT_CONQUISTAS.map(c => ({ id: c.id, obtido: false })),
       version: 8.0
     };
+  },
+
+  // Migração da 8.0 para 8.1 - Sorte não reseta o bônus na ascensão.
+  // Adiciona sorteUpgradesAtivados, pré-populado com os ids de upgrades de
+  // sorte já comprados (nas melhorias normais e nos distritos de ascensão),
+  // pra não conceder um cookie dourado "grátis" retroativo por upgrades que
+  // o jogador já tinha antes dessa versão existir.
+  8.0: (save) => {
+    const idsJaComprados = new Set();
+
+    (save.melhorias ?? [])
+      .filter(m => m.efeito === 'sorte' && m.comprado)
+      .forEach(m => idsJaComprados.add(m.id));
+
+    const ascensao = save.ascensao ?? {};
+    Object.values(ascensao).forEach(distrito => {
+      if (!distrito || typeof distrito !== 'object' || !Array.isArray(distrito.upgrades)) return;
+      distrito.upgrades
+        .filter(u => u.efeito === 'sorte' && u.comprado)
+        .forEach(u => idsJaComprados.add(u.id));
+    });
+
+    return {
+      ...save,
+      sorteUpgradesAtivados: save.sorteUpgradesAtivados ?? Array.from(idsJaComprados),
+      version: 8.1
+    };
   }
 };
  
@@ -344,7 +375,8 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       douradosTotais: 0,
       tempoDourado: null,
       producaoMinimizada: false,
-      conquistas: DEFAULT_CONQUISTAS
+      conquistas: DEFAULT_CONQUISTAS,
+      sorteUpgradesAtivados: []
     };
   }
  
@@ -377,6 +409,7 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       tempoDourado: migrated.tempoDourado ?? null,
       producaoMinimizada: migrated.producaoMinimizada ?? false,
       conquistas: normalizeConquistas(migrated.conquistas, DEFAULT_CONQUISTAS),
+      sorteUpgradesAtivados: Array.isArray(migrated.sorteUpgradesAtivados) ? migrated.sorteUpgradesAtivados : [],
       version: VERSAO_ATUAL
     };
   } catch (error) {
@@ -394,7 +427,8 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       douradosTotais: 0,
       tempoDourado: null,
       producaoMinimizada: false,
-      conquistas: DEFAULT_CONQUISTAS
+      conquistas: DEFAULT_CONQUISTAS,
+      sorteUpgradesAtivados: []
     };
   }
 }
@@ -430,7 +464,8 @@ export function saveGame(state) {
     douradosTotais: state.douradosTotais ?? 0,
     tempoDourado: state.tempoDourado ?? null,
     producaoMinimizada: state.producaoMinimizada ?? false,
-    conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false }))
+    conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false })),
+    sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? []
   };
  
   localStorage.setItem("QuickSave", JSON.stringify(save));
@@ -467,7 +502,8 @@ export function Save(state) {
     douradosTotais: state.douradosTotais ?? 0,
     tempoDourado: state.tempoDourado ?? null,
     producaoMinimizada: state.producaoMinimizada ?? false,
-    conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false }))
+    conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false })),
+    sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? []
   };
  
   return btoa(JSON.stringify(save));
@@ -492,7 +528,8 @@ export function Load(saveString, defaultConstrucoes = null, defaultMelhorias = n
       douradosTotais: 0,
       tempoDourado: null,
       producaoMinimizada: false,
-      conquistas: DEFAULT_CONQUISTAS
+      conquistas: DEFAULT_CONQUISTAS,
+      sorteUpgradesAtivados: []
     };
   }
 }

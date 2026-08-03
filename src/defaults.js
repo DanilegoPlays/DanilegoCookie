@@ -573,6 +573,8 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
       if (m.id === "cookie8" && cookiesTotaisAscensao < 15_000_000) return false;
       if (m.id === "cookie9" && cookiesTotaisAscensao < 15_000_000) return false;
       if (m.id === "cookie10" && cookiesTotaisAscensao < 15_000_000) return false;
+      if (m.id === "cookie11" && cookiesTotaisAscensao < 500_000_000) return false;
+      if (m.id === "cookie12" && cookiesTotaisAscensao < 1_000_000_000) return false;
 
       if (m.id === "sorte1" && douradosTotais < 1) return false;
       if (m.id === "sorte2" && douradosTotais < 7) return false;
