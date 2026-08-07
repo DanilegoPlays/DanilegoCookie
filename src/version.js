@@ -1,8 +1,8 @@
 // Módulo para permitir usar saves antigos em novas versões (para não ser necessário recomeçar a cada update)
 
-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS } from './defaults';
+import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO } from './defaults';
 
-export const VERSAO_ATUAL = 8.1; // Versão atual do save (V8.1 - Pequenas mudanças)
+export const VERSAO_ATUAL = 9.0; // Versão atual do save (V9.0 - Alquimia)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -24,7 +24,12 @@ export const DEFAULT_SAVE = {
   // IDs dos upgrades de sorte que já concederam o cookie dourado gratuito.
   // Persiste através de ascensões (não reseta), pra evitar farm de cookies
   // dourados grátis recomprando o mesmo upgrade de sorte toda ascensão.
-  sorteUpgradesAtivados: []
+  sorteUpgradesAtivados: [],
+  // Laboratório de Frascos (minigame introduzido na V9.0 - Alquimia).
+  laboratorio: DEFAULT_LABORATORIO,
+  // Buffs/debuffs ativos (a maioria vem do Laboratório). Só os que ainda
+  // não expiraram são salvos — ver normalizeBuff.
+  buff: []
 }
  
 // --- MIGRAÇÃO  ---
@@ -83,6 +88,46 @@ function normalizeCookieCoin(saved) {
   };
 }
  
+// Laboratório de Frascos: cargas/proximaRecarga (progresso do jogador) vêm
+// do save; nome/descricao sempre vêm da versão atual do jogo (podem mudar
+// entre versões sem quebrar o save). Frasco/historico ficam vazios se
+// ausentes — não faz sentido persistir uma poção "em preparo" pela metade
+// entre sessões de um jeito confiável, então ela é descartada no load.
+function normalizeLaboratorio(saved) {
+  if (!saved || typeof saved !== 'object') {
+    return DEFAULT_LABORATORIO;
+  }
+
+  const substancias = {};
+  Object.keys(DEFAULT_LABORATORIO.substancias).forEach(cor => {
+    const def = DEFAULT_LABORATORIO.substancias[cor];
+    const savedCor = saved.substancias?.[cor];
+    substancias[cor] = {
+      ...def,
+      cargas: savedCor?.cargas ?? def.cargas,
+      proximaRecarga: savedCor?.proximaRecarga ?? null
+    };
+  });
+
+  return {
+    desbloqueado: saved.desbloqueado ?? DEFAULT_LABORATORIO.desbloqueado,
+    substancias,
+    Frasco: Array.isArray(saved.Frasco) ? saved.Frasco : [],
+    historico: Array.isArray(saved.historico) ? saved.historico : [],
+    descobertos: Array.isArray(saved.descobertos) ? saved.descobertos : [],
+    genericosDescobertos: Array.isArray(saved.genericosDescobertos) ? saved.genericosDescobertos : [],
+    CookieQuimico: saved.CookieQuimico ?? false
+  };
+}
+
+// Buffs/debuffs ativos: só mantém os que ainda não expiraram (não faz
+// sentido persistir um buff de 7 segundos entre sessões).
+function normalizeBuff(saved) {
+  if (!Array.isArray(saved)) return [];
+  const agora = Date.now();
+  return saved.filter(b => b && typeof b === 'object' && typeof b.expira === 'number' && b.expira > agora);
+}
+
 function normalizeAscensao(saved) {
   if (!saved || typeof saved !== "object") {
     return DEFAULT_ASCENSAO;
@@ -298,6 +343,18 @@ const migrations = {
       sorteUpgradesAtivados: save.sorteUpgradesAtivados ?? Array.from(idsJaComprados),
       version: 8.1
     };
+  },
+
+  // Migração da 8.1 para 9.0 - ALQUIMIA (Laboratório de Frascos)
+  // Adiciona laboratorio (minigame novo) e buff (efeitos ativos), ambos
+  // ausentes em saves anteriores a essa versão.
+  8.1: (save) => {
+    return {
+      ...save,
+      laboratorio: save.laboratorio ?? DEFAULT_LABORATORIO,
+      buff: save.buff ?? [],
+      version: 9.0
+    };
   }
 };
  
@@ -376,7 +433,9 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       tempoDourado: null,
       producaoMinimizada: false,
       conquistas: DEFAULT_CONQUISTAS,
-      sorteUpgradesAtivados: []
+      sorteUpgradesAtivados: [],
+      laboratorio: DEFAULT_LABORATORIO,
+      buff: []
     };
   }
  
@@ -410,6 +469,8 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       producaoMinimizada: migrated.producaoMinimizada ?? false,
       conquistas: normalizeConquistas(migrated.conquistas, DEFAULT_CONQUISTAS),
       sorteUpgradesAtivados: Array.isArray(migrated.sorteUpgradesAtivados) ? migrated.sorteUpgradesAtivados : [],
+      laboratorio: normalizeLaboratorio(migrated.laboratorio),
+      buff: normalizeBuff(migrated.buff),
       version: VERSAO_ATUAL
     };
   } catch (error) {
@@ -428,7 +489,9 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       tempoDourado: null,
       producaoMinimizada: false,
       conquistas: DEFAULT_CONQUISTAS,
-      sorteUpgradesAtivados: []
+      sorteUpgradesAtivados: [],
+      laboratorio: DEFAULT_LABORATORIO,
+      buff: []
     };
   }
 }
@@ -465,7 +528,10 @@ export function saveGame(state) {
     tempoDourado: state.tempoDourado ?? null,
     producaoMinimizada: state.producaoMinimizada ?? false,
     conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false })),
-    sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? []
+    sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? [],
+    laboratorio: state.laboratorio ?? DEFAULT_LABORATORIO,
+    // Só salva buffs ainda ativos — descarta os já expirados.
+    buff: (state.buff ?? []).filter(b => b && typeof b.expira === 'number' && b.expira > Date.now())
   };
  
   localStorage.setItem("QuickSave", JSON.stringify(save));
@@ -503,7 +569,10 @@ export function Save(state) {
     tempoDourado: state.tempoDourado ?? null,
     producaoMinimizada: state.producaoMinimizada ?? false,
     conquistas: (state.conquistas ?? []).map(c => ({ id: c.id, obtido: c.obtido ?? false })),
-    sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? []
+    sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? [],
+    laboratorio: state.laboratorio ?? DEFAULT_LABORATORIO,
+    // Só salva buffs ainda ativos — descarta os já expirados.
+    buff: (state.buff ?? []).filter(b => b && typeof b.expira === 'number' && b.expira > Date.now())
   };
  
   return btoa(JSON.stringify(save));
@@ -529,7 +598,9 @@ export function Load(saveString, defaultConstrucoes = null, defaultMelhorias = n
       tempoDourado: null,
       producaoMinimizada: false,
       conquistas: DEFAULT_CONQUISTAS,
-      sorteUpgradesAtivados: []
+      sorteUpgradesAtivados: [],
+      laboratorio: DEFAULT_LABORATORIO,
+      buff: []
     };
   }
 }

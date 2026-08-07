@@ -13,11 +13,13 @@ import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png';
 import Bancos from './arte/Bancos.png';
 import Bancos_d from './arte/Bancos_d.png';
+import Torre from './arte/Torre.png';
 import Lab from './arte/Lab.png';
+import { velocityPerSecond } from 'framer-motion';
 
 // Estruturas padrão para construções e melhorias
 export const DEFAULT_CONSTRUCOES = [
-    {nome: "Vovó", preço: 15, cps: 0.5, quantidade: 0, quantidadeGratis: 0, descricao: "Uma vovó para assar cookies fresquinhos do forno", icone: Vovo1, icone_pequeno: Vovo3},
+    {nome: "Vovó", preço: 15, cps: 1111110.5, quantidade: 0, quantidadeGratis: 0, descricao: "Uma vovó para assar cookies fresquinhos do forno", icone: Vovo1, icone_pequeno: Vovo3},
     {nome: "Fazenda", preço: 100, cps: 1.5, quantidade: 0, descricao: "As Fazendas plantam e colhem Pés de Cookie", icone: Fazenda, icone_pequeno: Fazenda},
     {nome: "Mina", preço: 1000, cps: 8, quantidade: 0, descricao: "As Minas mineram Cookie Mineral direto da terra!", icone: Mina, icone_pequeno: Mina},
     {nome: "Fábrica", preço: 11000, cps: 45, quantidade: 0, descricao: "As Fábricas produzem cookies em larga escala", icone: Fabrica, icone_pequeno: Fabrica},
@@ -25,7 +27,7 @@ export const DEFAULT_CONSTRUCOES = [
     {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos produzem cookies a partir de empréstimos", icone: Bancos, icone_pequeno: Bancos},
     {nome: "Templo de Karaj", preço: 77_777_000, cps: 7777, quantidade: 0, descricao: "Os Templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!", icone: Karaj, icone_pequeno: Karaj},
     {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: Lab, icone_pequeno: Lab},
-    {nome: "Torre", preço: 5_100_000_000, cps: 300_000, quantidade: 0, descricao: "As torres criam Cookies usanso magia!", icone: PC, icone_pequeno: PC}
+    {nome: "Torre", preço: 5_100_000_000, cps: 300_000, quantidade: 0, descricao: "As torres criam Cookies usanso magia!", icone: Torre, icone_pequeno: Torre}
     //{nome: "Cassino da Sorte", preço: 77_777_777_777, cps: 1_777_777, quantidade: 0, descricao: "Pessoas apostam seus cookies no Cassino da Sorte, e você ganha uma parte! A Casa sempre vence!", icone: PC, icone_pequeno: PC},
     //{nome: "Portal", preço: 1_000_000_000_000, cps: 10_000_000, quantidade: 0, descricao: "Trazem Cookies de outra dimensão... com certeza nada de ruim pode vir disso...", icone: PC, icone_pequeno: PC}
   ];
@@ -109,6 +111,8 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Cookie Recheado", preço: 1_111_111_111, efeito:'5porcento', id: 'cookie11', comprado: false, descricao: "Qual é o recheio? Ninguém sabe. +5% de CPS"},
     {nome: "Cookie com Sorvete", preço: 5_555_555_555, efeito:'3porcento', id: 'cookie12', comprado: false, descricao: "Boa combinação! +3% de CPS"},
 
+    {nome: "Cookie Químico", preço: 1_000_000_000_000, efeito:'5porcento', id: 'chemicalcookie', comprado: false, descricao: "Cookie criado com química pura! +5% de CPS", spriteX: 8, spriteY: 9},
+
     // Cookies Caseiros - Vovós
     {nome: "Biscoito Polvilho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo1', comprado: false, descricao: "Salgadinho! +3% de CPS"},
     {nome: "Casadinho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo2', comprado: false, descricao: "Muito bom. +3% de CPS"},
@@ -125,10 +129,10 @@ export const DEFAULT_MELHORIAS = [
     {nome: "Tortinhas de Morango", preço: 100_000_000_000_000, efeito:'5porcento', id: 'cookiebr6', comprado: false, descricao: "A Melhor de Todas! +5% de CPS"},
 
     // Sorte
-    {nome: "Trevo de Quatro Folhas", preço: 77_777, efeito:'sorte', id: 'sorte1', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
-    {nome: "Pé de Coelho", preço: 7_777_777, efeito:'sorte', id: 'sorte2', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
-    {nome: "Ferradura Dourada", preço: 777_777_777, efeito:'sorte', id: 'sorte3', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
-    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"}
+    {nome: "Trevo de Quatro Folhas", preço: 77_777, efeito:'sorte', id: 'sorte1', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"},
+    {nome: "Pé de Coelho", preço: 7_777_777, efeito:'sorte', id: 'sorte2', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"},
+    {nome: "Ferradura Dourada", preço: 777_777_777, efeito:'sorte', id: 'sorte3', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"},
+    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"}
   ];
 
 export const DEFAULT_DOURADO = [
@@ -230,7 +234,7 @@ export const DEFAULT_CONQUISTAS = [
     {nome: "Infinito Açucarado", tipo: 'cps', quantidade: 1_000_000_000_000, id: 'cps13', obtido: false, descricao: "Faça 1 trilhão de cookies por segundo", spriteX: 12, spriteY: 0},
 
     // número de cookies obtidos por click
-    {nome: "Click", tipo: 'click', quantidade: 1, id: 'click1', obtido: false, descricao: "Clique no cookie 1 vez", spriteX: 0, spriteY: 1},
+    {nome: "Click", tipo: 'valorClick', quantidade: 1, id: 'click1', obtido: false, descricao: "Clique no cookie 1 vez", spriteX: 0, spriteY: 1},
     {nome: "Clique de Gente Grande", tipo: 'valorClick', quantidade: 1_000, id: 'click2', obtido: false, descricao: "Faça 1.000 cookies em um único clique", spriteX: 1, spriteY: 1},
     {nome: "Punho de Ferro", tipo: 'valorClick', quantidade: 1_000_000, id: 'click3', obtido: false, descricao: "Faça 1 milhão de cookies em um único clique", spriteX: 2, spriteY: 1},
     {nome: "Clique Atômico", tipo: 'valorClick', quantidade: 1_000_000_000, id: 'click4', obtido: false, descricao: "Faça 1 bilhão de cookies em um único clique", spriteX: 3, spriteY: 1},
@@ -322,6 +326,30 @@ export const DEFAULT_CONQUISTAS = [
      spriteX: 2, spriteY: 15,
      check: (s) => s.temploSecretoClicado === true},
 
+    {nome: "Ícaro", id: 'sec_icaro', obtido: false,
+     descricao: "Voou perto demais do sol.",
+     spriteX: 3, spriteY: 15,
+     check: (s) => s.icaroClicado === true},
+
+    // Aplicou as 4 cores de poção na Vovó (easter egg do Laboratório)
+    {nome: "Vovó Arco-Íris", id: 'sec_vovoarcoiris', obtido: false,
+     descricao: "Descobriu como colorir a Vovó de todas as cores.",
+     spriteX: 4, spriteY: 15,
+     check: (s) => s.vovoTodasCoresClicado === true},
+
+    // Progresso de descoberta no Laboratório de Frascos: conta só os 16
+    // combos únicos e especiais (EFEITOS_COMBOS) — os efeitos genéricos
+    // por cor não entram nessa contagem.
+    {nome: "Aprendiz de Alquimia", id: 'lab_10efeitos', obtido: false,
+     descricao: "Descobriu metade dos combos especiais do Laboratório de Frascos.",
+     spriteX: 8, spriteY: 14,
+     check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 8},
+
+    {nome: "Minä", id: 'lab_20efeitos', obtido: false,
+     descricao: "Descobriu todos os 16 combos especiais do Laboratório de Frascos.",
+     spriteX: 9, spriteY: 14,
+     check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 16},
+
 
 
     // Conquistas de cookie coins (linha 14, cols 0-3)
@@ -366,6 +394,145 @@ export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
     coins: 0,
     mercado: 1
   };
+
+// Descrição do efeito de cada combo especial do Laboratório de Frascos,
+// usada na tooltip do frasco grande — só é mostrada depois que o jogador
+// já bebeu aquela combinação pelo menos uma vez (ver laboratorio.descobertos).
+// Cada combo é uma LISTA de efeitos (um item por linha, direto e numérico,
+// no estilo das plantas do jardim do Cookie Clicker — inclui negativos).
+// Chave = "verde-vermelho-azul-amarelo" (quantidade de cada um no frasco).
+export const EFEITOS_COMBOS = {
+  "3-0-0-0": [
+    "+10 horas de CPS instantâneo",
+    "-10% CPS por 1 hora"
+  ],
+  "2-1-0-0": [
+    "1 clique com poder x1111",
+    "-10 unidades de uma construção aleatória (no clique)"
+  ],
+  "1-2-0-0": [
+    "1 clique com poder x1111",
+    "-10 unidades de uma construção aleatória (no clique)"
+  ],
+  "0-2-0-1": [
+    "Clique x77 por 7 segundos",
+    "-2 unidades de uma construção aleatória por clique"
+  ],
+  "0-3-0-0": [
+    "Clique x100 por 10 segundos",
+    "-5 unidades de uma construção aleatória por clique"
+  ],
+  "1-0-0-2": [
+    "Invoca 1 Cookie Dourado"
+  ],
+  "0-0-0-3": [
+    "Invoca 'O Sol' no centro da tela",
+    "Ao clicar: destrói TODAS as construções",
+    "Ao clicar: +3 de sorte por 1 hora"
+  ],
+  "1-0-2-0": [
+    "+100% CPS por 10 minutos",
+    "-2 de sorte por 10 minutos",
+    "Efeito termina ao clicar no cookie"
+  ],
+  "0-1-2-0": [
+    "+30% CPS por 1 hora",
+    "-2 de sorte por 1 hora",
+    "Efeito termina ao clicar no cookie"
+  ],
+  "0-0-2-1": [
+    "+7% CPS por 7 horas",
+    "Efeito termina ao clicar no cookie"
+  ],
+  "0-0-3-0": [
+    "+24% CPS por 24 horas",
+    "-4 de sorte por 24 horas",
+    "Efeito termina ao clicar no cookie"
+  ],
+  "1-1-1-0": [
+    "Construções 20% mais baratas por 5 minutos"
+  ],
+  "1-1-0-1": [
+    "Cookie Coins valem 10x mais por 1 minuto"
+  ],
+  "0-1-1-1": [
+    "Desbloqueia o upgrade 'Cookie Químico'"
+  ],
+  "1-0-1-1": [
+    "+1 de sorte por 10 minutos"
+  ],
+  "0-0-1-2": [
+    "Cookies Dourados duram +10% por 10 minutos"
+  ],
+};
+
+// Efeitos das substâncias FORA de um combo especial (misturas genéricas),
+// por cor e por quantidade daquela cor no frasco (1 ou 2 — 3 unidades puras
+// de qualquer cor sempre cai em um combo especial, nunca chega aqui).
+// A descoberta desses é por COR, não por mistura exata: a primeira vez que
+// o jogador bebe qualquer mistura genérica contendo aquela cor, os efeitos
+// dela (em qualquer quantidade) passam a ser conhecidos.
+export const EFEITOS_GENERICOS = {
+  verde: {
+    1: ["+20 min de CPS instantâneo"],
+    2: ["+40 min de CPS instantâneo"]
+  },
+  vermelho: {
+    1: ["Clique x10 por 10 segundos", "-1 construção aleatória por clique"],
+    2: ["Clique x15 por 10 segundos", "-1 construção aleatória por clique"]
+  },
+  azul: {
+    1: ["+10% CPS por 1 hora", "Efeito termina ao clicar no cookie"],
+    2: ["+20% CPS por 1 hora", "Efeito termina ao clicar no cookie"]
+  },
+  amarelo: {
+    1: ["+1 de sorte por 3 minutos"],
+    2: ["+1 de sorte por 10 minutos"]
+  }
+};
+
+export const DEFAULT_LABORATORIO = {desbloqueado: false,
+    substancias: {
+      verde: {
+        cargas: 2,
+        proximaRecarga: null, // timestamp da próxima carga ficar pronta, ou null se cheio
+        nome: "Essência da Ganância",
+        descricao: "Para quem quer resultados instantâneos. O que pode dar errado?"
+      },
+      vermelho: {
+        cargas: 2,
+        proximaRecarga: null, // timestamp da próxima carga ficar pronta, ou null se cheio
+        nome: "Essência da Raiva",
+        descricao: "A Raiva pode levar a ganhos rápidos. Não a deixe te consumir"
+      },
+      azul: {
+        cargas: 2,
+        proximaRecarga: null, // timestamp da próxima carga ficar pronta, ou null se cheio
+        nome: "Essência da Preguiça",
+        descricao: "Para aqueles que não querem clicar e preferem a vida fácil"
+      },
+      amarelo: {
+        cargas: 2,
+        proximaRecarga: null, // timestamp da próxima carga ficar pronta, ou null se cheio
+        nome: "Essência do Orgulho",
+        descricao: "Dizem que isso dá sorte para aqueles que bebem. Cuidado para não se deixar levar..."
+      }
+    },
+    Frasco: [],
+    // Histórico das cargas consumidas no Frasco atual, na ordem em que
+    // foram adicionadas — permite desfazer (undo) restaurando exatamente
+    // o estado anterior de cada substância. É esvaziado ao beber a poção.
+    historico: [],
+    // Combinações (chaves de EFEITOS_COMBOS) que o jogador já bebeu pelo
+    // menos uma vez — habilita a descrição do efeito na tooltip do frasco.
+    descobertos: [],
+    // Cores cujo efeito GENÉRICO (fora de combo especial) já foi descoberto
+    // — ex: usar 1x Verde sozinho (ou com algo que não forma combo) revela
+    // o efeito genérico do Verde em qualquer quantidade daqui pra frente.
+    genericosDescobertos: [],
+    CookieQuimico: false
+  };
+
 export const CONFIG_DOURADO = {
   TMIN: 300, // 5 minutos
   TMAX: 540, // 9 minutos
@@ -493,7 +660,7 @@ export const DEFAULT_ASCENSAO = {
 // Retorna as melhorias já filtradas, ordenadas do mais barato ao mais caro,
 // e com um campo extra `indiceOriginal` que guarda a posição no array original
 // (necessário para a função ComprarMelhoria saber qual melhoria foi comprada).
-export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao) {
+export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao, laboratorio) {
   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
   const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
   const ContagemMinas = construcoes.find((c) => c.nome === "Mina")?.quantidade || 0;
@@ -575,6 +742,7 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
       if (m.id === "cookie10" && cookiesTotaisAscensao < 15_000_000) return false;
       if (m.id === "cookie11" && cookiesTotaisAscensao < 500_000_000) return false;
       if (m.id === "cookie12" && cookiesTotaisAscensao < 1_000_000_000) return false;
+      if (m.id === "chemicalcookie" && (!laboratorio || !laboratorio.CookieQuimico)) return false;
 
       if (m.id === "sorte1" && douradosTotais < 1) return false;
       if (m.id === "sorte2" && douradosTotais < 7) return false;

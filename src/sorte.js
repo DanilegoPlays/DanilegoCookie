@@ -75,6 +75,7 @@ export function criarEfeitoCookieDourado({
   setBuff,
   cookieInstaneo,
   mostrarAviso,
+  buff,
 }) {
   return function efeitoCookieDourado() {
     // toca som do cookie dourado
@@ -93,13 +94,17 @@ export function criarEfeitoCookieDourado({
 
     mostrarAviso(`Cookie dourado: ${efeito.nome}`);
 
+    const now = Date.now();
+    const durationBuff = buff.find(b => b.tipo === "GoldenCookieDuration" && b.expira > now);
+    const finalDuration = durationBuff ? efeito.duração * durationBuff.mult : efeito.duração;
+
     setBuff(prev => [
       ...prev,
       {
         nome: efeito.nome,
         tipo: efeito.tipo,
         mult: efeito.mult,
-        expira: Date.now() + efeito.duração * 1000
+        expira: Date.now() + finalDuration * 1000
       }
     ]);
   };

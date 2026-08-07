@@ -1,9 +1,8 @@
 .jogo {
   display: flex;
-  height:100vh;
   justify-content: space-between;
   align-items: flex-start;
-  width: 98%;
+  width: 100%;
   margin: 0 auto;
   gap: 10px;
 }
@@ -11,15 +10,47 @@
 .lado-esquerdo {
   display:flex;
   flex-direction: column;
-  width: 400px;
+  text-align: center;
+  /* Cresce pra preencher o espaço livre da linha, até o teto de 500px
+     (mesmo tamanho que era fixo antes) — mesma lógica do .karaj-viewport. */
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 500px;
 }
+
+/* Caixa com os botões Opções e Conquistas na coluna esquerda,
+   entre o display de buffs e o minigame Cookie Coin. */
+.seção-menus {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+  background-color: #fffae0;
+  padding: 20px;
+  border-radius: 20px;
+  border: 4px solid #000;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.seção-minigames {
+  background-color: #fffae0;
+  padding: 20px;
+  border-radius: 20px;
+  border: 4px solid #000;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  max-height: 750px; 
+  overflow-x: visible; 
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #f06d06 #fff;
+}
+
 .seção-cookie-coin {
   background: linear-gradient(180deg, #0b0f0c, #050705);
   border: 2px solid #2aff6d;
   border-radius: 6px;
 
   padding: 14px 16px;
-  width: 350px;
 
   color: #2aff6d;
   font-family: "Courier New", Courier, monospace;
@@ -32,21 +63,53 @@
   position: relative;
 }
 
+.seção-laboratório {
+  /* Fundo escuro com tom chumbo, lembrando painéis de aço escovado */
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  
+  /* Borda verde químico/esmeralda */
+  border: 2px solid #10b981; 
+  border-radius: 16px;
+
+  padding: 16px 20px;
+
+  /* Texto claro (off-white) para contraste impecável */
+  color: #f1f5f9; 
+  font-family: "Courier New", Courier, monospace;
+  font-size: 16px;
+
+  /* Brilho externo e interno verde radiante (efeito de tubo de ensaio brilhante) */
+  box-shadow:
+    0 4px 15px rgba(16, 185, 129, 0.4),
+    inset 0 0 15px rgba(16, 185, 129, 0.15);
+
+  position: relative;
+}
+
+/* Sugestão para o título dentro da seção */
+.seção-laboratório h3 {
+  color: #34d399; /* Verde neon mais claro */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 5px rgba(52, 211, 153, 0.4);
+  margin-top: 0;
+}
 
 
 .lado-meio {
   display:flex;
   flex-direction: column;
+  /* Cresce pra preencher o espaço livre da linha, até o teto de 800px
+     (mesmo max-width que .seção-cookie já usava). */
 }
 /* Seção do cookie (meio) */
 .seção-cookie {
-
+  position: relative;
   text-align: center;
   max-width: 800px;
 }
 /* Coleção de Construções */
 .seção-coleção {
-  min-width: 800px;
   background: rgba(0, 0, 0, 0.1);
   padding: 10px;
   border-radius: 10px;
@@ -100,10 +163,14 @@
 .lado-direito {
   display:flex;
   flex-direction: column;
+  /* Cresce pra preencher o espaço livre da linha, dentro dos limites que
+     já existiam (200px–480px). */
+  flex: 1 1 0;
+  max-width: 480px;
+  min-width: 200px;
 }
 
 .seção-upgrades {
-  width: 400px;
   text-align: center;
   background-color: #fffae0;
   padding: 20px;
@@ -132,14 +199,13 @@
 
 /* Seção das construções */
 .seção-construções {
-  width: 400px;
   text-align: center;
   background-color: #fffae0;
   padding: 20px;
   border-radius: 20px;
   border: 4px solid #000;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  max-height: 500px;        /* tamanho da caixa de construções*/
+  max-height: 650px;        /* tamanho da caixa de construções*/
   overflow-x: visible; /* permite os tooltips "vazarem" da caixa de upgrades */
   overflow-y: auto;
   scrollbar-width: thin;
@@ -237,6 +303,57 @@
   opacity: 1;
 }
 
+/* Tooltips do Laboratório de Frascos (mesmo padrão da tooltip das construções) */
+.frasco-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.flask-icon[draggable="true"]:hover {
+  transform: scale(1.08);
+}
+
+.flask-icon[draggable="true"]:active {
+  cursor: grabbing !important;
+  opacity: 0.6;
+}
+
+.flask-cargas {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.flask-carga-ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffd700;
+  display: inline-block;
+}
+
+.info-frasco {
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 260px;
+  line-height: 1.5;
+  pointer-events: none;
+  text-align: left;
+  white-space: pre-line; /* respeita \n como quebra de linha (lista de efeitos) */
+
+  box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-family: monospace;
+}
+
+.info-frasco-extra {
+  color: #ffd54f;
+}
+
 .seção-opções {
   width: 400px;
   text-align: center;
@@ -265,7 +382,6 @@
 
 /* seção minigame */
 .seção-karaj {
-  width: 350px;
   margin-top: 20px;
   padding: 16px;
   border-radius: 16px;
@@ -534,8 +650,11 @@
 /* faz precisar arrastar para ver toda karaj*/
 .karaj-viewport {
   position: relative;
-  width: 100%;
-  height: 90%;
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 1000px;
+  height: 700px;
+  max-height: 80vh;
   overflow: hidden;
   cursor: grab;
   user-select: none;
@@ -552,15 +671,12 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  max-height: none;
   border: none;
   border-radius: 0;
   z-index: 1000;
   background: #1a1a1a;
 }
-
-
-
-
 
 /*
 #cookie2
@@ -696,21 +812,44 @@ body {
   100% { transform: scale(1); }
 }
 
-.seção-buffs {
-  background: rgba(255, 215, 0, 0.1);
-  border: 2px solid gold;
-  padding: 12px;
-
-}
-
-/* Caixa com os botões Opções e Conquistas na coluna esquerda,
-   entre o display de buffs e o minigame Cookie Coin. */
-.seção-menus {
+/* Barra de buffs ativos, estilo Cookie Clicker. Fica FORA do fluxo normal
+   (position:absolute), então nunca empurra o cookie — sobra como uma
+   coluna vertical de ícones grudada na lateral esquerda da seção. O efeito
+   completo só aparece no tooltip (hover). */
+.barra-buffs {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
 }
+
+.buff-icone {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: rgba(255, 215, 0, 0.15);
+  border: 2px solid gold;
+  border-radius: 8px;
+  cursor: default;
+  transition: transform 0.15s ease;
+}
+
+.buff-icone:hover {
+  transform: scale(1.12);
+}
+
+.buff-icone.debuff {
+  background: rgba(255, 82, 82, 0.15);
+  border-color: #ff5252;
+}
+
+
 
 /* Tela central compartilhada pelos menus de opções e conquistas.
    Ocupa o lugar do "lado-meio" quando um desses menus está aberto,

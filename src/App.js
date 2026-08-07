@@ -21,20 +21,21 @@ import somClick3 from './arte/click3.mp3';
 import somClick4 from './arte/click4.mp3';
 import somDourado from './arte/dourado.mp3';
 import somSpawn from './arte/spawn.mp3';
+import somSol from './arte/sol.mp3';
 
 import {ExplosaoVideo, PRIMEIRO_PRESTIGIO, calcularPrestigio, getNomeDistrito, criarAbrirDistrito, criarColocarDistrito, criarComprarUpgradeAscensao, criarAscender, criarOnMouseDown, criarOnMouseMove, criarOnMouseUp} from './Ascension';
 import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, CONQUISTA_SPRITE, filtrarUpgradesDisponiveis} from './defaults';
+import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, CONQUISTA_SPRITE, EFEITOS_COMBOS, EFEITOS_GENERICOS, filtrarUpgradesDisponiveis} from './defaults';
 import conquistasSprite from './arte/conquistas.png';
 import tinyCookie from './arte/TinyCookie.png';
 import madalenaIcon from './arte/Madalena.png';
 import temploSecretoIcon from './arte/MarioL.png';
 import cookieCoinIcon from './arte/CookieCoin.png';
 import {SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
-import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoCookieCoin} from './minigame';
+import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoCookieCoin, criarAdicionarQuimica, criarDesfazerQuimica, criarBeberPocao, getCargasAtuais, MAX_CARGAS} from './minigame';
 import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP} from './helper';
 
 function App() {
@@ -58,13 +59,14 @@ function App() {
   // Flag pra disparar a conquista secreta do templo (não persiste).
   const [temploSecretoClicado, setTemploSecretoClicado] = useState(false)
   // Qual índice do templo (em "Sua Produção") tem o ícone secreto escondido.
-  // Escolhido aleatoriamente na primeira render, mantém na sessão.
   const temploSecretoIndexRef = useRef(null);
  
  
   // Minigames
   const [cookieCoin, setCookieCoin] = useState(DEFAULT_COOKIE_COIN);
   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
+  const [laboratorio, setLaboratorio] = useState(DEFAULT_LABORATORIO);
+
   const [telaAtual, setTelaAtual] = useState("jogo"); // telas: "jogo", "karaj" (ascensao), "conquistas", "opções"
   // Tooltip da grade de conquistas — position: fixed pra escapar do overflow
   // do container. Posição calculada dinamicamente no onMouseEnter da caixa.
@@ -72,6 +74,10 @@ function App() {
   const [animandoAscensao, setAnimandoAscensao] = useState(false); // animação da ascensão
   // sorte
   const [cookieDourado, setCookieDourado] = useState(null);
+  // "O Sol" — cookie gigante do combo 3x Amarelo do Laboratório (ver mais abaixo)
+  const [sol, setSol] = useState(null);
+  // Flag pra disparar a conquista secreta "Ícaro" (não persiste).
+  const [icaroClicado, setIcaroClicado] = useState(false)
   const [buff, setBuff] = useState([]);
   const [sorte, setSorte] = useState(1);
   const [tempoDourado, setTempoDourado] = useState(() => { // Tempo até o próximo cookie dourado!
@@ -88,6 +94,7 @@ function App() {
   const clickSonsRef = useRef([]);
   const douradoSomRef = useRef(null);
   const spawnSomRef = useRef(null);
+  const solSomRef = useRef(null);
  
   // Inicializa os audios uma vez só
   useEffect(() => {
@@ -104,11 +111,18 @@ function App() {
  
     spawnSomRef.current = new Audio(somSpawn);
     spawnSomRef.current.volume = 0.6;
+
+    // Som contínuo do "O Sol" — toca em loop enquanto ele estiver na tela.
+    solSomRef.current = new Audio(somSol);
+    solSomRef.current.volume = 0.5;
+    solSomRef.current.loop = true;
   }, []);
 
   // Função para calcular o preço atual de cada construção baseado no preço base e quantidade
   function getPreçoAtual(preçoBase, quantidade) {
-    return Math.floor(preçoBase * Math.pow(1.15, quantidade));
+    const descontoBuff = buff.find(b => b.tipo === "BuildingDiscount" && b.expira > Date.now());
+    const multiplicadorDesconto = descontoBuff ? descontoBuff.mult : 1;
+    return Math.floor(preçoBase * Math.pow(1.15, quantidade) * multiplicadorDesconto);
   }
   function preverCustoMultiplo(precoBase, quantidadeAtual, saldoCookies, quantidadeDesejada) {
   let custoSimulado = 0;
@@ -141,6 +155,12 @@ function App() {
     const templo = construcoes.find(c => c.nome === "Templo de Karaj");
     if (templo && templo.quantidade >= 1) {
       setAscensao(prev =>
+        prev.desbloqueado ? prev : { ...prev, desbloqueado: true }
+      );
+    }
+    const lab = construcoes.find(c => c.nome === "Laboratório");
+    if (lab && lab.quantidade >= 1) {
+      setLaboratorio(prev =>
         prev.desbloqueado ? prev : { ...prev, desbloqueado: true }
       );
     }
@@ -196,6 +216,38 @@ function App() {
   // Tooltips
   const [hoveredConstrucao, setHoveredConstrucao] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  // Tooltip dos frascos do Laboratório (segue o mesmo padrão do tooltip das construções)
+  const [hoveredFrasco, setHoveredFrasco] = useState(null); // { titulo, descricao, extra? }
+  const [tooltipPosFrasco, setTooltipPosFrasco] = useState({ x: 0, y: 0 });
+  // Tooltip dos ícones de buff (estilo Cookie Clicker: só o ícone, hover mostra o efeito)
+  const [hoveredBuff, setHoveredBuff] = useState(null);
+  const [tooltipPosBuff, setTooltipPosBuff] = useState({ x: 0, y: 0 });
+  // Feedback visual de arrastar-e-soltar
+  const [arrastandoSobreFrasco, setArrastandoSobreFrasco] = useState(false);
+  const [arrastandoSobreVovo, setArrastandoSobreVovo] = useState(false);
+
+  // --- Easter egg: colorir a Vovó com a poção do Laboratório ---
+  const VOVO_SPRITE_X = { verde: 5, vermelho: 6, azul: 7, amarelo: 8 };
+  const VOVO_NOMES = { verde: "Verde", vermelho: "Vermelha", azul: "Azul", amarelo: "Amarela" };
+  const [vovoCor, setVovoCor] = useState(null); // null | 'verde' | 'vermelho' | 'azul' | 'amarelo'
+  const [vovoCoresFeitas, setVovoCoresFeitas] = useState([]); // cores distintas já aplicadas
+  // Flag pra disparar a conquista secreta "Vovó Arco-Íris" (não persiste).
+  const [vovoTodasCoresClicado, setVovoTodasCoresClicado] = useState(false);
+
+  function AplicarCorNaVovo(cor) {
+    if (!VOVO_SPRITE_X[cor]) return;
+
+    setVovoCor(cor);
+    mostrarAvisoPersistente(`Sua Vovó agora é a Vovó ${VOVO_NOMES[cor]}! 🧪`);
+
+    if (!vovoCoresFeitas.includes(cor)) {
+      const novasCores = [...vovoCoresFeitas, cor];
+      setVovoCoresFeitas(novasCores);
+      if (novasCores.length === 4) {
+        setVovoTodasCoresClicado(true);
+      }
+    }
+  }
   // Avisos gerais
   function mostrarAviso(texto) {
     setAviso({ texto, id: Date.now() });
@@ -234,6 +286,8 @@ function App() {
   const sorteUpgradesAtivadosRef = useRef(sorteUpgradesAtivados);
   const producaoMinimizadaRef = useRef(producaoMinimizada);
   const conquistasRef = useRef(conquistas);
+  const laboratorioRef = useRef(laboratorio);
+  const buffRef = useRef(buff);
  
   // Manter referencias sincronizadas
   useEffect(() => { 
@@ -252,11 +306,42 @@ function App() {
   useEffect(() => { sorteUpgradesAtivadosRef.current = sorteUpgradesAtivados; }, [sorteUpgradesAtivados]);
   useEffect(() => { producaoMinimizadaRef.current = producaoMinimizada; }, [producaoMinimizada]);
   useEffect(() => { conquistasRef.current = conquistas; }, [conquistas]);
+  useEffect(() => { laboratorioRef.current = laboratorio; }, [laboratorio]);
+  useEffect(() => { buffRef.current = buff; }, [buff]);
  
  
+  // Notifica e marca uma lista de conquistas como obtidas. Extraido pra
+  // funcao separada porque agora tem duas fontes de conquistas desbloqueadas:
+  // o useEffect passivo abaixo (cookiesTotais, CPS, construcoes, secretas) e
+  // o clique em si (valorClick - ver AssarCookies), que precisa ser checado
+  // no momento do clique, nao passivamente.
+  function desbloquearConquistas(novasConquistas) {
+    if (novasConquistas.length === 0) return;
+ 
+    novasConquistas.forEach(c => {
+      const T = CONQUISTA_SPRITE.tamanho;
+      const icone = (
+        <div
+          style={{width: T,height: T,backgroundImage: `url(${conquistasSprite})`,backgroundPosition: `-${c.spriteX * T}px -${c.spriteY * T}px`,imageRendering: 'pixelated',flexShrink: 0,}}/>
+      );
+      mostrarAvisoPersistente(`Nova Conquista: ${c.nome}`, icone);
+    });
+ 
+    const idsObtidos = new Set(novasConquistas.map(c => c.id));
+    setConquistas(prev => prev.map(c => 
+      idsObtidos.has(c.id) ? {...c, obtido: true} : c));
+  }
+
   useEffect(() => {
-    
-    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado}))
+    // Progresso de descoberta no Laboratório de Frascos: só os 16 combos
+    // especiais e únicos contam (efeitos genéricos por cor não entram aqui).
+    // Filtra só chaves que são de fato combos especiais (defesa extra caso
+    // algum save antigo tenha ficado com misturas genéricas registradas ali
+    // por engano, de uma versão anterior com bug).
+    const efeitosLaboratorioDescobertos =
+      (laboratorio.descobertos ?? []).filter(k => EFEITOS_COMBOS[k]).length;
+
+    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, efeitosLaboratorioDescobertos}))
  
     if (novasConquistas.length === 0) return;
  
@@ -264,15 +349,7 @@ function App() {
       const T = CONQUISTA_SPRITE.tamanho;
       const icone = (
         <div
-          style={{
-            width: T,
-            height: T,
-            backgroundImage: `url(${conquistasSprite})`,
-            backgroundPosition: `-${c.spriteX * T}px -${c.spriteY * T}px`,
-            imageRendering: 'pixelated',
-            flexShrink: 0,
-          }}
-        />
+          style={{width: T,height: T,backgroundImage: `url(${conquistasSprite})`,backgroundPosition: `-${c.spriteX * T}px -${c.spriteY * T}px`,imageRendering: 'pixelated',flexShrink: 0,}}/>
       );
       mostrarAvisoPersistente(`Nova Conquista: ${c.nome}`, icone);
     });
@@ -281,7 +358,7 @@ function App() {
     setConquistas(prev => prev.map(c => 
       idsObtidos.has(c.id) ? {...c, obtido: true} : c));
  
-  }, [cookiesTotais, CPS, cookiePequenoClicado, madalenaClicada, temploSecretoClicado]);
+  }, [cookiesTotais, CPS, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, laboratorio.descobertos]);
  
  
  
@@ -320,6 +397,8 @@ function App() {
       sorteUpgradesAtivados: sorteUpgradesAtivadosRef.current,
       producaoMinimizada: producaoMinimizadaRef.current,
       conquistas: conquistasRef.current,
+      laboratorio: laboratorioRef.current,
+      buff: buffRef.current,
       lastSavedAt: Date.now()
     };
   }
@@ -370,6 +449,8 @@ function App() {
       }
       setProducaoMinimizada(dados.producaoMinimizada ?? false);
       if (dados.conquistas) setConquistas(dados.conquistas);
+      setLaboratorio(dados.laboratorio ?? DEFAULT_LABORATORIO);
+      setBuff(dados.buff ?? []);
  
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -418,6 +499,67 @@ function App() {
       spawnSomRef.current.play().catch(() => {});
     }
   }
+
+  // "O Sol": cookie gigante invocado pelo combo 3x Amarelo do Laboratório de
+  // Frascos. Clicar nele destrói TODAS as construções, mas dá +3 de sorte
+  // por 1 hora e desbloqueia a conquista secreta "Ícaro".
+  function SpawnSol() {
+    // Cookie Dourado normal fica 15s na tela (ver SpawnCookieDourado em
+    // sorte.js) — O Sol fica o dobro disso.
+    setSol({ expira: Date.now() + 30 * 1000 });
+    if (spawnSomRef.current) {
+      spawnSomRef.current.currentTime = 0;
+      spawnSomRef.current.play().catch(() => {});
+    }
+  }
+
+  function CliqueSol() {
+    if (!sol) return;
+
+    if (douradoSomRef.current) {
+      douradoSomRef.current.currentTime = 0;
+      douradoSomRef.current.play().catch(() => {});
+    }
+
+    setSol(null);
+    setConstrucoes(prev => prev.map(c => ({ ...c, quantidade: 0 })));
+    setBuff(prev => [...prev, {
+      nome: "Bênção do Sol",
+      tipo: "Luck",
+      mult: 3,
+      expira: Date.now() + 60 * 60 * 1000
+    }]);
+    setIcaroClicado(true);
+    mostrarAvisoPersistente("Você voou perto demais do Sol! Todas as suas construções foram destruídas — mas ganhou +3 de sorte por 1 hora.");
+  }
+
+  // Some com O Sol se o jogador não clicar a tempo.
+  useEffect(() => {
+    if (!sol) return;
+    const timeout = setTimeout(() => {
+      setSol(null);
+    }, Math.max(0, sol.expira - Date.now()));
+    return () => clearTimeout(timeout);
+  }, [sol]);
+
+  // Toca o som do Sol em loop enquanto ele estiver na tela; para assim que
+  // ele sumir (por clique ou por expirar o tempo).
+  useEffect(() => {
+    const audio = solSomRef.current;
+    if (!audio) return;
+
+    if (sol) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    return () => {
+      audio.pause();
+    };
+  }, [sol]);
  
   // Função para calcular o próximo cookie dourado
   const calcularProximoSpawn = () => calcularProximoSpawnFn(sorte);
@@ -514,7 +656,9 @@ function App() {
     });
  
     // Cada upgrade aumenta a sorte em 1
-    const totalLuck = 1 + luckUpgrades + ascensaoLuck;
+    const now = Date.now();
+    const luckBuff = buff.filter(b => b.tipo === "Luck" && b.expira > now).reduce((sum, b) => sum + b.mult, 0);
+    const totalLuck = 1 + luckUpgrades + ascensaoLuck + luckBuff;
     setSorte(totalLuck);
   }, [melhorias, ascensao]);
  
@@ -663,6 +807,20 @@ function App() {
   function CpsConstrucao(c) {
     return c.cps * getMultiplicador(c, melhorias) * getMultiplicadorP(melhorias, ascensao);
   }
+
+  // Penalidade de alguns combos "instáveis" do Laboratório de Frascos:
+  // enquanto o efeito estiver ativo, cada clique no cookie derruba uma
+  // construção aleatória (perde 1 unidade de um prédio já comprado).
+  function PerderConstrucaoAleatoria(perda) {
+    const possiveis = construcoes.filter(c => c.quantidade > 0);
+    if (possiveis.length === 0) return;
+    const alvo = possiveis[Math.floor(Math.random() * possiveis.length)];
+    const perdaReal = Math.min(perda, alvo.quantidade); // nunca deixa a quantidade ficar negativa
+    setConstrucoes(prev => prev.map(c =>
+      c.nome === alvo.nome ? { ...c, quantidade: Math.max(0, c.quantidade - perda) } : c
+    ));
+    mostrarAviso(`💥 Instabilidade química destruiu ${perdaReal} ${alvo.nome}!`);
+  }
  
   // função click (gera os cookies do click)
   function AssarCookies() {
@@ -673,10 +831,51 @@ function App() {
       som.currentTime = 0;
       som.play().catch(() => {});
     }
-    setContagem((anterior) => anterior + clickRef.current);
-    setCookiesTotais((anterior) => anterior + clickRef.current);
-    setCookiesTotaisAscensao((anterior) => anterior + clickRef.current);
+
+    // "Clique Supremo" (combos verde+vermelho): buff de uso único,
+    // não expira por tempo, é consumido no primeiro clique após ser ativado.
+    const now = Date.now();
+    const cliqueSupremo = buff.find(b => b.tipo === "ClickOnce" && b.expira > now);
+    // Combos "instáveis" que multiplicam o clique por uma duração (ex: Fúria
+    // Instável, Overdose Vermelha) e carregam a penalidade de derrubar prédios.
+    const debuffCliqueAtivo = buff.find(b => b.tipo === "Click" && b.expira > now && b.penalidade);
+
+    const valorClique = clickRef.current * (cliqueSupremo ? cliqueSupremo.mult : 1);
+
+    setContagem((anterior) => anterior + valorClique);
+    setCookiesTotais((anterior) => anterior + valorClique);
+    setCookiesTotaisAscensao((anterior) => anterior + valorClique);
+
+    if (cliqueSupremo) {
+      setBuff(prev => prev.filter(b => b !== cliqueSupremo));
+      mostrarAvisoPersistente(`Clique Supremo! +${Math.floor(valorClique).toLocaleString()} cookies!`);
+    }
+
+    if (cliqueSupremo && cliqueSupremo.penalidade) {
+      PerderConstrucaoAleatoria(cliqueSupremo.intensidade);
+    } else if (debuffCliqueAtivo) {
+      PerderConstrucaoAleatoria(debuffCliqueAtivo.intensidade);
+    }
+
+    // Penalidade do Azul: o efeito de CPS (e a sorte que vem junto) é
+    // instável e some assim que o jogador clica manualmente no cookie.
+    const buffsAzulAtivos = buff.filter(b => b.terminaComClique && b.expira > now);
+    if (buffsAzulAtivos.length > 0) {
+      setBuff(prev => prev.filter(b => !b.terminaComClique || b.expira <= now));
+      mostrarAvisoPersistente("Seu clique dissipou o efeito químico instável do Azul!");
+    }
+
+    // Conquistas de valorClick só fazem sentido no momento do clique em si
+    // (o valor do clique pode variar com buffs/upgrades), então checamos
+    // aqui e não no useEffect passivo de conquistas.
+    const novasConquistasClick = conquistas.filter(
+      c => !c.obtido && c.tipo === 'valorClick' && valorClique >= c.quantidade
+    );
+    desbloquearConquistas(novasConquistasClick);
+
+    return valorClique;
   }
+
   // função anti-click
   function DestruirCookies() {
     setContagem(contagem - 1);
@@ -692,11 +891,16 @@ function App() {
  
     // --- Animação dos numerinhos
     const id = Date.now(); // Id único para os numerinhos
-    // Pega a posição onde o click foi feito
-    const x = e.clientX - 20;
-    const y = e.clientY - 20; // posiciona um pouco acima do mouse
-    // Adiciona os numerinhos
-    setNumerinhos((prev) => [...prev, { id, x, y }]);
+    // Posição relativa a .seção-cookie (que agora é position:relative, por
+    // causa da barra de buffs) — não mais à tela inteira.
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const x = e.clientX - rect.left - 20;
+    const y = e.clientY - rect.top - 20; // posiciona um pouco acima do mouse
+
+    // Calcula o valor do clique ANTES de criar o numerinho, pra mostrar o
+    // valor real (inclusive com Clique Supremo x1111, quando ativo).
+    const valorClique = AssarCookies();
+    setNumerinhos((prev) => [...prev, { id, x, y, valor: valorClique }]);
  
     // Animação de clicar
     controls.start({
@@ -705,7 +909,6 @@ function App() {
       transition: { duration: 0.3, ease: "easeOut" },
     });
     
-    AssarCookies();
     // Apaga os numerinhos
     setTimeout(() => {
       setNumerinhos((prev) => prev.filter((t) => t.id !== id));
@@ -722,16 +925,16 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
   let nivelSimulado = construcaoAlvo.quantidade;
   let cookiesRestantes = contagem; // Usamos o seu estado de cookies atual
 
-  // 2. Simulamos a compra 1 por 1 até bater a quantidade desejada ou acabar o dinheiro
+  // 2. Simula comprar 1 por 1 até bater a quantidade desejada ou acabar o dinheiro
   while (quantidadeComprada < quantidadeDesejada) {
     // Usamos a sua função getPreçoAtual normalmente
     const precoAtual = getPreçoAtual(construcaoAlvo.preço, nivelSimulado);
 
     if (cookiesRestantes >= precoAtual) {
-      cookiesRestantes -= precoAtual; // Desconta o valor do "bolso" provisório
-      custoTotal += precoAtual;       // Soma na nota fiscal
-      quantidadeComprada++;           // Adiciona 1 no carrinho
-      nivelSimulado++;                // Aumenta o nível para o próximo cálculo ficar mais caro
+      cookiesRestantes -= precoAtual; 
+      custoTotal += precoAtual;       
+      quantidadeComprada++;         
+      nivelSimulado++;                
     } else {
       // Se não tem dinheiro para o próximo, interrompe o loop
       break; 
@@ -853,6 +1056,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       }
       setProducaoMinimizada(dados.producaoMinimizada ?? false);
       if (dados.conquistas) setConquistas(dados.conquistas);
+      setLaboratorio(dados.laboratorio ?? DEFAULT_LABORATORIO);
+      setBuff(dados.buff ?? []);
  
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -899,7 +1104,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
     construcoes,
     cookiesTotaisAscensao,
     douradosTotais,
-    ascensao
+    ascensao,
+    laboratorio
   );
  
   // lista de upgrades comprados
@@ -907,8 +1113,9 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
  
  
   // Minigame Cookie Coin (implementado em minigame.js)
+  const cookieCoinSellBuff = buff.find(b => b.tipo === "CookieCoinSell" && b.expira > Date.now());
   const valorAtualCookieCoin = Math.floor(
-    VALOR_BASE * cookieCoin.mercado
+    VALOR_BASE * cookieCoin.mercado * (cookieCoinSellBuff ? cookieCoinSellBuff.mult : 1)
   );
  
   const precoNvidia = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
@@ -987,7 +1194,32 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       SpawnCookieDourado();
     }
   }
- 
+
+  const AdicionarQuimica = criarAdicionarQuimica({
+      laboratorio,
+      setLaboratorio
+    });
+
+  const DesfazerQuimica = criarDesfazerQuimica({
+    laboratorio,
+    setLaboratorio,
+    mostrarAviso
+  });
+  
+  const BeberPocao = criarBeberPocao({
+    laboratorio,
+    setLaboratorio,
+    setBuff,
+    setContagem,
+    setCookiesTotais,
+    setCookiesTotaisAscensao,
+    CPS,
+    melhorias,
+    setMelhorias,
+    SpawnCookieDourado,
+    SpawnSol,
+    mostrarAvisoPersistente
+  });
   // useStates para arrastar com o mouse a cidade
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -1046,7 +1278,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
   // Funções de cookie dourado (implementadas em sorte.js)
   const cookieInstaneo = criarCookieInstaneo({CPS, contagem, setContagem, setCookiesTotais, setCookiesTotaisAscensao, mostrarAviso, simplificarNumero});
  
-  const efeitoCookieDourado = criarEfeitoCookieDourado({douradoSomRef, setDouradosTotais, setCookieDourado, setBuff, cookieInstaneo, mostrarAviso});
+  const efeitoCookieDourado = criarEfeitoCookieDourado({douradoSomRef, setDouradosTotais, setCookieDourado, setBuff, cookieInstaneo, mostrarAviso, buff});
   
   return (
     <div className="App">
@@ -1163,8 +1395,40 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
           }}
           className="cookie-dourado"
         >
-          <img style={{height: "100px", width:"100px"}}
-          src={dourado} alt={"Cookie Dourado"}></img>
+          <motion.img style={{height: "100px", width:"100px"}}
+          animate={{
+            scale: [1, 1.1, 1],
+            filter: ["brightness(1)", "brightness(1.1)", "brightness(1)"],
+          }}
+          transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
+          src={dourado} alt={"Cookie Dourado"}></motion.img>
+        </div>
+      }
+
+      {sol && telaAtual !== "ascensão" &&
+        <div
+          onClick={CliqueSol}
+          title="O Sol"
+          style={{
+            position: "fixed",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "50vmin",
+            height: "50vmin",
+            cursor: "pointer",
+            zIndex: 10000,
+            filter: "drop-shadow(0 0 60px rgba(255, 200, 0, 0.8))"
+          }}
+          className="o-sol"
+        >
+          <motion.img style={{width: "100%", height: "100%"}}
+          animate={{
+            scale: [1, 1.1, 1],
+            filter: ["brightness(1)", "brightness(1.1)", "brightness(1)"],
+          }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          src={dourado} alt={"O Sol"}></motion.img>
         </div>
       }
       
@@ -1172,36 +1436,6 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
         <div className="jogo">
           {telaAtual !== "ascensão" && (
           <div className="lado-esquerdo">
-
-
-              {/* Display de buffs */}
-                {buff.filter(b => b.expira > Date.now()).length > 0 && (
-                  <div className="seção-buffs">
-                    <h3 style={{ color: '#ffd700', margin: '0 0 8px 0', fontSize: '16px' }}>Efeitos Ativos</h3>
-                    {buff
-                      .filter(b => b.expira > Date.now())
-                      .map((b, i) => {
-                        const tempoRestante = Math.ceil((b.expira - Date.now()) / 1000);
-                        return (
-                          <div key={i} style={{
-                            background: 'rgba(0,0,0,0.3)',
-                            padding: '6px 8px',
-                            borderRadius: '4px',
-                            marginBottom: '4px',
-                            fontSize: '13px'
-                          }}>
-                            <div style={{ color: '#ffd700', fontWeight: 'bold' }}>{b.nome}</div>
-                            <div style={{ color: '#fff', fontSize: '12px' }}>
-                              {b.tipo === "CPS" && `${b.mult}x CPS`}
-                              {b.tipo === "Click" && `${b.mult}x Clique`}
-                              {' • '}
-                              <span style={{ color: '#aaa' }}>{tempoRestante}s</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
 
               {/* Botões para abrir menus de opções e conquistas */}
               <div className="seção-menus">
@@ -1218,95 +1452,331 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                   Conquistas
                 </button>
               </div>
+              <div className="seção-minigames">
+                <h3> Minigames</h3>
+                {cookieCoin.desbloqueado && (
+                <div className="seção-cookie-coin">
+                  <h2>Mineração de Cookie Coins</h2>
 
-              {cookieCoin.desbloqueado && (
-              <div className="seção-cookie-coin">
-                <h2>Mineração de Cookie Coins</h2>
-
-                <p>
-                   <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)}
-                </p>
-                <p>Level: {cookieCoin.level}</p>
-
-                <button
-                  onClick={ComprarCookieCoinNivel}
-                  disabled={contagem < precoNvidia}
-                  style={{cursor: "pointer"}}
-                >
-                  Nova Placa de Vídeo<br />
-                  Preço: {simplificarNumeroPT(precoNvidia)}
-                </button>
-                
                   <p>
-                    Valor:{" "}
-                    <strong>
-                      {simplificarNumero(valorAtualCookieCoin).toLocaleString()} cookies
-                    </strong>
+                    <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)}
                   </p>
-                  <GraficoCookieCoin dados={historicoCookieCoin} simplificarNumero={simplificarNumero} />
+                  <p>Level: {cookieCoin.level}</p>
 
-                <button
-                  onClick={VenderCookieCoin}
-                  disabled={cookieCoin.coins < 1}
-                  style={{cursor: "pointer"}}
-                >
-                  Vender Cookie Coins<br />
-                </button>
-
-                
-
-              </div>
-              )}
-              {ascensao.desbloqueado && (
-                <div className="seção-karaj">
-                  <h2>A Cidade de Karaj</h2>
+                  <button
+                    onClick={ComprarCookieCoinNivel}
+                    disabled={contagem < precoNvidia}
+                    style={{cursor: "pointer"}}
+                  >
+                    Nova Placa de Vídeo<br />
+                    Preço: {simplificarNumeroPT(precoNvidia)}
+                  </button>
                   
-                  <div className="prestigio-box" style={{cursor: "pointer" }}>
-                    <div className="prestigio-header">
-                      Prestigio a ser ganho: <strong>+{prestigioPossivel}</strong>
-                    </div>
+                    <p>
+                      Valor:{" "}
+                      <strong>
+                        {simplificarNumero(valorAtualCookieCoin).toLocaleString()} cookies
+                      </strong>
+                    </p>
+                    <GraficoCookieCoin dados={historicoCookieCoin} simplificarNumero={simplificarNumero} />
 
-                    <div className="prestigio-bar-outer">
-                      <div
-                        className="prestigio-bar-inner"
-                        style={{ width: `${progressoPorcentagem * 100}%` }}
-                      />
-                    </div>
+                  <button
+                    onClick={VenderCookieCoin}
+                    disabled={cookieCoin.coins < 1}
+                    style={{cursor: "pointer"}}
+                  >
+                    Vender Cookie Coins<br />
+                  </button>
 
-                    <div className="prestigio-info">
-                      {simplificarNumero(
-                        cookiesProximoPrestigio - cookiesTotais
-                      )} cookies até o próximo nível
-                    </div>
-                  </div>
-
-                  <p>
-                    A cidade eterna de Karaj observa seus ciclos
-                  </p>
-
-                  <div className="templo-icone">
-                    <img src={Karaj} alt={"Templo"}></img>
-                  </div>
-                  {telaAtual === "jogo" && (
-                    <button
-                      className="portao-karaj"
-                      onClick={() => setTelaAtual("karaj")}
-                    >
-                      Portão da Cidade
-                    </button>
-                  )}
-                  {telaAtual === "karaj" && (
-                    <button
-                      className="portao-karaj"
-                      onClick={() => setTelaAtual("jogo")}
-                    >
-                      Portão da Cidade
-                    </button>
-                  )}
+                  
 
                 </div>
-              )}
+                )}
+                {ascensao.desbloqueado && (
+                  <div className="seção-karaj">
+                    <h2>A Cidade de Karaj</h2>
+                    
+                    <div className="prestigio-box" style={{cursor: "pointer" }}>
+                      <div className="prestigio-header">
+                        Prestigio a ser ganho: <strong>+{prestigioPossivel}</strong>
+                      </div>
 
+                      <div className="prestigio-bar-outer">
+                        <div
+                          className="prestigio-bar-inner"
+                          style={{ width: `${progressoPorcentagem * 100}%` }}
+                        />
+                      </div>
+
+                      <div className="prestigio-info">
+                        {simplificarNumero(
+                          cookiesProximoPrestigio - cookiesTotais
+                        )} cookies até o próximo nível
+                      </div>
+                    </div>
+
+                    <p>
+                      A cidade eterna de Karaj observa seus ciclos
+                    </p>
+
+                    <div className="templo-icone">
+                      <img src={Karaj} alt={"Templo"}></img>
+                    </div>
+                    {telaAtual === "jogo" && (
+                      <button
+                        className="portao-karaj"
+                        onClick={() => setTelaAtual("karaj")}
+                      >
+                        Portão da Cidade
+                      </button>
+                    )}
+                    {telaAtual === "karaj" && (
+                      <button
+                        className="portao-karaj"
+                        onClick={() => setTelaAtual("jogo")}
+                      >
+                        Portão da Cidade
+                      </button>
+                    )}
+
+                  </div>
+                )}
+                {laboratorio.desbloqueado && (
+              <div className='seção-laboratório'>
+                <h2>Laboratório de Alquimia</h2>
+
+                <div className="flasks-container" style={{display: 'flex', justifyContent: 'space-around', marginBottom: '20px'}}>
+                  {['verde', 'vermelho', 'azul', 'amarelo'].map((color) => {
+                    const now = Date.now();
+                    const { cargas, proximaRecarga } = getCargasAtuais(laboratorio.substancias[color], now);
+                    const semCargas = cargas <= 0;
+                    // Pode arrastar sempre que tiver pelo menos 1 carga — o destino
+                    // (frasco grande ou Vovó) decide o que fazer com o químico.
+                    const podeArrastar = !semCargas;
+                    const spriteX = color === 'verde' ? 4 : color === 'vermelho' ? 5 : color === 'azul' ? 6 : 7;
+                    const displaySpriteX = semCargas ? 3 : spriteX;
+                    const T = CONQUISTA_SPRITE.tamanho;
+                    
+                    const info = laboratorio.substancias[color];
+
+                    return (
+                      <div key={color} className="frasco-wrapper">
+                        <div
+                          className="flask-icon"
+                          draggable={podeArrastar}
+                          style={{width: T, height: T, backgroundImage: `url(${conquistasSprite})`, backgroundPosition: `-${displaySpriteX * T}px -${9 * T}px`, backgroundSize: `${CONQUISTA_SPRITE.colunas * T}px ${CONQUISTA_SPRITE.linhas * T}px`, cursor: podeArrastar ? 'grab' : 'not-allowed', opacity: semCargas ? 0.5 : 1}}
+                          onDragStart={(e) => {
+                            if (!podeArrastar) { e.preventDefault(); return; }
+                            e.dataTransfer.setData('text/plain', color);
+                            e.dataTransfer.effectAllowed = 'copy';
+                          }}
+                          onMouseEnter={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setTooltipPosFrasco({
+                              x: rect.right + 10,
+                              y: rect.top + rect.height / 2
+                            });
+                            setHoveredFrasco({
+                              titulo: info.nome,
+                              descricao: info.descricao,
+                              extra: `Cargas: ${cargas}/${MAX_CARGAS}` + (
+                                proximaRecarga
+                                  ? ` • próxima em ${Math.ceil((proximaRecarga - now) / 60000)} min`
+                                  : ''
+                              ) + (podeArrastar ? " • Arraste até o frasco grande para fazer CIÊNCIA!" : '')
+                            });
+                          }}
+                          onMouseLeave={() => setHoveredFrasco(null)}
+                        />
+                        <div className="flask-cargas">
+                          {Array.from({ length: MAX_CARGAS }).map((_, idx) => (
+                            <span
+                              key={idx}
+                              className="flask-carga-ponto"
+                              style={{ opacity: idx < cargas ? 1 : 0.25 }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      );
+                    })}
+                </div>
+                <div
+                  className="large-flask frasco-wrapper"
+                  style={{
+                    margin: '20px auto',
+                    textAlign: 'center',
+                    padding: '10px',
+                    borderRadius: '12px',
+                    border: arrastandoSobreFrasco ? '2px dashed #ffd700' : '2px dashed transparent',
+                    background: arrastandoSobreFrasco ? 'rgba(255, 215, 0, 0.15)' : 'transparent',
+                    transition: 'background 0.15s, border-color 0.15s'
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setArrastandoSobreFrasco(true);
+                  }}
+                  onDragLeave={() => setArrastandoSobreFrasco(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setArrastandoSobreFrasco(false);
+                    const color = e.dataTransfer.getData('text/plain');
+                    if (color) AdicionarQuimica(color);
+                  }}
+                >
+                  {laboratorio.Frasco.length > 0 ? (
+                    <div
+                      style={{width: CONQUISTA_SPRITE.tamanho * 2, height: CONQUISTA_SPRITE.tamanho * 2, backgroundImage: `url(${conquistasSprite})`,
+                        backgroundPosition: `-${(laboratorio.Frasco[0] === 'verde' ? 4 : laboratorio.Frasco[0] === 'vermelho' ? 5 : laboratorio.Frasco[0] === 'azul' ? 6 : 7) * CONQUISTA_SPRITE.tamanho * 2}px -${9 * CONQUISTA_SPRITE.tamanho * 2}px`,
+                        backgroundSize: `${CONQUISTA_SPRITE.colunas * CONQUISTA_SPRITE.tamanho * 2}px ${CONQUISTA_SPRITE.linhas * CONQUISTA_SPRITE.tamanho * 2}px`,
+                        margin: '0 auto',
+                        cursor: 'pointer',
+                        imageRendering: 'pixelated'
+                      }}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setTooltipPosFrasco({
+                          x: rect.right + 10,
+                          y: rect.top + rect.height / 2
+                        });
+
+                        // Calcula a "assinatura" da mistura atual (mesma lógica
+                        // do BeberPocao) pra saber se o jogador já descobriu o efeito.
+                        const contagens = { verde: 0, vermelho: 0, azul: 0, amarelo: 0 };
+                        laboratorio.Frasco.forEach(c => { contagens[c] += 1; });
+                        const comboKey = `${contagens.verde}-${contagens.vermelho}-${contagens.azul}-${contagens.amarelo}`;
+
+                        const NOMES_COR = { verde: 'Verde', vermelho: 'Vermelho', azul: 'Azul', amarelo: 'Amarelo' };
+                        let linhasEfeito;
+
+                        if (EFEITOS_COMBOS[comboKey]) {
+                          // Combo especial: descoberta é da mistura inteira.
+                          const jaDescoberto = (laboratorio.descobertos ?? []).includes(comboKey);
+                          linhasEfeito = jaDescoberto
+                            ? EFEITOS_COMBOS[comboKey]
+                            : ["Desconhecido — beba a poção pra descobrir!"];
+                        } else {
+                          // Mistura genérica: cada cor é descoberta independentemente.
+                          const genericosDescobertos = laboratorio.genericosDescobertos ?? [];
+                          linhasEfeito = [];
+                          ['verde', 'vermelho', 'azul', 'amarelo'].forEach((cor) => {
+                            const qtd = contagens[cor];
+                            if (qtd === 0) return;
+                            if (genericosDescobertos.includes(cor)) {
+                              const efeitosCor = EFEITOS_GENERICOS[cor]?.[qtd] ?? EFEITOS_GENERICOS[cor]?.[2] ?? [];
+                              efeitosCor.forEach((linha) => linhasEfeito.push(`${NOMES_COR[cor]}: ${linha}`));
+                            } else {
+                              linhasEfeito.push(`${NOMES_COR[cor]}: Desconhecido`);
+                            }
+                          });
+                          if (linhasEfeito.length === 0) {
+                            linhasEfeito = ["Desconhecido — beba a poção pra descobrir!"];
+                          }
+                        }
+
+                        const efeitoTexto = linhasEfeito.map((l) => `• ${l}`).join('\n');
+
+                        setHoveredFrasco({
+                          titulo: "Frasco Atual",
+                          descricao: `Contém: ${laboratorio.Frasco.map(c => laboratorio.substancias[c].nome).join(', ')}.`,
+                          extra: `Efeito:\n${efeitoTexto}` + (
+                            laboratorio.Frasco.length < 3
+                              ? `\n\nPode adicionar mais ${3 - laboratorio.Frasco.length}`
+                              : '\n\nPronto para beber'
+                          )
+                        });
+                      }}
+                      onMouseLeave={() => setHoveredFrasco(null)}
+                    />
+                  ) : (
+                    <div
+                      style={{width: CONQUISTA_SPRITE.tamanho * 2, height: CONQUISTA_SPRITE.tamanho * 2, backgroundImage: `url(${conquistasSprite})`, backgroundPosition: `-${3 * CONQUISTA_SPRITE.tamanho * 2}px -${9 * CONQUISTA_SPRITE.tamanho * 2}px`, backgroundSize: `${CONQUISTA_SPRITE.colunas * CONQUISTA_SPRITE.tamanho * 2}px ${CONQUISTA_SPRITE.linhas * CONQUISTA_SPRITE.tamanho * 2}px`, margin: '0 auto', imageRendering: 'pixelated'}}
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltipPosFrasco({
+                            x: rect.right + 10,
+                            y: rect.top + rect.height / 2
+                          });
+                          setHoveredFrasco({
+                            titulo: "Frasco Vazio",
+                            descricao: "Arraste os químicos acima até aqui para preparar uma poção.",
+                            extra: null
+                          });
+                        }}
+                        onMouseLeave={() => setHoveredFrasco(null)}
+                      />
+                    )}
+                    <p style={{fontSize: '12px', marginTop: '5px'}}>
+                      {laboratorio.Frasco.length > 0 
+                        ? `${laboratorio.Frasco.length}/3 químicos` 
+                        : 'Frasco vazio'}
+                    </p>
+                  </div>
+
+                  {hoveredFrasco && (
+                    <div
+                      className="info-frasco"
+                      style={{
+                        position: "fixed",
+                        left: tooltipPosFrasco.x,
+                        top: tooltipPosFrasco.y,
+                        transform: "translate(0, -50%)",
+                        zIndex: 9999,
+                        ...((hoveredFrasco.titulo === "Frasco Atual" || hoveredFrasco.titulo === "Frasco Vazio")
+                          ? { background: "rgba(0, 0, 0, 1)" }
+                          : {})
+                      }}
+                    >
+                      <strong>{hoveredFrasco.titulo}</strong><br />
+                      {hoveredFrasco.descricao}
+                      {hoveredFrasco.extra && (
+                        <>
+                          <br />
+                          <span className="info-frasco-extra">{hoveredFrasco.extra}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                   <div style={{display: 'flex', gap: '8px', marginTop: '10px'}}>
+                     <button
+                      onClick={DesfazerQuimica}
+                      disabled={laboratorio.Frasco.length === 0}
+                      title="Esvaziar o frasco e devolver todas as cargas usadas"
+                      style={{
+                        cursor: laboratorio.Frasco.length === 0 ? 'not-allowed' : 'pointer',
+                        opacity: laboratorio.Frasco.length === 0 ? 0.6 : 1,
+                        padding: '10px 14px'
+                      }}
+                    >
+                      ↩️ Esvaziar Frasco
+                    </button>
+                     <button
+                      onClick={BeberPocao}
+                      disabled={laboratorio.Frasco.length === 0}
+                      style={{
+                        cursor: laboratorio.Frasco.length === 0 ? 'not-allowed' : 'pointer',
+                        flex: 1,
+                        padding: '10px'
+                      }}
+                    >
+                      Beber Poção
+                    </button>
+                  </div>
+
+
+                  </div>
+                )}
+                {!laboratorio.desbloqueado && !ascensao.desbloqueado && !ascensao.cookieCoin && (
+                  <div>
+                  (Nenhum ainda)
+                  </div>
+                )}
+              </div>
           </div>
           )}
 
@@ -1357,6 +1827,9 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 </div>
                 <div>{`Cookies dourados: ${simplificarNumero(douradosTotais)}`}</div>
                 <div>{`Sorte: ${simplificarNumero(sorte)}`}</div>
+                {laboratorio.desbloqueado && (
+                  <div>{`Combos especiais descobertos: ${(laboratorio.descobertos ?? []).filter(k => EFEITOS_COMBOS[k]).length} / 16`}</div>
+                )}
               </div>
 
               <h3 style={{ marginTop: 30 }}>Conquistas</h3>
@@ -1410,19 +1883,10 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                     onMouseUp={onMouseUp}
                     onMouseLeave={onMouseUp}>
 
-              {/* Botão que ativa o Modo Construção */}
+              {/* Botão que ativa o Modo Construção — fixo no canto inferior
+                  esquerdo do .karaj-viewport (que é position:relative) */}
               <div className="modo-const"
-              style={{
-                position: 'fixed',
-                top: '20px',
-                left: '25%',
-                zIndex: 100,
-                background: 'rgba(0,0,0,0.85)',
-                padding: '15px',
-                borderRadius: '12px',
-                border: modoConstrucao.ativo ? '3px solid #ffd700' : '3px solid #666',
-                minWidth: '200px'
-              }}>
+              style={{position: 'absolute',bottom: '20px',left: '20px',zIndex: 100,background: 'rgba(0,0,0,0.85)',padding: '15px',borderRadius: '12px',border: modoConstrucao.ativo ? '3px solid #ffd700' : '3px solid #666',minWidth: '200px'}}>
                   <button
                     
                     onClick={(e) => {
@@ -1531,20 +1995,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                                     distrito: key
                                   });
                                 }}
-                                style={{
-                                  width: '100%',
-                                  padding: '8px',
-                                  margin: '5px 0',
-                                  background: modoConstrucao.distrito === key ? '#2196F3' : 'rgba(33,150,243,0.2)',
-                                  border: modoConstrucao.distrito === key ? '2px solid #2196F3' : '1px solid #888',
-                                  borderRadius: '5px',
-                                  cursor: 'pointer',
-                                  color: '#fff',
-                                  fontSize: '12px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px'
-                                }}
+                                style={{width: '100%', padding: '8px', margin: '5px 0', background: modoConstrucao.distrito === key ? '#2196F3' : 'rgba(33,150,243,0.2)', border: modoConstrucao.distrito === key ? '2px solid #2196F3' : '1px solid #888', borderRadius: '5px',cursor: 'pointer',color: '#fff',fontSize: '12px',display: 'flex',alignItems: 'center',gap: '8px'}}
                               >
                                 <img src={distrito.icone} style={{width: '20px', height: '20px'}} alt="" />
                                  {getNomeDistrito(key)}
@@ -1583,11 +2034,13 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 </div>
               
               
-              {/* Botão de Prestígio e Ascender */}
+              {/* Botão de Prestígio e Ascender — fixo no centro superior
+                  do .karaj-viewport (que é position:relative) */}
               <div style={{
-                position: 'fixed',
+                position: 'absolute',
                 top: '20px',
-                left: '40%',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 zIndex: 99,
                 display: 'flex',
                 flexDirection: 'column',
@@ -1756,9 +2209,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                     );
                   })}
 
-                  {/* Madalena perdida — conquista secreta. Fica no canto inferior
-                      direito do mapa de Karaj (2400x1600), bem escondida.
-                      O ícone é pequeno (24px) pra dificultar achar de relance. */}
+                  {/* Madalena perdida — conquista secreta*/}
                   <img
                     src={madalenaIcon}
                     alt=""
@@ -1777,6 +2228,73 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
           {telaAtual !== "ascensão" && (
           <div className="lado-meio">
               <div className="seção-cookie">
+
+                {/* Barra de buffs ativos (estilo Cookie Clicker): só o ícone,
+                    passar o mouse mostra o efeito completo num tooltip. */}
+                {buff.filter(b => b.expira > Date.now()).length > 0 && (
+                  <div className="barra-buffs">
+                    {buff
+                      .filter(b => b.expira > Date.now())
+                      .map((b, i) => {
+                        const ICONES_BUFF = {
+                          CPS: '📈',
+                          Click: '👆',
+                          ClickOnce: '⚡',
+                          Luck: '🍀',
+                          BuildingDiscount: '🏗️',
+                          GoldenCookieDuration: '🍪',
+                          CookieCoinSell: '💰'
+                        };
+                        return (
+                          <div
+                            key={i}
+                            className={`buff-icone ${b.debuff ? 'debuff' : ''}`}
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setTooltipPosBuff({
+                                x: rect.right + 10,
+                                y: rect.top + rect.height / 2
+                              });
+                              setHoveredBuff(b);
+                            }}
+                            onMouseLeave={() => setHoveredBuff(null)}
+                          >
+                            {ICONES_BUFF[b.tipo] ?? '✨'}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+
+                {hoveredBuff && (
+                  <div
+                    className="info-frasco"
+                    style={{
+                      position: "fixed",
+                      left: tooltipPosBuff.x,
+                      top: tooltipPosBuff.y,
+                      transform: "translate(0, -50%)",
+                      zIndex: 9999
+                    }}
+                  >
+                    <strong style={{ color: hoveredBuff.debuff ? '#ff5252' : '#ffd700' }}>{hoveredBuff.nome}</strong><br />
+                    {hoveredBuff.tipo === "CPS" && `${hoveredBuff.mult}x CPS`}
+                    {hoveredBuff.tipo === "Click" && `${hoveredBuff.mult}x Clique`}
+                    {hoveredBuff.tipo === "ClickOnce" && `Próximo clique: x${hoveredBuff.mult}`}
+                    {hoveredBuff.tipo === "Luck" && `${hoveredBuff.mult >= 0 ? '+' : ''}${hoveredBuff.mult} Sorte`}
+                    {hoveredBuff.tipo === "BuildingDiscount" && `Prédios ${Math.floor((1 - hoveredBuff.mult) * 100)}% mais baratos`}
+                    {hoveredBuff.tipo === "GoldenCookieDuration" && `Cookie Dourado +${Math.floor((hoveredBuff.mult - 1) * 100)}% duração`}
+                    {hoveredBuff.tipo === "CookieCoinSell" && `Cookie Coins valem ${hoveredBuff.mult}x mais`}
+                    {' • '}
+                    <span className="info-frasco-extra">{Math.ceil((hoveredBuff.expira - Date.now()) / 1000)}s</span>
+                    {hoveredBuff.terminaComClique && (
+                      <>
+                        <br />
+                        <span style={{ color: '#ff8a65' }}>Some se você clicar no cookie</span>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Contagem de Cookies */}
                 <div style={{ fontSize: "40px", margin: "20px 0" }}>{`${simplificarNumeroPT(contagem)} de cookies`}</div>
@@ -1810,7 +2328,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                     transition={{ duration: 1, ease: "easeOut" }}
                     style={{position: "absolute",left: text.x,top: text.y,transform: "translate(-50%, -50%)",color: "#fff",fontSize: "30px",fontWeight: "bold",textShadow: "0 0 5px black",pointerEvents: "none"}}
                   >
-                    +{simplificarNumero(click)}
+                    +{simplificarNumero(text.valor)}
                   </motion.div>
                 ))}
 
@@ -1933,7 +2451,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
               </div>
               <div className="seção-construções">
 
-                {/* OS BOTÕES DE MULTIPLICADOR */}
+                {/* Comprar múltiplas construções */}
               <div className="controles-multiplicador" style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
                 <span>Comprar:</span>
                 <button 
@@ -1963,6 +2481,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                   // sem dinheiro pra comprar 1
                   const naoPodeComprarNada = quantPossivel === 0;
 
+                  const éVovo = c.nome === "Vovó";
+
                   return (
                     <div key={c.indiceOriginal} className="construção-wrapper">
                       <button 
@@ -1983,11 +2503,39 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                         disabled={naoPodeComprarNada}
                         style={{
                           cursor: naoPodeComprarNada ? "auto" : "pointer",
-                          opacity: naoPodeComprarNada ? 0.6 : 1
+                          opacity: naoPodeComprarNada ? 0.6 : 1,
+                          border: éVovo && arrastandoSobreVovo ? '2px dashed #ffd700' : undefined,
+                          background: éVovo && arrastandoSobreVovo ? 'rgba(255, 215, 0, 0.15)' : undefined
                         }}
+                        onDragOver={éVovo ? (e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'copy';
+                        } : undefined}
+                        onDragEnter={éVovo ? (e) => {
+                          e.preventDefault();
+                          setArrastandoSobreVovo(true);
+                        } : undefined}
+                        onDragLeave={éVovo ? () => setArrastandoSobreVovo(false) : undefined}
+                        onDrop={éVovo ? (e) => {
+                          e.preventDefault();
+                          setArrastandoSobreVovo(false);
+                          const cor = e.dataTransfer.getData('text/plain');
+                          if (['verde', 'vermelho', 'azul', 'amarelo'].includes(cor)) AplicarCorNaVovo(cor);
+                        } : undefined}
                       >
                         <div className="construções-icone">
-                          <img src={c.icone} alt={c.nome}></img>
+                          {éVovo && vovoCor ? (
+                            <div style={{
+                              width: CONQUISTA_SPRITE.tamanho * 2,
+                              height: CONQUISTA_SPRITE.tamanho * 2,
+                              backgroundImage: `url(${conquistasSprite})`,
+                              backgroundPosition: `-${VOVO_SPRITE_X[vovoCor] * CONQUISTA_SPRITE.tamanho * 2}px -${2 * CONQUISTA_SPRITE.tamanho * 2}px`,
+                              backgroundSize: `${CONQUISTA_SPRITE.colunas * CONQUISTA_SPRITE.tamanho * 2}px ${CONQUISTA_SPRITE.linhas * CONQUISTA_SPRITE.tamanho * 2}px`,
+                              imageRendering: 'pixelated'
+                            }} />
+                          ) : (
+                            <img src={c.icone} alt={c.nome}></img>
+                          )}
                         </div>
                         
                         <div className="construções-info">
