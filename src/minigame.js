@@ -119,7 +119,7 @@ export function GraficoCookieCoin({ dados, simplificarNumero }) {
   // ========== Laboratório de Alquimia ==========
 
 export const MAX_CARGAS = 2;
-export const TEMPO_RECARGA_CARGA = 6 * 1000; // 1 hora por carga
+export const TEMPO_RECARGA_CARGA = 60 * 60 * 1000; // 1 hora por carga
  
 // Função pura: dado o estado salvo de uma substância (cargas + próxima
 // recarga) e o instante atual, calcula quantas cargas estão de fato
