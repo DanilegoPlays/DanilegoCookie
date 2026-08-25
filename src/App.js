@@ -28,15 +28,15 @@ import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, CONQUISTA_SPRITE, EFEITOS_COMBOS, EFEITOS_GENERICOS, filtrarUpgradesDisponiveis} from './defaults';
+import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, CONQUISTA_SPRITE, EFEITOS_COMBOS, EFEITOS_GENERICOS, NVIDIA_NIVEL_MAXIMO_BASE, filtrarUpgradesDisponiveis} from './defaults';
 import conquistasSprite from './arte/conquistas.png';
 import tinyCookie from './arte/TinyCookie.png';
 import madalenaIcon from './arte/Madalena.png';
 import temploSecretoIcon from './arte/MarioL.png';
 import cookieCoinIcon from './arte/CookieCoin.png';
 import {SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
-import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoCookieCoin, criarAdicionarQuimica, criarDesfazerQuimica, criarBeberPocao, getCargasAtuais, MAX_CARGAS} from './minigame';
-import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP} from './helper';
+import {SEGUNDOS_CPS_POR_COOKIE_COIN, FRACAO_CPS_POR_PLACA, COINS_POR_SEGUNDO_POR_PLACA, criarComprarCookieCoinNivel, criarAjustarPlacasLigadas, criarVenderCookieCoin, GraficoCookieCoin, criarAdicionarQuimica, criarDesfazerQuimica, criarBeberPocao, getCargasAtuais, MAX_CARGAS} from './minigame';
+import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP, getNivelMaximoPlacas} from './helper';
 
 function App() {
  
@@ -227,7 +227,7 @@ function App() {
   const [arrastandoSobreVovo, setArrastandoSobreVovo] = useState(false);
 
   // --- Easter egg: colorir a Vovó com a poção do Laboratório ---
-  const VOVO_SPRITE_X = { verde: 5, vermelho: 6, azul: 7, amarelo: 8 };
+  const VOVO_SPRITE_X = { verde: 6, vermelho: 7, azul: 8, amarelo: 9 };
   const VOVO_NOMES = { verde: "Verde", vermelho: "Vermelha", azul: "Azul", amarelo: "Amarela" };
   const [vovoCor, setVovoCor] = useState(null); // null | 'verde' | 'vermelho' | 'azul' | 'amarelo'
   const [vovoCoresFeitas, setVovoCoresFeitas] = useState([]); // cores distintas já aplicadas
@@ -341,7 +341,7 @@ function App() {
     const efeitosLaboratorioDescobertos =
       (laboratorio.descobertos ?? []).filter(k => EFEITOS_COMBOS[k]).length;
 
-    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, efeitosLaboratorioDescobertos}))
+    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, efeitosLaboratorioDescobertos, cookieCoin}))
  
     if (novasConquistas.length === 0) return;
  
@@ -358,7 +358,7 @@ function App() {
     setConquistas(prev => prev.map(c => 
       idsObtidos.has(c.id) ? {...c, obtido: true} : c));
  
-  }, [cookiesTotais, CPS, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, laboratorio.descobertos]);
+  }, [cookiesTotais, CPS, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, laboratorio.descobertos, cookieCoin]);
  
  
  
@@ -762,11 +762,17 @@ function App() {
       return soma + CpsConstrucao(c) * quantidadeTotal;
     }, 0);
     const multiplicador = getMultiplicadorP(melhorias, ascensao);
-    const producao = CPSBuffado(producaoBase * multiplicador, buff);
+    const producaoBruta = CPSBuffado(producaoBase * multiplicador, buff);
+
+    // Cada placa de Cookie Coin "ligada" desvia 5% da CPS pra converter em
+    // Cookie Coins (ver ganho de coins abaixo). A CPS exibida/recebida já
+    // sai líquida desse desvio.
+    const fracaoDesviada = Math.min(cookieCoin.ligadas, cookieCoin.level) * FRACAO_CPS_POR_PLACA;
+    const producao = producaoBruta * (1 - fracaoDesviada);
  
     producaoRef.current = producao;
     setCPS(producao); // atualiza display só quando algo realmente mudou
-  }, [construcoes, melhorias, ascensao, buff]);
+  }, [construcoes, melhorias, ascensao, buff, cookieCoin.ligadas, cookieCoin.level]);
  
   // Timer único que nunca remonta. Lê produção da ref.
   useEffect(() => {
@@ -1114,21 +1120,29 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
  
   // Minigame Cookie Coin (implementado em minigame.js)
   const cookieCoinSellBuff = buff.find(b => b.tipo === "CookieCoinSell" && b.expira > Date.now());
+  // Preço médio (mercado = 1): 10 segundos de CPS por Cookie Coin.
+  const valorBaseCookieCoin = CPS * SEGUNDOS_CPS_POR_COOKIE_COIN;
   const valorAtualCookieCoin = Math.floor(
-    VALOR_BASE * cookieCoin.mercado * (cookieCoinSellBuff ? cookieCoinSellBuff.mult : 1)
+    valorBaseCookieCoin * cookieCoin.mercado * (cookieCoinSellBuff ? cookieCoinSellBuff.mult : 1)
   );
  
   const precoNvidia = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
+  // Base (5) + 5 pra cada upgrade "maisplacas" comprado no Distrito dos
+  // Computadores — com os 2 upgrades, o máximo vira 15.
+  const nivelMaximoPlacas = getNivelMaximoPlacas(ascensao, NVIDIA_NIVEL_MAXIMO_BASE);
  
   const ComprarCookieCoinNivel = criarComprarCookieCoinNivel({
     contagem,
     setContagem,
     cookieCoin,
     setCookieCoin,
+    nivelMaximo: nivelMaximoPlacas,
   });
-  // ganho de Cookie Coins
+  const AjustarPlacasLigadas = criarAjustarPlacasLigadas({ cookieCoin, setCookieCoin });
+  // ganho de Cookie Coins — só as placas "ligadas" geram renda (cada uma
+  // fixo em COINS_POR_SEGUNDO_POR_PLACA, custeada pelo desvio de CPS acima).
   useEffect(() => {
-    if (!cookieCoin.desbloqueado || cookieCoin.level === 0) return;
+    if (!cookieCoin.desbloqueado || cookieCoin.ligadas === 0) return;
     let lastUpdate = Date.now();
     const timer = setInterval(() => {
  
@@ -1137,12 +1151,12 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       lastUpdate = now;
       setCookieCoin(prev => ({
         ...prev,
-        coins: prev.coins + prev.level * 0.003 * deltaSeconds
+        coins: prev.coins + prev.ligadas * COINS_POR_SEGUNDO_POR_PLACA * deltaSeconds
       }));
     }, 100);
  
     return () => clearInterval(timer);
-  }, [cookieCoin.desbloqueado, cookieCoin.level]);
+  }, [cookieCoin.desbloqueado, cookieCoin.ligadas]);
  
   const VenderCookieCoin = criarVenderCookieCoin({
     cookieCoin,
@@ -1159,21 +1173,18 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
     if (!cookieCoin.desbloqueado) return;
  
     const timer = setInterval(() => {
-      const mudanca = (Math.random() - 0.5)*0.2;
-      let NovoMercado = cookieCoin.mercado + mudanca;
- 
-      NovoMercado = Math.max(0.01, Math.min(100, NovoMercado))
       setCookieCoin(prev => {
- 
-      return {
-        ...prev,
-        mercado: Number(NovoMercado.toFixed(2))
-      }})
- 
-      let Valor = NovoMercado * VALOR_BASE
-      setHistoricoCookieCoin(h => {
-        const novo = [...h, Valor];
-        return novo.slice(-30); // últimos 30 pontos do gráfico
+        const mudanca = (Math.random() - 0.5) * 0.2;
+        let novoMercado = prev.mercado + mudanca;
+        novoMercado = Math.max(0.01, Math.min(100, novoMercado));
+        novoMercado = Number(novoMercado.toFixed(2));
+
+        // CPS lido da ref (sempre atual) — evita usar um valor de CPS
+        // desatualizado de quando este efeito rodou pela última vez.
+        const valor = novoMercado * producaoRef.current * SEGUNDOS_CPS_POR_COOKIE_COIN;
+        setHistoricoCookieCoin(h => [...h, valor].slice(-30)); // últimos 30 pontos do gráfico
+
+        return { ...prev, mercado: novoMercado };
       });
     }, 30000);
     
@@ -1256,6 +1267,10 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       setConstrucoes(DEFAULT_CONSTRUCOES);
       setMelhorias(DEFAULT_MELHORIAS);
       setBuff([]);
+      // O Laboratório reseta "construído" (a construção física some junto
+      // das outras) — "desbloqueado" é permanente, conquistado ao construir
+      // o Laboratório pela 1ª vez, e nunca reseta.
+      setLaboratorio(prev => ({ ...DEFAULT_LABORATORIO, desbloqueado: prev.desbloqueado }));
       
       
  
@@ -1263,7 +1278,14 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
     setTimeout(() => {
       setTelaAtual("ascensão");
       
-      setCookieCoin(DEFAULT_COOKIE_COIN);
+      // Cookie Coin: as placas (level/ligadas) e o mercado resetam junto
+      // do resto do progresso, mas as coins acumuladas NÃO se perdem — e o
+      // desbloqueio também persiste (não precisa reconstruir 1 Computador).
+      setCookieCoin(prev => ({
+        ...DEFAULT_COOKIE_COIN,
+        desbloqueado: prev.desbloqueado,
+        coins: prev.coins
+      }));
       setAscensao(prev=> ({
         ...prev,
         desbloqueado: true,
@@ -1271,6 +1293,19 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
         prestigioTotal: prev.prestigioTotal + prestigioPossivel
       }))
     }, 4000);
+  }
+
+  // Gasta 1 Cookie Coin pra reativar o Laboratório depois de uma ascensão
+  // (construido reseta toda ascensão; desbloqueado é permanente, conquistado
+  // ao construir o Laboratório pela 1ª vez — isso já funciona via o
+  // useEffect acima, não precisa de coin nenhuma).
+  function DesbloquearLaboratorioComCoin() {
+    if (!laboratorio.desbloqueado) return;
+    if (laboratorio.construido) return;
+    if (cookieCoin.coins < 1) return;
+    setCookieCoin(prev => ({ ...prev, coins: prev.coins - 1 }));
+    setLaboratorio(prev => ({ ...prev, construido: true }));
+    mostrarAvisoPersistente("Laboratório de Frascos reativado!");
   }
  
  
@@ -1335,17 +1370,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
             <div
               key={a.id}
               onClick={() => fecharAvisoPersistente(a.id)}
-              style={{pointerEvents: "auto", background: "rgba(0, 0, 0, 0.85)", color: "#ffd700", border: "2px solid #ffd700", borderRadius: "8px", padding: "12px 40px 12px 16px",
-                fontSize: "15px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                maxWidth: "600px",
-                position: "relative",
-                boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-                display: "flex",
-                alignItems: "center",
-                gap: "14px",
-              }}
+              style={{pointerEvents: "auto", background: "rgba(0, 0, 0, 0.85)", color: "#ffd700", border: "2px solid #ffd700", borderRadius: "8px", padding: "12px 40px 12px 16px",fontSize: "15px",fontWeight: "bold",cursor: "pointer",maxWidth: "600px",position: "relative",boxShadow: "0 0 10px rgba(0,0,0,0.5)",display: "flex",alignItems: "center",gap: "14px",}}
               title="Clique para fechar"
             >
               {a.icone}
@@ -1357,18 +1382,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 {(avisosPersistentes.length >= 2 || esperando > 0) && (
                   <button
                     onClick={limparAvisosPersistentes}
-                    style={{
-                      pointerEvents: "auto",
-                      background: "rgba(0, 0, 0, 0.85)",
-                      color: "#fff",
-                      border: "2px solid #888",
-                      borderRadius: "6px",
-                      padding: "6px 14px",
-                      fontSize: "13px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      boxShadow: "0 0 8px rgba(0,0,0,0.4)",
-                    }}
+                    style={{pointerEvents: "auto",background: "rgba(0, 0, 0, 0.85)",color: "#fff",border: "2px solid #888",borderRadius: "6px", padding: "6px 14px",fontSize: "13px", fontWeight: "bold",cursor: "pointer",boxShadow: "0 0 8px rgba(0,0,0,0.4)",}}
                     title="Fecha todos os avisos"
                   >
                     {esperando > 0
@@ -1414,8 +1428,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            width: "50vmin",
-            height: "50vmin",
+            width: "60vmin",
+            height: "60vmin",
             cursor: "pointer",
             zIndex: 10000,
             filter: "drop-shadow(0 0 60px rgba(255, 200, 0, 0.8))"
@@ -1461,16 +1475,60 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                   <p>
                     <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)}
                   </p>
-                  <p>Level: {cookieCoin.level}</p>
+                  <p>Placas: {cookieCoin.level} / {nivelMaximoPlacas}</p>
 
                   <button
                     onClick={ComprarCookieCoinNivel}
-                    disabled={contagem < precoNvidia}
+                    disabled={cookieCoin.level >= nivelMaximoPlacas || contagem < precoNvidia}
                     style={{cursor: "pointer"}}
                   >
-                    Nova Placa de Vídeo<br />
-                    Preço: {simplificarNumeroPT(precoNvidia)}
+                    {cookieCoin.level >= nivelMaximoPlacas ? (
+                      "Nível Máximo Atingido"
+                    ) : (
+                      <>
+                        Nova Placa de Vídeo<br />
+                        Preço: {simplificarNumeroPT(precoNvidia)}
+                      </>
+                    )}
                   </button>
+
+                  <div style={{margin: "10px 0"}}>
+                    <p className='placas'
+                    style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px'}}
+                    onMouseEnter={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setTooltipPosFrasco({
+                              x: rect.right + 10,
+                              y: rect.top + rect.height / 2
+                            });
+                            setHoveredFrasco({
+                              titulo: "Placas Ligadas",
+                              descricao: `Ligue as placas para minerar Cookie Coins! Cada placa gasta ${simplificarNumeroPT(FRACAO_CPS_POR_PLACA * 100)}% do seu CPS.`
+                            });
+                          }}
+                          onMouseLeave={() => setHoveredFrasco(null)}>
+                      <span>Placas ligadas: <strong>{cookieCoin.ligadas} / {cookieCoin.level}</strong></span>
+
+                      <span style={{display: "flex", gap: "8px"}}>
+                        <button
+                          onClick={() => AjustarPlacasLigadas(-1)}
+                          disabled={cookieCoin.ligadas <= 0}
+                          style={{cursor: "pointer", padding: "4px 14px", fontSize: "16px"}}
+                          title="Desligar uma placa"
+                        >
+                          −
+                        </button>
+                        <button
+                          onClick={() => AjustarPlacasLigadas(1)}
+                          disabled={cookieCoin.ligadas >= cookieCoin.level}
+                          style={{cursor: "pointer", padding: "4px 14px", fontSize: "16px"}}
+                          title="Ligar mais uma placa"
+                        >
+                          +
+                        </button>
+                      </span>
+                    </p>
+                  </div>
                   
                     <p>
                       Valor:{" "}
@@ -1541,17 +1599,31 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
 
                   </div>
                 )}
-                {laboratorio.desbloqueado && (
+
+                {laboratorio.desbloqueado && !laboratorio.construido &&(
+                  <div style={{textAlign: 'center', padding: '10px 0'}}>
+                    <button
+                      className='seção-laboratório'
+                      onClick={DesbloquearLaboratorioComCoin}
+                      disabled={cookieCoin.coins < 1}
+                      style={{cursor: cookieCoin.coins < 1 ? 'not-allowed' : 'pointer'}}
+                      title="Gaste 1 Cookie Coin pra ativar um novo minigame!"
+                    >
+                      🧪 Novo Minigame (1 <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" style={{verticalAlign: 'middle'}} />)
+                    </button>
+                  </div>
+                )}
+                
+                {laboratorio.desbloqueado && laboratorio.construido && (
               <div className='seção-laboratório'>
                 <h2>Laboratório de Alquimia</h2>
 
+                
                 <div className="flasks-container" style={{display: 'flex', justifyContent: 'space-around', marginBottom: '20px'}}>
                   {['verde', 'vermelho', 'azul', 'amarelo'].map((color) => {
                     const now = Date.now();
                     const { cargas, proximaRecarga } = getCargasAtuais(laboratorio.substancias[color], now);
                     const semCargas = cargas <= 0;
-                    // Pode arrastar sempre que tiver pelo menos 1 carga — o destino
-                    // (frasco grande ou Vovó) decide o que fazer com o químico.
                     const podeArrastar = !semCargas;
                     const spriteX = color === 'verde' ? 4 : color === 'vermelho' ? 5 : color === 'azul' ? 6 : 7;
                     const displaySpriteX = semCargas ? 3 : spriteX;
@@ -1768,10 +1840,9 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                     </button>
                   </div>
 
-
-                  </div>
+                </div>
                 )}
-                {!laboratorio.desbloqueado && !ascensao.desbloqueado && !ascensao.cookieCoin && (
+                {!laboratorio.desbloqueado && !ascensao.desbloqueado && !cookieCoin.desbloqueado && (
                   <div>
                   (Nenhum ainda)
                   </div>

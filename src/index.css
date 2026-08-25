@@ -46,7 +46,25 @@
 }
 
 .seção-cookie-coin {
-  background: linear-gradient(180deg, #0b0f0c, #050705);
+  background: linear-gradient(180deg, #0b0f0c, #052705);
+  border: 2px solid #2aff6d;
+  border-radius: 6px;
+
+  padding: 14px 16px;
+
+  color: #2aff6d;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 16px;
+
+  box-shadow:
+    0 0 12px rgba(42, 255, 109, 0.25),
+    inset 0 0 10px rgba(42, 255, 109, 0.08);
+
+  position: relative;
+}
+
+.placas {
+  background: linear-gradient(180deg, #0b0f0c, #052705);
   border: 2px solid #2aff6d;
   border-radius: 6px;
 
@@ -671,6 +689,8 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  max-width: none;
+  min-width: 0;
   max-height: none;
   border: none;
   border-radius: 0;

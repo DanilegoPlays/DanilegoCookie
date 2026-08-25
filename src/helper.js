@@ -92,3 +92,13 @@ export function getMultiplicadorP(melhorias, ascensao) {
   return multiplicadorBasico * multiplicadorPrestigio;
 }
 
+// Limite atual de placas de Cookie Coin: NVIDIA_NIVEL_MAXIMO_BASE (5) + 5
+// pra cada upgrade "maisplacas" comprado no Distrito dos Computadores.
+// Com os 2 upgrades comprados, o máximo vira 5 + 5 + 5 = 15.
+export function getNivelMaximoPlacas(ascensao, base) {
+  const upgradesMaisPlacas = ascensao?.distritopc?.upgrades?.filter(
+    u => u.efeito === "maisplacas" && u.comprado
+  ).length ?? 0;
+
+  return base + upgradesMaisPlacas * 5;
+}

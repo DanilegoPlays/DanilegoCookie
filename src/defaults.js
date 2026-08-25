@@ -13,8 +13,8 @@ import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png';
 import Bancos from './arte/Bancos.png';
 import Bancos_d from './arte/Bancos_d.png';
-import Torre from './arte/Torre.png';
 import Lab from './arte/Lab.png';
+import Torre from './arte/Torre.png';
 import { velocityPerSecond } from 'framer-motion';
 
 // Estruturas padrão para construções e melhorias
@@ -341,7 +341,7 @@ export const DEFAULT_CONQUISTAS = [
     // combos únicos e especiais (EFEITOS_COMBOS) — os efeitos genéricos
     // por cor não entram nessa contagem.
     {nome: "Aprendiz de Alquimia", id: 'lab_10efeitos', obtido: false,
-     descricao: "Descobriu metade dos combos especiais do Laboratório de Frascos.",
+     descricao: "Descobriu 8 dos 16 combos especiais do Laboratório de Frascos.",
      spriteX: 8, spriteY: 14,
      check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 8},
 
@@ -355,12 +355,12 @@ export const DEFAULT_CONQUISTAS = [
     // Conquistas de cookie coins (linha 14, cols 0-3)
     {nome: "Primeiro Minerador", id: 'cc1', obtido: false, descricao: "Tenha 1 Cookie Coin",
      check: (s) => s.cookieCoin?.coins >= 1, spriteX: 0, spriteY: 14},
-    {nome: "HODL", id: 'cc2', obtido: false, descricao: "Tenha 1.000 Cookie Coins ao mesmo tempo",
+    {nome: "HODL", id: 'cc2', obtido: false, descricao: "Tenha 1000 Cookie Coins ao mesmo tempo",
      check: (s) => s.cookieCoin?.coins >= 1000, spriteX: 1, spriteY: 14},
-    {nome: "Todas que existem?", id: 'cc3', obtido: false, descricao: "Tenha 21.000.000 Cookie Coins ao mesmo tempo",
+    {nome: "Todas que existem?", id: 'cc3', obtido: false, descricao: "Tenha 21 Milhões de Cookie Coins ao mesmo tempo",
      check: (s) => s.cookieCoin?.coins >= 21_000_000, spriteX: 2, spriteY: 14},
-    {nome: "Especialista em Hardware", id: 'cc4', obtido: false, descricao: "Tenha uma placa de vídeo nível 100",
-     check: (s) => s.cookieCoin?.level >= 100, spriteX: 3, spriteY: 14},
+    {nome: "Especialista em Hardware", id: 'cc4', obtido: false, descricao: "Tenha 15 placas de vídeo",
+     check: (s) => s.cookieCoin?.level == 15, spriteX: 3, spriteY: 14},
 
 
     // tenha 100 construções no total (linha 14, cols 4-5)
@@ -389,8 +389,19 @@ export const DEFAULT_CONQUISTAS = [
 
 ];
 
+// Nível base (sem upgrades) e teto teórico absoluto (com todos os upgrades
+// de prestígio de +5 slots comprados) das placas de Cookie Coin. O limite
+// EFETIVO de cada jogador é calculado dinamicamente por getNivelMaximoPlacas
+// (helper.js), que soma NVIDIA_NIVEL_MAXIMO_BASE aos upgrades do Distrito
+// dos Computadores comprados (efeito 'maisplacas', +5 cada).
+export const NVIDIA_NIVEL_MAXIMO_BASE = 5;
+export const NVIDIA_NIVEL_MAXIMO_ABSOLUTO = 15; // base 5 + 2 upgrades x 5
+
 export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
     level: 0,
+    // Quantas placas estão "ligadas" agora, convertendo 5% de CPS cada uma
+    // em 0.001 Cookie Coins/s. 0 ≤ ligadas ≤ level, o jogador escolhe.
+    ligadas: 0,
     coins: 0,
     mercado: 1
   };
@@ -492,6 +503,10 @@ export const EFEITOS_GENERICOS = {
 };
 
 export const DEFAULT_LABORATORIO = {desbloqueado: false,
+    // true assim que o jogador tem pelo menos 1 construção Laboratório —
+    // ainda precisa gastar 1 Cookie Coin (ver DesbloquearLaboratorioComCoin
+    // no App.js) pra "desbloqueado" virar true de verdade.
+    construido: false,
     substancias: {
       verde: {
         cargas: 2,
@@ -553,9 +568,8 @@ export const DEFAULT_ASCENSAO = {
         icone_destruido: Karaj_d,
         upgrades: [
           {nome: "Conexão Espiritual", preço: 1, efeito:'ascensao', id: 'ascensaocps', comprado: false, descricao: "Você ganha 1% de cps por nível de prestígio"},
-          {nome: "Sorte dos Deuses", preço: 7, efeito:'sorte', id: 'ascensaosorte1', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"},
           {nome: "Armazém Temporal", preço: 13, efeito:'offline1', id: 'offline1', comprado: false, descricao: "Você ganha 50% de CPS enquanto o jogo está fechado (por um máximo de 2 horas)"},
-          
+          {nome: "Sorte dos Deuses", preço: 77, efeito:'sorte', id: 'ascensaosorte1', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"}
         ]
       },
       distritovovo: {
@@ -569,8 +583,8 @@ export const DEFAULT_ASCENSAO = {
         requisitoConstrucao: "Vovó",
         upgrades: [
           {nome: "Caixa de Cookies da Vovó", preço: 25, efeito:'caixavovo', id: 'vovoascensao1', comprado: false, descricao: "Desbloqueia vários novos cookies de vovó"},
-          {nome: "Sorte no Bingo!", preço: 77, efeito:'sorte', id: 'ascensaosorte2', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"},
-          {nome: "Vovós Ancestrais", preço: 100, efeito:'vovoGratis', id: 'vovoascensao2', comprado: false, descricao: "Você começa a próxima ascensão com 10 vovós grátis!"}
+          {nome: "Vovós Ancestrais", preço: 100, efeito:'vovoGratis', id: 'vovoascensao2', comprado: false, descricao: "Você começa a próxima ascensão com 10 vovós grátis!"},
+          {nome: "Sorte no Bingo!", preço: 7777, efeito:'sorte', id: 'ascensaosorte2', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"}
         ]
       },
       distritofazenda: {
@@ -618,7 +632,10 @@ export const DEFAULT_ASCENSAO = {
         icone_destruido:PC,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Computador",
-        upgrades: []
+        upgrades: [
+          {nome: "Slots PCI-E Extras", preço: 10_000, efeito:'maisplacas', id: 'pcascensao1', comprado: false, descricao: "Permite instalar mais 5 placas de vídeo."},
+          {nome: "Operação de Mineração", preço: 1_000_000, efeito:'maisplacas', id: 'pcascensao2', comprado: false, descricao: "Permite instalar mais 5 placas de vídeo."}
+        ]
       },
       distritobanco: {
         desbloqueado: false,

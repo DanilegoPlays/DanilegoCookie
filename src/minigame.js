@@ -1,17 +1,29 @@
 // Módulo dos minigames
 
-// Valor base de 1 Cookie Coin em cookies (multiplicado pelo "mercado").
-export const VALOR_BASE = 1_000_000;
+// Preço médio de 1 Cookie Coin: 1000% do CPS atual (ou seja, vender 1 coin
+// equivale a 10 segundos de produção). O valor real ainda varia em cima
+// disso conforme o "mercado" flutua (ver App.js).
+export const SEGUNDOS_CPS_POR_COOKIE_COIN = 10;
+
+// Cada placa "ligada" troca uma fatia da CPS por uma renda fixa de coins.
+export const FRACAO_CPS_POR_PLACA = 0.05; // 5% de CPS por placa ligada
+export const COINS_POR_SEGUNDO_POR_PLACA = 0.001; // 0.001 coin/s por placa ligada
 
 // Factory: cria a função que compra um nível de placa de vídeo.
-// O preço é calculado dinamicamente com base no level atual.
+// O preço é calculado dinamicamente com base no level atual. "nivelMaximo"
+// vem de getNivelMaximoPlacas (helper.js) — a base (5) mais os upgrades de
+// prestígio "maisplacas" do Distrito dos Computadores (+5 cada). Cada nível
+// comprado é um "slot" que pode depois ser ligado/desligado (ver
+// criarAjustarPlacasLigadas).
 export function criarComprarCookieCoinNivel({
   contagem,
   setContagem,
   cookieCoin,
   setCookieCoin,
+  nivelMaximo,
 }) {
   return function ComprarCookieCoinNivel() {
+    if (cookieCoin.level >= nivelMaximo) return;
     const precoNvidia = Math.floor(100000 * Math.pow(1.2, cookieCoin.level));
     if (contagem >= precoNvidia) {
       setContagem(prev => prev - precoNvidia);
@@ -20,6 +32,18 @@ export function criarComprarCookieCoinNivel({
         level: prev.level + 1
       }));
     }
+  };
+}
+
+// Factory: cria a função que ativa/desativa placas (o botão "+"/"-").
+// "delta" é +1 (ligar mais uma) ou -1 (desligar uma), sempre travado entre
+// 0 e o número de placas compradas (level).
+export function criarAjustarPlacasLigadas({ cookieCoin, setCookieCoin }) {
+  return function AjustarPlacasLigadas(delta) {
+    setCookieCoin(prev => {
+      const novasLigadas = Math.max(0, Math.min(prev.level, prev.ligadas + delta));
+      return { ...prev, ligadas: novasLigadas };
+    });
   };
 }
 

@@ -92,11 +92,14 @@ export function ExplosaoVideo({ onFinish }) {
 // Quantos cookies são necessários para o primeiro nível de prestígio.
 export const PRIMEIRO_PRESTIGIO = 1_000_000_000;
 
-// Dimensões da viewport e do mapa da cidade (para calcular limites do drag).
-export const LARGURA_VISAO = 800;
-export const ALTURA_VISAO = 500;
-export const LARGURA_CIDADE = 2400;
-export const ALTURA_CIDADE = 1600;
+// Dimensões do mapa da cidade (deve bater com .tela-karaj no index.css:
+// width/height/background-size). A largura/altura da "visão" (viewport)
+// NÃO é mais fixa aqui — .karaj-viewport é responsivo (varia de tela pra
+// tela, e é 100vw/100vh no modo ascensão), então o limite do arraste é
+// calculado ao vivo em criarOnMouseMove, a partir do tamanho real do
+// elemento no momento do drag.
+export const LARGURA_CIDADE = 2000;
+export const ALTURA_CIDADE = 1200;
 
 // Fórmula do prestígio: raiz quadrada de (cookies / bilhão), arredondada pra baixo.
 export function calcularPrestigio(cookiesTotais) {
@@ -230,11 +233,16 @@ export function criarOnMouseMove({ dragging, startRef, posRef, setPos }) {
   return function onMouseMove(e) {
     if (!dragging) return;
 
-    const MIN_X = LARGURA_VISAO - LARGURA_CIDADE;
+    // Tamanho real do .karaj-viewport agora (responsivo — varia de tela
+    // pra tela, e é 100vw/100vh no modo ascensão), não um valor fixo.
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    const MIN_X = rect.width - LARGURA_CIDADE;
     const MAX_X = 0;
 
-    const MIN_Y = ALTURA_VISAO - ALTURA_CIDADE;
+    const MIN_Y = rect.height - ALTURA_CIDADE;
     const MAX_Y = 0;
+
     const dx = e.clientX - startRef.current.x;
     const dy = e.clientY - startRef.current.y;
 

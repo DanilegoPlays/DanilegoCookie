@@ -1,8 +1,8 @@
 // Módulo para permitir usar saves antigos em novas versões (para não ser necessário recomeçar a cada update)
 
-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO } from './defaults';
+import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, NVIDIA_NIVEL_MAXIMO_ABSOLUTO } from './defaults';
 
-export const VERSAO_ATUAL = 9.0; // Versão atual do save (V9.0 - Alquimia)
+export const VERSAO_ATUAL = 9.1; // Versão atual do save (V9.1 - Rework dos Cookie Coins)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -81,11 +81,25 @@ function normalizeCookieCoin(saved) {
   if (!saved || Array.isArray(saved) || typeof saved !== 'object') {
     return DEFAULT_SAVE.cookieCoin;
   }
-  
-  return {
+
+  const merged = {
     ...DEFAULT_SAVE.cookieCoin,
     ...saved
   };
+
+  // Corta o nível pro máximo mesmo em saves antigos de antes do limite
+  // existir — não faz sentido converter mais de 100% da CPS.
+  // Usa o teto ABSOLUTO (15, com os 2 upgrades de prestígio) — não o
+  // base (5) — pra não cortar jogadores que já compraram os upgrades de
+  // +5 placas do Distrito dos Computadores. O limite "de verdade" (que
+  // depende de quais upgrades foram comprados) é sempre recalculado ao
+  // vivo em App.js via getNivelMaximoPlacas; isso aqui é só uma trava de
+  // sanidade contra saves corrompidos/editados manualmente.
+  merged.level = Math.max(0, Math.min(NVIDIA_NIVEL_MAXIMO_ABSOLUTO, merged.level ?? 0));
+  // Nunca deixa "ligadas" passar do número de placas realmente compradas.
+  merged.ligadas = Math.max(0, Math.min(merged.level, merged.ligadas ?? 0));
+
+  return merged;
 }
  
 // Laboratório de Frascos: cargas/proximaRecarga (progresso do jogador) vêm
@@ -111,6 +125,7 @@ function normalizeLaboratorio(saved) {
 
   return {
     desbloqueado: saved.desbloqueado ?? DEFAULT_LABORATORIO.desbloqueado,
+    construido: saved.construido ?? DEFAULT_LABORATORIO.construido,
     substancias,
     Frasco: Array.isArray(saved.Frasco) ? saved.Frasco : [],
     historico: Array.isArray(saved.historico) ? saved.historico : [],
@@ -354,6 +369,35 @@ const migrations = {
       laboratorio: save.laboratorio ?? DEFAULT_LABORATORIO,
       buff: save.buff ?? [],
       version: 9.0
+    };
+  },
+
+  // Migração da 9.0 para 9.1 - REWORK DOS COOKIE COINS
+  // O nível das placas de Cookie Coin passou a ter um teto (NVIDIA_NIVEL_MAXIMO_BASE, ampliável por upgrades),
+  // e o minigame foi rebalanceado (antes era fácil acumular milhares de
+  // coins; agora é bem mais caro/lento). Por isso, saves de antes dessa
+  // versão têm coins e nível zerados — o corte de nível em si é feito por
+  // normalizeCookieCoin (roda sempre, em qualquer versão).
+  // O Laboratório ganhou o campo novo "construido" (separado de
+  // "desbloqueado", que agora é permanente). Pra não punir quem já tinha o
+  // Laboratório funcionando no sistema antigo (uma única flag), quem já
+  // estava com "desbloqueado: true" ganha "construido: true" de graça —
+  // não perde o acesso nem precisa pagar 1 coin na primeira vez.
+  9.0: (save) => {
+    return {
+      ...save,
+      cookieCoin: save.cookieCoin
+        ? { ...save.cookieCoin, coins: 0, level: 0 }
+        : save.cookieCoin,
+      laboratorio: save.laboratorio
+        ? {
+            ...save.laboratorio,
+            construido: save.laboratorio.desbloqueado
+              ? true
+              : (save.laboratorio.construido ?? false)
+          }
+        : save.laboratorio,
+      version: 9.1
     };
   }
 };
