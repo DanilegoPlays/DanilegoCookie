@@ -5,6 +5,8 @@
   width: 100%;
   margin: 0 auto;
   gap: 10px;
+  user-select: none;
+
 }
 
 .lado-esquerdo {
@@ -117,10 +119,16 @@
 .lado-meio {
   display:flex;
   flex-direction: column;
-  /* Cresce pra preencher o espaço livre da linha, até o teto de 800px
-     (mesmo max-width que .seção-cookie já usava). */
 }
-/* Seção do cookie (meio) */
+.seção-numero {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  border-radius: 10px;
+  position: relative;
+  text-align: center;
+  width: fit-content;
+  margin: 0 auto;
+}
 .seção-cookie {
   position: relative;
   text-align: center;
@@ -131,8 +139,13 @@
   background: rgba(0, 0, 0, 0.1);
   padding: 10px;
   border-radius: 10px;
-  margin-top: 20px;
+
+  min-width: 450px;
   max-width: 800px;
+  max-height: 300px;
+  overflow-x: hidden; 
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .colecao-grupo {
   margin-bottom: 30px;
@@ -181,15 +194,13 @@
 .lado-direito {
   display:flex;
   flex-direction: column;
-  /* Cresce pra preencher o espaço livre da linha, dentro dos limites que
-     já existiam (200px–480px). */
   flex: 1 1 0;
   max-width: 480px;
   min-width: 200px;
 }
 
 .seção-upgrades {
-  text-align: center;
+  text-align: left;
   background-color: #fffae0;
   padding: 20px;
   border-radius: 20px;
@@ -209,6 +220,35 @@
 }
 .upgrade-wrapper:hover .info {
   opacity: 1;
+}
+
+/* Botão de melhoria agora só mostra o ícone (64x64, igual o sprite das
+   conquistas) — nome/descrição/preço só aparecem no tooltip (.info-melhoria). */
+.melhorias {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid rgba(255, 215, 120, 0.4);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.melhorias:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 0 10px rgba(255, 215, 120, 0.6);
+}
+
+/* Tooltip das melhorias abre à ESQUERDA do ícone (em vez de centralizado
+   em cima, que é o padrão de .info). */
+.info-melhoria {
+  left: auto;
+  right: 110%;
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .seção-upgrades::-webkit-scrollbar {
@@ -265,10 +305,14 @@
   align-items: center;
   justify-content: center;
 }
-.construções-icone img {
+.construções-icone img,
+.construções-icone div {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 .construções-info {
   flex: 1;
@@ -381,9 +425,6 @@
   border: 4px solid #000;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
-
-
-
 
 #cookie
 {
@@ -569,11 +610,11 @@
   margin-top: 10px;
 }
 .upgrade-predio {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
+  position: relative;
 
   background: transparent;
-  border-radius: 10px;
 
   display: flex;
   align-items: center;
@@ -593,23 +634,148 @@
 }
 
 .upgrade-predio img {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   pointer-events: none;
+}
+
+/* Slot de Upgrade Permanente (Distrito das Fazendas). Fica FORA do fluxo
+   do grid (position:absolute) — .upgrade-predio (72x72) é pequeno demais
+   pra conter isso sem esmagar os vizinhos, então ele flutua por baixo do
+   ícone, como um dropdown. */
+.slot-upgrade-permanente {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: 100px;
+  margin-top: 4px;
+}
+
+.botao-slot-permanente {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 8px;
+  border: 2px solid #c9a44c;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.botao-slot-permanente:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 0 10px rgba(255, 215, 120, 0.6);
+}
+
+.botao-slot-permanente-vazio {
+  font-size: 28px;
+  opacity: 0.5;
+  line-height: 1;
+}
+
+.botao-slot-permanente:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.aviso-slot-permanente {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* Caixa flutuante com scroll, listando os upgrades da última ascensão */
+.caixa-seletor-permanente {
+  position: relative;
+  top: 100%;
+  right: 150%;
+  z-index: 50;
+  width: 240px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 4px;
+  background: #1a1408;
+  border: 2px solid #c9a44c;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 4px;
+}
+
+.opcao-seletor-permanente {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.opcao-seletor-permanente-texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.opcao-seletor-permanente:hover {
+  background: rgba(255, 215, 120, 0.15);
+  border-color: #c9a44c;
+}
+
+.opcao-seletor-permanente.selecionado {
+  background: rgba(255, 215, 120, 0.25);
+  border-color: #ffd700;
+}
+
+.opcao-seletor-permanente.nenhum {
+  align-items: center;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.descricao-opcao-seletor {
+  font-size: 11px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+.opcao-seletor-permanente-vazio {
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: center;
+  padding: 8px;
 }
 
 
 .distrito-caixa {
   position: relative;
-  width: 260px;
+  width: 300px;
+  height: fit-content;
   border: 3px solid #c9a44c;
   border-radius: 14px;
-  padding: 14px;
+  padding: 10px;
   background: transparent;
   text-align: center;
   z-index: 50;
   pointer-events: auto;
-  backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 215, 120, 0.6);
 
   box-shadow:
@@ -817,13 +983,22 @@ body {
 }
 
 .bounce {
-  animation: bounce 0.3s ease;
+  animation: bounce 0.5s ease;
 }
 
 
 .cookie-dourado {
   font-size: 48px;
-  animation: float 2s ease-in-out infinite;
+  animation: float 10s ease-in-out infinite;
+}
+
+.cookie-dourado.saindo {
+  animation: float 10s ease-in-out infinite, fadeOutDourado 10s ease forwards;
+}
+
+@keyframes fadeOutDourado {
+  from { opacity: 1; }
+  to   { opacity: 0.1; }
 }
 
 @keyframes float {
@@ -875,7 +1050,7 @@ body {
    Ocupa o lugar do "lado-meio" quando um desses menus está aberto,
    no mesmo espírito de quando Karaj abre (o cookie/direita somem). */
 .tela-menu {
-  width: 600px;
+  width: 80vh;
   min-height: 400px;
   max-height: 80vh;
   background-color: #fffae0;
@@ -883,14 +1058,15 @@ body {
   border-radius: 20px;
   border: 4px solid #000;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  text-align: center;
+  text-align: left;
   overflow-y: auto;
 }
 
 .tela-menu h2 {
   margin-top: 0;
   margin-bottom: 20px;
-  font-size: 32px;
+  font-size: 24px;
+  text-align: center;
 }
 
 /* Grade de troféus (conquistas). Se ajusta sozinha à largura disponível.
@@ -1013,6 +1189,19 @@ body {
 
 .tiny-cookie:hover {
   transform: scale(1.4) rotate(15deg);
+}
+
+/* Ícone de preço em cookies (substitui o texto "Preço: "). Usa 1em pra
+   sempre ficar do mesmo tamanho da fonte ao redor, seja num botão, numa
+   tooltip ou num texto normal. Não é clicável nem tem hover — é só um
+   substituto visual pra palavra "cookies". */
+.preco-cookie-icone {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  margin: 0 2px;
 }
 
 /* Ícone do Cookie Coin na seção de mineração — não é clicável, só decorativo. */

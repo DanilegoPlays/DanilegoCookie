@@ -1,0 +1,1108 @@
+diff --git a/src/App.js b/src/App.js
+index 14c2abd..414adf0 100644
+--- a/src/App.js
++++ b/src/App.js
+@@ -27,7 +27,7 @@ import './App.css';
+ import { useState, useEffect, useRef } from "react";
+ import { motion, useAnimation } from "framer-motion";
+ import { Save, Load, saveGame, loadSave } from './version';
+-import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, CONQUISTA_SPRITE, filtrarUpgradesDisponiveis} from './defaults';
++import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_LABORATORIO, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, CONQUISTA_SPRITE, filtrarUpgradesDisponiveis} from './defaults';
+ import conquistasSprite from './arte/conquistas.png';
+ import tinyCookie from './arte/TinyCookie.png';
+ import madalenaIcon from './arte/Madalena.png';
+@@ -35,6 +35,7 @@ import temploSecretoIcon from './arte/MarioL.png';
+ import cookieCoinIcon from './arte/CookieCoin.png';
+ import {SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
+ import {VALOR_BASE, criarComprarCookieCoinNivel, criarVenderCookieCoin, GraficoCookieCoin} from './minigame';
++import {Laboratorio, criarAdicionarQuimico, criarBeberFrasco} from './laboratorio';
+ import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP} from './helper';
+ 
+ function App() {
+@@ -64,6 +65,11 @@ function App() {
+  
+   // Minigames
+   const [cookieCoin, setCookieCoin] = useState(DEFAULT_COOKIE_COIN);
++  const [laboratorio, setLaboratorio] = useState(DEFAULT_LABORATORIO);
++  // Bônus temporário na duração dos cookies dourados (efeito blue+green+yellow).
++  const [douradoDuracaoBonus, setDouradoDuracaoBonus] = useState(null);
++  // Tick de 1s para atualizar contadores de cooldown do laboratório na UI.
++  const [, setTickUI] = useState(0);
+   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
+   const [telaAtual, setTelaAtual] = useState("jogo"); // telas: "jogo", "karaj" (ascensao), "conquistas", "opções"
+   // Tooltip da grade de conquistas — position: fixed pra escapar do overflow
+@@ -106,9 +112,17 @@ function App() {
+     spawnSomRef.current.volume = 0.6;
+   }, []);
+ 
++  // Desconto temporário nas construções (efeito red+green+blue do Laboratório).
++  // Retorna o fator multiplicador (ex: 0.8 = 20% mais barato).
++  function fatorDescontoConstrucao() {
++    const now = Date.now();
++    const descontoBuff = buff.find(b => b.tipo === "Desconto" && b.expira > now);
++    return descontoBuff ? (1 - descontoBuff.mult) : 1;
++  }
++
+   // Função para calcular o preço atual de cada construção baseado no preço base e quantidade
+   function getPreçoAtual(preçoBase, quantidade) {
+-    return Math.floor(preçoBase * Math.pow(1.15, quantidade));
++    return Math.floor(preçoBase * Math.pow(1.15, quantidade) * fatorDescontoConstrucao());
+   }
+   function preverCustoMultiplo(precoBase, quantidadeAtual, saldoCookies, quantidadeDesejada) {
+   let custoSimulado = 0;
+@@ -144,6 +158,12 @@ function App() {
+         prev.desbloqueado ? prev : { ...prev, desbloqueado: true }
+       );
+     }
++    const laborat = construcoes.find(c => c.nome === "Laboratório");
++    if (laborat && laborat.quantidade >= 1) {
++      setLaboratorio(prev =>
++        prev.desbloqueado ? prev : { ...prev, desbloqueado: true }
++      );
++    }
+  
+     // Desbloqueia distritos
+     const distritosParaVerificar = [
+@@ -225,6 +245,7 @@ function App() {
+   const construcoesRef = useRef(construcoes);
+   const melhoriasRef = useRef(melhorias);
+   const cookieCoinRef = useRef(cookieCoin);
++  const laboratorioRef = useRef(laboratorio);
+   const ascensaoRef = useRef(ascensao);
+   const cookiesTotaisRef = useRef(cookiesTotais);
+   const cookiesTotaisAscensaoRef = useRef(cookiesTotaisAscensao);
+@@ -245,6 +266,7 @@ function App() {
+   useEffect(() => { construcoesRef.current = construcoes; }, [construcoes]);
+   useEffect(() => { melhoriasRef.current = melhorias; }, [melhorias]);
+   useEffect(() => { cookieCoinRef.current = cookieCoin; }, [cookieCoin]);
++  useEffect(() => { laboratorioRef.current = laboratorio; }, [laboratorio]);
+   useEffect(() => { ascensaoRef.current = ascensao; }, [ascensao]);
+   useEffect(() => { sorteRef.current = sorte; }, [sorte]);
+   useEffect(() => { douradosTotaisRef.current = douradosTotais; }, [douradosTotais]);
+@@ -311,6 +333,7 @@ function App() {
+       construcoes: construcoesRef.current,
+       melhorias: melhoriasRef.current,
+       cookieCoin: cookieCoinRef.current,
++      laboratorio: laboratorioRef.current,
+       ascensao: ascensaoRef.current,
+       cookiesTotais: cookiesTotaisRef.current,
+       cookiesTotaisAscensao: cookiesTotaisAscensaoRef.current,
+@@ -351,6 +374,7 @@ function App() {
+       setConstrucoes(dados.construcoes ?? DEFAULT_CONSTRUCOES);
+       setMelhorias(dados.melhorias ?? DEFAULT_MELHORIAS);
+       setCookieCoin(dados.cookieCoin ?? DEFAULT_COOKIE_COIN);
++      setLaboratorio(dados.laboratorio ?? DEFAULT_LABORATORIO);
+       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
+       setDouradosTotais(dados.douradosTotais ?? 0);
+       setSorte(dados.sorte ?? 1);
+@@ -408,7 +432,10 @@ function App() {
+  
+   // Wrapper do spawn: além de criar o cookie, toca o sino se o upgrade "Sino da Fábrica" foi comprado
+   function SpawnCookieDourado() {
+-    SpawnCookieDouradoFn(setCookieDourado);
++    // Bônus temporário de duração dos cookies dourados (efeito blue+green+yellow do lab)
++    const bonusAtivo = douradoDuracaoBonus && douradoDuracaoBonus.expira > Date.now();
++    const duracaoMult = bonusAtivo ? 1 + douradoDuracaoBonus.pct : 1;
++    SpawnCookieDouradoFn(setCookieDourado, duracaoMult);
+ 
+     const temSino = ascensao?.distritofabrica?.upgrades?.some(
+       u => u.id === "fabricaascensao2" && u.comprado
+@@ -488,11 +515,15 @@ function App() {
+   // Limpa efeitos de cookie dourado expirados.
+   useEffect(() => {
+     const cleanupInterval = setInterval(() => {
++      const now = Date.now();
+       setBuff(prev => {
+-        const now = Date.now();
+         const filtrado = prev.filter(b => b.expira > now);
+         return filtrado.length === prev.length ? prev : filtrado;
+       });
++      // Expira bônus de duração de cookie dourado
++      setDouradoDuracaoBonus(prev => (prev && prev.expira <= now ? null : prev));
++      // Força atualização dos cooldowns do laboratório na UI
++      setTickUI(t => t + 1);
+     }, 1000);
+     return () => clearInterval(cleanupInterval);
+   }, []);
+@@ -513,10 +544,16 @@ function App() {
+       });
+     });
+  
++    // Bônus temporário de sorte vindo do minigame do Laboratório (buff tipo "Sorte")
++    const now = Date.now();
++    const sorteBuff = buff
++      .filter(b => b.tipo === "Sorte" && b.expira > now)
++      .reduce((soma, b) => soma + (b.mult || 0), 0);
++
+     // Cada upgrade aumenta a sorte em 1
+-    const totalLuck = 1 + luckUpgrades + ascensaoLuck;
++    const totalLuck = 1 + luckUpgrades + ascensaoLuck + sorteBuff;
+     setSorte(totalLuck);
+-  }, [melhorias, ascensao]);
++  }, [melhorias, ascensao, buff]);
+  
+   function getOffline(ascensao) {
+  
+@@ -832,6 +869,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+       setConstrucoes(dados.construcoes ?? DEFAULT_CONSTRUCOES);
+       setMelhorias(dados.melhorias ?? DEFAULT_MELHORIAS);
+       setCookieCoin(dados.cookieCoin ?? DEFAULT_COOKIE_COIN);
++      setLaboratorio(dados.laboratorio ?? DEFAULT_LABORATORIO);
+       setCookiesTotais(dados.cookiesTotais ?? 0);
+       setCookiesTotaisAscensao(dados.cookiesTotaisAscensao ?? 0);
+       setAscensao(dados.ascensao ?? DEFAULT_ASCENSAO);
+@@ -899,7 +937,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+     construcoes,
+     cookiesTotaisAscensao,
+     douradosTotais,
+-    ascensao
++    ascensao,
++    laboratorio
+   );
+  
+   // lista de upgrades comprados
+@@ -1032,6 +1071,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+       setTelaAtual("ascensão");
+       
+       setCookieCoin(DEFAULT_COOKIE_COIN);
++      setLaboratorio(DEFAULT_LABORATORIO);
++      setDouradoDuracaoBonus(null);
+       setAscensao(prev=> ({
+         ...prev,
+         desbloqueado: true,
+@@ -1047,6 +1088,22 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+   const cookieInstaneo = criarCookieInstaneo({CPS, contagem, setContagem, setCookiesTotais, setCookiesTotaisAscensao, mostrarAviso, simplificarNumero});
+  
+   const efeitoCookieDourado = criarEfeitoCookieDourado({douradoSomRef, setDouradosTotais, setCookieDourado, setBuff, cookieInstaneo, mostrarAviso});
++
++  // Minigame do Laboratório (implementado em laboratorio.js)
++  const adicionarQuimico = criarAdicionarQuimico({ laboratorio, setLaboratorio });
++  const beberFrasco = criarBeberFrasco({
++    laboratorio,
++    setLaboratorio,
++    setBuff,
++    setContagem,
++    setCookiesTotais,
++    setCookiesTotaisAscensao,
++    setDouradoDuracaoBonus,
++    producaoRef,
++    spawnCookieDourado: SpawnCookieDourado,
++    mostrarAviso,
++    simplificarNumero,
++  });
+   
+   return (
+     <div className="App">
+@@ -1194,6 +1251,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+                             <div style={{ color: '#fff', fontSize: '12px' }}>
+                               {b.tipo === "CPS" && `${b.mult}x CPS`}
+                               {b.tipo === "Click" && `${b.mult}x Clique`}
++                              {b.tipo === "Sorte" && `+${b.mult} Sorte`}
++                              {b.tipo === "Desconto" && `Construções ${Math.round(b.mult * 100)}% mais baratas`}
+                               {' • '}
+                               <span style={{ color: '#aaa' }}>{tempoRestante}s</span>
+                             </div>
+@@ -1203,6 +1262,25 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+                   </div>
+                 )}
+ 
++              {/* Bônus de duração de cookie dourado (efeito do Laboratório) */}
++              {douradoDuracaoBonus && douradoDuracaoBonus.expira > Date.now() && (
++                <div className="seção-buffs">
++                  <div style={{
++                    background: 'rgba(0,0,0,0.3)',
++                    padding: '6px 8px',
++                    borderRadius: '4px',
++                    fontSize: '13px'
++                  }}>
++                    <div style={{ color: '#ffd700', fontWeight: 'bold' }}>Reagente Dourado</div>
++                    <div style={{ color: '#fff', fontSize: '12px' }}>
++                      {`Cookies Dourados +${Math.round(douradoDuracaoBonus.pct * 100)}% duração`}
++                      {' • '}
++                      <span style={{ color: '#aaa' }}>{Math.ceil((douradoDuracaoBonus.expira - Date.now()) / 1000)}s</span>
++                    </div>
++                  </div>
++                </div>
++              )}
++
+               {/* Botões para abrir menus de opções e conquistas */}
+               <div className="seção-menus">
+                 <button
+@@ -1257,6 +1335,16 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
+ 
+               </div>
+               )}
++
++              {laboratorio.desbloqueado && (
++                <Laboratorio
++                  laboratorio={laboratorio}
++                  spriteSheet={conquistasSprite}
++                  adicionarQuimico={adicionarQuimico}
++                  beberFrasco={beberFrasco}
++                />
++              )}
++
+               {ascensao.desbloqueado && (
+                 <div className="seção-karaj">
+                   <h2>A Cidade de Karaj</h2>
+diff --git a/src/defaults.js b/src/defaults.js
+index e1a2630..409168e 100644
+--- a/src/defaults.js
++++ b/src/defaults.js
+@@ -128,7 +128,10 @@ export const DEFAULT_MELHORIAS = [
+     {nome: "Trevo de Quatro Folhas", preço: 77_777, efeito:'sorte', id: 'sorte1', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
+     {nome: "Pé de Coelho", preço: 7_777_777, efeito:'sorte', id: 'sorte2', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
+     {nome: "Ferradura Dourada", preço: 777_777_777, efeito:'sorte', id: 'sorte3', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
+-    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"}
++    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Faz um Cookie Dourado aparecer, e aumenta sua sorte! +1 Sorte"},
++
++    // Upgrade especial desbloqueado pelo minigame do Laboratório (red + blue + yellow)
++    {nome: "Cookie Químico", preço: 1_000_000_000_000, efeito:'5porcento', id: 'chemicalcookie', comprado: false, descricao: "Sintetizado em laboratório! +5% de CPS", spriteX: 4, spriteY: 9}
+   ];
+ 
+ export const DEFAULT_DOURADO = [
+@@ -366,6 +369,34 @@ export const DEFAULT_COOKIE_COIN = {desbloqueado: false,
+     coins: 0,
+     mercado: 1
+   };
++
++// Estado inicial do minigame do Laboratório (mistura de químicos).
++// - desbloqueado: fica true quando o jogador tem 1 Laboratório.
++// - frascos: cooldown de cada químico. 0 = disponível; timestamp (ms) = quando
++//   volta a ficar disponível (30 minutos após ser usado).
++// - grande: array com as cores adicionadas no frasco grande (máx. 3).
++// - chemicalCookieDesbloqueado: libera o upgrade "Cookie Químico".
++export const DEFAULT_LABORATORIO = {
++    desbloqueado: false,
++    frascos: { green: 0, red: 0, blue: 0, yellow: 0 },
++    grande: [],
++    chemicalCookieDesbloqueado: false,
++  };
++
++// Configurações do minigame do Laboratório.
++//   COOLDOWN: tempo (ms) que cada químico fica indisponível após ser bebido.
++//   spriteY / sprites: coordenadas no spritesheet conquistas.png.
++export const CONFIG_LABORATORIO = {
++    COOLDOWN: 30 * 60 * 1000, // 30 minutos
++    spriteY: 9,
++    sprites: {
++      vazio: 3,
++      green: 4,
++      red: 5,
++      blue: 6,
++      yellow: 7,
++    },
++  };
+ export const CONFIG_DOURADO = {
+   TMIN: 300, // 5 minutos
+   TMAX: 540, // 9 minutos
+@@ -493,7 +524,7 @@ export const DEFAULT_ASCENSAO = {
+ // Retorna as melhorias já filtradas, ordenadas do mais barato ao mais caro,
+ // e com um campo extra `indiceOriginal` que guarda a posição no array original
+ // (necessário para a função ComprarMelhoria saber qual melhoria foi comprada).
+-export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao) {
++export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao, laboratorio) {
+   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
+   const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
+   const ContagemMinas = construcoes.find((c) => c.nome === "Mina")?.quantidade || 0;
+@@ -576,6 +607,8 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
+       if (m.id === "cookie11" && cookiesTotaisAscensao < 500_000_000) return false;
+       if (m.id === "cookie12" && cookiesTotaisAscensao < 1_000_000_000) return false;
+ 
++      if (m.id === "chemicalcookie" && !laboratorio?.chemicalCookieDesbloqueado) return false;
++
+       if (m.id === "sorte1" && douradosTotais < 1) return false;
+       if (m.id === "sorte2" && douradosTotais < 7) return false;
+       if (m.id === "sorte3" && douradosTotais < 77) return false;
+diff --git a/src/index.css b/src/index.css
+index 9ee3135..ecc7cb5 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -937,4 +937,85 @@ body {
+   transform: translateY(-50%);
+   font-size: 18px;
+   color: #aaa;
+-}
+\ No newline at end of file
++}
++/* ----- Minigame do Laborat\u00f3rio ----- */
++.se\u00e7\u00e3o-laboratorio {
++  background: linear-gradient(180deg, #0b0f14, #050708);
++  border: 2px solid #7ac6ff;
++  border-radius: 6px;
++  padding: 14px 16px;
++  width: 350px;
++  color: #cfe9ff;
++  font-family: "Courier New", Courier, monospace;
++  font-size: 16px;
++  box-shadow:
++    0 0 12px rgba(122, 198, 255, 0.25),
++    inset 0 0 10px rgba(122, 198, 255, 0.08);
++  position: relative;
++  text-align: center;
++}
++
++.se\u00e7\u00e3o-laboratorio h2 {
++  margin: 0 0 10px 0;
++  color: #7ac6ff;
++}
++
++.lab-frascos-linha {
++  display: flex;
++  justify-content: center;
++  gap: 12px;
++  margin-bottom: 10px;
++}
++
++.lab-frasco-item {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++}
++
++.lab-frasco-pequeno {
++  border-radius: 6px;
++  transition: transform 0.1s ease;
++}
++
++.lab-frasco-pequeno.lab-disponivel:hover {
++  transform: scale(1.1);
++}
++
++.lab-frasco-pequeno.lab-indisponivel {
++  opacity: 0.5;
++}
++
++.lab-cooldown {
++  font-size: 11px;
++  color: #ff9a9a;
++  margin-top: 2px;
++}
++
++.lab-frasco-grande-wrapper {
++  display: flex;
++  justify-content: center;
++  margin: 6px 0 12px 0;
++}
++
++.lab-frasco-grande {
++  border: 2px dashed rgba(122, 198, 255, 0.4);
++  border-radius: 8px;
++  background-color: rgba(122, 198, 255, 0.05);
++}
++
++.lab-beber-botao {
++  background: #7ac6ff;
++  color: #04121e;
++  border: none;
++  border-radius: 6px;
++  padding: 8px 24px;
++  font-family: "Courier New", Courier, monospace;
++  font-size: 16px;
++  font-weight: bold;
++}
++
++.lab-beber-botao:disabled {
++  opacity: 0.5;
++  cursor: not-allowed;
++}
+diff --git a/src/labdefaults.test.js b/src/labdefaults.test.js
+new file mode 100644
+index 0000000..d5efd62
+--- /dev/null
++++ b/src/labdefaults.test.js
+@@ -0,0 +1,23 @@
++import { filtrarUpgradesDisponiveis, DEFAULT_MELHORIAS, DEFAULT_CONSTRUCOES, DEFAULT_ASCENSAO, DEFAULT_LABORATORIO } from './defaults';
++
++test('chemical cookie hidden until unlocked', () => {
++  const construcoes = DEFAULT_CONSTRUCOES.map(c => ({...c, quantidade: 999}));
++  const locked = filtrarUpgradesDisponiveis(
++    DEFAULT_MELHORIAS, construcoes, 1e18, 1000, DEFAULT_ASCENSAO,
++    { ...DEFAULT_LABORATORIO, chemicalCookieDesbloqueado: false });
++  expect(locked.find(m => m.id === 'chemicalcookie')).toBeUndefined();
++
++  const unlocked = filtrarUpgradesDisponiveis(
++    DEFAULT_MELHORIAS, construcoes, 1e18, 1000, DEFAULT_ASCENSAO,
++    { ...DEFAULT_LABORATORIO, chemicalCookieDesbloqueado: true });
++  const cc = unlocked.find(m => m.id === 'chemicalcookie');
++  expect(cc).toBeDefined();
++  expect(cc.efeito).toBe('5porcento');
++  expect(cc.preço).toBe(1_000_000_000_000);
++});
++
++test('DEFAULT_LABORATORIO shape', () => {
++  expect(DEFAULT_LABORATORIO.desbloqueado).toBe(false);
++  expect(DEFAULT_LABORATORIO.grande).toEqual([]);
++  expect(DEFAULT_LABORATORIO.frascos).toEqual({green:0,red:0,blue:0,yellow:0});
++});
+diff --git a/src/laboratorio.integration.test.js b/src/laboratorio.integration.test.js
+new file mode 100644
+index 0000000..4345877
+--- /dev/null
++++ b/src/laboratorio.integration.test.js
+@@ -0,0 +1,106 @@
++import { criarAdicionarQuimico, criarBeberFrasco } from './laboratorio';
++import { DEFAULT_LABORATORIO, CONFIG_LABORATORIO } from './defaults';
++
++// Helper to run a stateful sequence
++function makeLab() {
++  let lab = { ...DEFAULT_LABORATORIO, desbloqueado: true,
++              frascos: { ...DEFAULT_LABORATORIO.frascos }, grande: [] };
++  const setLaboratorio = (fn) => { lab = typeof fn === 'function' ? fn(lab) : fn; };
++  return { get: () => lab, setLaboratorio };
++}
++
++test('adicionarQuimico adds up to 3 and blocks re-add of same in flask', () => {
++  const { get, setLaboratorio } = makeLab();
++  let add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++  add('green');
++  expect(get().grande).toEqual(['green']);
++  expect(get().frascos.green).toBe(-1);
++
++  // re-add same green blocked
++  add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++  add('green');
++  expect(get().grande).toEqual(['green']);
++
++  add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++  add('red'); 
++  add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++  add('blue');
++  expect(get().grande).toEqual(['green','red','blue']);
++
++  // 4th blocked
++  add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++  add('yellow');
++  expect(get().grande.length).toBe(3);
++});
++
++test('beberFrasco applies green instant cookies and sets cooldown', () => {
++  const { get, setLaboratorio } = makeLab();
++  // Only one green frask exists, so only 1 can be added at a time.
++  let add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++  add('green');
++
++  let contagem = 0, totais = 0, ascTotais = 0;
++  const buffs = [];
++  const beber = criarBeberFrasco({
++    laboratorio: get(),
++    setLaboratorio,
++    setBuff: (fn) => { const r = fn(buffs); buffs.length=0; buffs.push(...r); },
++    setContagem: (fn) => { contagem = fn(contagem); },
++    setCookiesTotais: (fn) => { totais = fn(totais); },
++    setCookiesTotaisAscensao: (fn) => { ascTotais = fn(ascTotais); },
++    setDouradoDuracaoBonus: () => {},
++    producaoRef: { current: 100 }, // 100 cps
++    spawnCookieDourado: () => {},
++    mostrarAviso: () => {},
++    simplificarNumero: (n) => n,
++  });
++  beber();
++  // 1x green = 20 min => 100 cps * 60 * 20 = 120000
++  expect(contagem).toBe(100*60*20);
++  expect(totais).toBe(100*60*20);
++  expect(get().grande).toEqual([]);
++  expect(get().frascos.green).toBeGreaterThan(Date.now());
++});
++
++test('beberFrasco red+blue+yellow unlocks chemical cookie & spawns nothing', () => {
++  const { get, setLaboratorio } = makeLab();
++  let add;
++  ['red','blue','yellow'].forEach(c => {
++    add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++    add(c);
++  });
++  let spawned = 0;
++  const buffs=[];
++  const beber = criarBeberFrasco({
++    laboratorio: get(), setLaboratorio,
++    setBuff: (fn)=>{const r=fn(buffs);buffs.length=0;buffs.push(...r);},
++    setContagem:()=>{}, setCookiesTotais:()=>{}, setCookiesTotaisAscensao:()=>{},
++    setDouradoDuracaoBonus:()=>{}, producaoRef:{current:0},
++    spawnCookieDourado:()=>{spawned++;}, mostrarAviso:()=>{}, simplificarNumero:n=>n,
++  });
++  beber();
++  expect(get().chemicalCookieDesbloqueado).toBe(true);
++  expect(spawned).toBe(0);
++  expect(buffs.length).toBe(0); // no buffs from this combo
++});
++
++test('beberFrasco red+green+yellow spawns golden', () => {
++  const { get, setLaboratorio } = makeLab();
++  ['red','green','yellow'].forEach(c => {
++    const add = criarAdicionarQuimico({ laboratorio: get(), setLaboratorio });
++    add(c);
++  });
++  let spawned = 0;
++  const beber = criarBeberFrasco({
++    laboratorio: get(), setLaboratorio,
++    setBuff:()=>{}, setContagem:()=>{}, setCookiesTotais:()=>{}, setCookiesTotaisAscensao:()=>{},
++    setDouradoDuracaoBonus:()=>{}, producaoRef:{current:0},
++    spawnCookieDourado:()=>{spawned++;}, mostrarAviso:()=>{}, simplificarNumero:n=>n,
++  });
++  beber();
++  expect(spawned).toBe(1);
++});
++
++test('cooldown constant is 30 minutes', () => {
++  expect(CONFIG_LABORATORIO.COOLDOWN).toBe(30*60*1000);
++});
+diff --git a/src/laboratorio.js b/src/laboratorio.js
+new file mode 100644
+index 0000000..d1af6ac
+--- /dev/null
++++ b/src/laboratorio.js
+@@ -0,0 +1,367 @@
++// Módulo do minigame do Laboratório (mistura de químicos).
++//
++// Seguindo a arquitetura do minigame.js e sorte.js, as funções aqui são
++// "factories": recebem os setters e valores do estado do App e devolvem uma
++// função pronta pra ser chamada.
++//
++// Regras dos químicos:
++//  - green: cookies instantâneos (minutos de produção)
++//  - red: boost de clique de curta duração
++//  - blue: boost de CPS de longa duração
++//  - yellow: bônus de sorte (ou cookie dourado instantâneo com 3x)
++//  - combinações de 3 cores diferentes têm efeitos especiais.
++// Cada frasco pode ser usado uma vez e depois entra em cooldown de 30 minutos.
++
++import { CONFIG_LABORATORIO } from './defaults';
++
++// Ordem canônica das cores (usada pra comparar combinações).
++export const CORES = ['green', 'red', 'blue', 'yellow'];
++
++// Nome amigável de cada cor (em português) pra tooltips e avisos.
++export const NOME_COR = {
++  green: 'verde',
++  red: 'vermelho',
++  blue: 'azul',
++  yellow: 'amarelo',
++};
++
++// Conta quantos de cada cor há na mistura.
++// Retorna um objeto tipo { green: 2, red: 1 }.
++export function contarCores(grande) {
++  const contagem = {};
++  grande.forEach(cor => {
++    contagem[cor] = (contagem[cor] || 0) + 1;
++  });
++  return contagem;
++}
++
++// Descreve o conteúdo do frasco grande em texto (pra tooltip).
++export function descreverGrande(grande) {
++  if (grande.length === 0) return 'Frasco grande vazio. Arraste um químico para começar.';
++
++  const contagem = contarCores(grande);
++  const partes = CORES
++    .filter(cor => contagem[cor])
++    .map(cor => `${contagem[cor]} ${NOME_COR[cor]}`);
++
++  const restantes = 3 - grande.length;
++  const sufixo = restantes > 0
++    ? `, você pode beber ou adicionar mais ${restantes}`
++    : ', você pode beber';
++
++  return `Contém ${partes.join(', ')}${sufixo}`;
++}
++
++// Retorna true se o químico dessa cor está disponível (fora de cooldown).
++export function estaDisponivel(laboratorio, cor) {
++  const cd = laboratorio.frascos?.[cor] || 0;
++  if (cd === -1) return false; // já está no frasco grande
++  return cd <= Date.now();
++}
++
++// Calcula os efeitos de uma mistura. Função pura: só descreve o que fazer.
++// Retorna um objeto com as ações a executar:
++//   { cookiesMinutos, clickBoost:{mult,duracao}, cpsBoost:{mult,duracao},
++//     sorteBoost:{duracao}, golden:bool, buildingDesconto:{pct,duracao},
++//     douradoDuracao:{pct,duracao}, unlockChemicalCookie:bool, avisos:[] }
++export function calcularEfeitos(grande) {
++  const contagem = contarCores(grande);
++  const coresDistintas = Object.keys(contagem);
++  const resultado = { avisos: [] };
++
++  // Combinações especiais: exatamente 3 cores diferentes (1 de cada).
++  if (grande.length === 3 && coresDistintas.length === 3) {
++    const set = new Set(coresDistintas);
++    const tem = c => set.has(c);
++
++    if (tem('red') && tem('green') && tem('blue')) {
++      resultado.buildingDesconto = { pct: 0.2, duracao: 5 * 60 };
++      resultado.avisos.push('Construções 20% mais baratas por 5 minutos!');
++      return resultado;
++    }
++    if (tem('red') && tem('green') && tem('yellow')) {
++      resultado.golden = true;
++      resultado.avisos.push('Um Cookie Dourado foi invocado!');
++      return resultado;
++    }
++    if (tem('red') && tem('blue') && tem('yellow')) {
++      resultado.unlockChemicalCookie = true;
++      resultado.avisos.push('Você desbloqueou o upgrade "Cookie Químico"!');
++      return resultado;
++    }
++    if (tem('blue') && tem('green') && tem('yellow')) {
++      resultado.douradoDuracao = { pct: 0.1, duracao: 10 * 60 };
++      resultado.avisos.push('Cookies Dourados duram 10% mais pelos próximos 10 minutos!');
++      return resultado;
++    }
++  }
++
++  // Caso contrário: soma os efeitos individuais por cor.
++  Object.entries(contagem).forEach(([cor, n]) => {
++    if (cor === 'green') {
++      const minutos = n === 1 ? 20 : n === 2 ? 40 : 60;
++      resultado.cookiesMinutos = (resultado.cookiesMinutos || 0) + minutos;
++      resultado.avisos.push(`+${minutos} minutos de produção`);
++    } else if (cor === 'red') {
++      const mult = n === 1 ? 10 : n === 2 ? 15 : 20;
++      resultado.clickBoost = { mult, duracao: 10 };
++      resultado.avisos.push(`Clique x${mult} por 10 segundos`);
++    } else if (cor === 'blue') {
++      let mult, duracao;
++      if (n === 1) { mult = 1.1; duracao = 3600; }
++      else if (n === 2) { mult = 1.2; duracao = 3600; }
++      else { mult = 1.2; duracao = 10 * 3600; }
++      resultado.cpsBoost = { mult, duracao };
++      const pct = Math.round((mult - 1) * 100);
++      const horas = duracao / 3600;
++      resultado.avisos.push(`+${pct}% de CPS por ${horas} hora${horas > 1 ? 's' : ''}`);
++    } else if (cor === 'yellow') {
++      if (n === 3) {
++        resultado.golden = true;
++        resultado.avisos.push('Um Cookie Dourado foi invocado!');
++      } else {
++        const duracao = n === 1 ? 3 * 60 : 10 * 60;
++        resultado.sorteBoost = { valor: 1, duracao };
++        resultado.avisos.push(`+1 de sorte por ${duracao / 60} minutos`);
++      }
++    }
++  });
++
++  return resultado;
++}
++
++// Factory: cria a função que adiciona um químico ao frasco grande.
++// Só adiciona se o químico está disponível e ainda cabe (máximo 3).
++export function criarAdicionarQuimico({ laboratorio, setLaboratorio }) {
++  return function adicionarQuimico(cor) {
++    setLaboratorio(prev => {
++      if (!prev.desbloqueado) return prev;
++      if (prev.grande.length >= 3) return prev;
++      const cd = prev.frascos?.[cor] || 0;
++      if (cd === -1) return prev; // já está no frasco grande
++      if (cd > Date.now()) return prev; // em cooldown
++      return {
++        ...prev,
++        grande: [...prev.grande, cor],
++        frascos: {
++          ...prev.frascos,
++          // Marca o químico como "em uso" imediatamente (cooldown começa ao beber).
++          // Enquanto está no frasco grande, ele não pode ser re-adicionado.
++          [cor]: -1,
++        },
++      };
++    });
++  };
++}
++
++// Factory: cria a função que "bebe" o frasco grande, aplicando os efeitos
++// e colocando os químicos usados em cooldown de 30 minutos.
++export function criarBeberFrasco({
++  laboratorio,
++  setLaboratorio,
++  setBuff,
++  setContagem,
++  setCookiesTotais,
++  setCookiesTotaisAscensao,
++  setDouradoDuracaoBonus,
++  producaoRef,
++  spawnCookieDourado,
++  mostrarAviso,
++  simplificarNumero,
++}) {
++  return function beberFrasco() {
++    const grande = laboratorio.grande;
++    if (!grande || grande.length === 0) return;
++
++    const efeitos = calcularEfeitos(grande);
++    const agora = Date.now();
++
++    // Cookies instantâneos (green)
++    if (efeitos.cookiesMinutos) {
++      const cps = producaoRef.current || 0;
++      const ganho = cps * 60 * efeitos.cookiesMinutos;
++      setContagem(v => v + ganho);
++      setCookiesTotais(v => v + ganho);
++      setCookiesTotaisAscensao(v => v + ganho);
++    }
++
++    // Boost de clique (red)
++    if (efeitos.clickBoost) {
++      setBuff(prev => [...prev, {
++        nome: 'Reação Explosiva',
++        tipo: 'Click',
++        mult: efeitos.clickBoost.mult,
++        expira: agora + efeitos.clickBoost.duracao * 1000,
++      }]);
++    }
++
++    // Boost de CPS (blue)
++    if (efeitos.cpsBoost) {
++      setBuff(prev => [...prev, {
++        nome: 'Catalisador de Produção',
++        tipo: 'CPS',
++        mult: efeitos.cpsBoost.mult,
++        expira: agora + efeitos.cpsBoost.duracao * 1000,
++      }]);
++    }
++
++    // Bônus de sorte (yellow 1x/2x)
++    if (efeitos.sorteBoost) {
++      setBuff(prev => [...prev, {
++        nome: 'Elixir da Sorte',
++        tipo: 'Sorte',
++        mult: efeitos.sorteBoost.valor,
++        expira: agora + efeitos.sorteBoost.duracao * 1000,
++      }]);
++    }
++
++    // Desconto em construções (red+green+blue)
++    if (efeitos.buildingDesconto) {
++      setBuff(prev => [...prev, {
++        nome: 'Solvente Corrosivo',
++        tipo: 'Desconto',
++        mult: efeitos.buildingDesconto.pct,
++        expira: agora + efeitos.buildingDesconto.duracao * 1000,
++      }]);
++    }
++
++    // Aumento de duração dos cookies dourados (blue+green+yellow)
++    if (efeitos.douradoDuracao && setDouradoDuracaoBonus) {
++      setDouradoDuracaoBonus({
++        pct: efeitos.douradoDuracao.pct,
++        expira: agora + efeitos.douradoDuracao.duracao * 1000,
++      });
++    }
++
++    // Cookie dourado instantâneo (yellow 3x, ou red+green+yellow)
++    if (efeitos.golden && spawnCookieDourado) {
++      spawnCookieDourado();
++    }
++
++    // Desbloqueio do upgrade Cookie Químico (red+blue+yellow)
++    // (marca a flag no próprio estado do laboratório).
++
++    // Aviso do que aconteceu
++    if (efeitos.avisos.length > 0) {
++      mostrarAviso(`Laboratório: ${efeitos.avisos.join(' • ')}`);
++    }
++
++    // Coloca em cooldown os químicos usados e esvazia o frasco grande.
++    setLaboratorio(prev => {
++      const novosFrascos = { ...prev.frascos };
++      grande.forEach(cor => {
++        novosFrascos[cor] = agora + CONFIG_LABORATORIO.COOLDOWN;
++      });
++      return {
++        ...prev,
++        grande: [],
++        frascos: novosFrascos,
++        chemicalCookieDesbloqueado:
++          prev.chemicalCookieDesbloqueado || !!efeitos.unlockChemicalCookie,
++      };
++    });
++  };
++}
++
++// Componente da UI do minigame do Laboratório.
++export function Laboratorio({
++  laboratorio,
++  spriteSheet,
++  adicionarQuimico,
++  beberFrasco,
++}) {
++  const tamanho = 64;
++  const { spriteY, sprites } = CONFIG_LABORATORIO;
++
++  const now = Date.now();
++
++  // Estilo de um ícone de frasco do spritesheet.
++  // px = tamanho desejado na tela. Escalamos o background proporcionalmente
++  // para que sprites maiores (frasco grande) mostrem o slot inteiro.
++  const estiloSprite = (spriteX, px) => {
++    const escala = px / tamanho;
++    return {
++      width: px,
++      height: px,
++      backgroundImage: `url(${spriteSheet})`,
++      backgroundPosition: `-${spriteX * tamanho * escala}px -${spriteY * tamanho * escala}px`,
++      backgroundSize: `${16 * tamanho * escala}px ${16 * tamanho * escala}px`,
++      imageRendering: 'pixelated',
++      display: 'inline-block',
++    };
++  };
++
++  // Cor da primeira do frasco grande (ou vazio).
++  const spriteGrande = laboratorio.grande.length > 0
++    ? sprites[laboratorio.grande[0]]
++    : sprites.vazio;
++
++  return (
++    <div className="seção-laboratorio">
++      <h2>Laboratório</h2>
++
++      {/* Frascos pequenos no topo */}
++      <div className="lab-frascos-linha">
++        {CORES.map(cor => {
++          const cd = laboratorio.frascos?.[cor] || 0;
++          const emCooldown = cd > now;
++          const emUso = cd === -1;
++          const disponivel = !emCooldown && !emUso;
++          const spriteX = disponivel ? sprites[cor] : sprites.vazio;
++          const segundos = emCooldown ? Math.ceil((cd - now) / 1000) : 0;
++          const minutos = Math.floor(segundos / 60);
++          const seg = segundos % 60;
++
++          return (
++            <div key={cor} className="lab-frasco-item">
++              <div
++                className={`lab-frasco-pequeno ${disponivel ? 'lab-disponivel' : 'lab-indisponivel'}`}
++                draggable={disponivel}
++                onDragStart={e => {
++                  e.dataTransfer.setData('text/plain', cor);
++                }}
++                onClick={() => disponivel && adicionarQuimico(cor)}
++                title={
++                  disponivel
++                    ? `Químico ${NOME_COR[cor]} — arraste ou clique para adicionar`
++                    : emUso
++                      ? 'Já está no frasco grande'
++                      : `Em cooldown: ${minutos}:${seg.toString().padStart(2, '0')}`
++                }
++                style={{ ...estiloSprite(spriteX, tamanho), cursor: disponivel ? 'grab' : 'not-allowed' }}
++              />
++              {emCooldown && (
++                <div className="lab-cooldown">{minutos}:{seg.toString().padStart(2, '0')}</div>
++              )}
++            </div>
++          );
++        })}
++      </div>
++
++      {/* Frasco grande no meio */}
++      <div className="lab-frasco-grande-wrapper">
++        <div
++          className="lab-frasco-grande"
++          title={descreverGrande(laboratorio.grande)}
++          onDragOver={e => e.preventDefault()}
++          onDrop={e => {
++            e.preventDefault();
++            const cor = e.dataTransfer.getData('text/plain');
++            if (cor) adicionarQuimico(cor);
++          }}
++          style={estiloSprite(spriteGrande, 96)}
++        />
++      </div>
++
++      {/* Botão de beber */}
++      <button
++        className="lab-beber-botao"
++        onClick={beberFrasco}
++        disabled={laboratorio.grande.length === 0}
++        style={{ cursor: laboratorio.grande.length === 0 ? 'not-allowed' : 'pointer' }}
++      >
++        Beber
++      </button>
++    </div>
++  );
++}
+diff --git a/src/laboratorio.render.test.js b/src/laboratorio.render.test.js
+new file mode 100644
+index 0000000..fe9bbb4
+--- /dev/null
++++ b/src/laboratorio.render.test.js
+@@ -0,0 +1,49 @@
++import { render, screen, fireEvent } from '@testing-library/react';
++import { Laboratorio } from './laboratorio';
++import { DEFAULT_LABORATORIO } from './defaults';
++
++test('renders lab UI with drink button disabled when empty', () => {
++  const add = jest.fn();
++  const beber = jest.fn();
++  render(
++    <Laboratorio
++      laboratorio={{ ...DEFAULT_LABORATORIO, desbloqueado: true, frascos:{green:0,red:0,blue:0,yellow:0}, grande: [] }}
++      spriteSheet="x.png"
++      adicionarQuimico={add}
++      beberFrasco={beber}
++    />
++  );
++  const btn = screen.getByText('Beber');
++  expect(btn).toBeDisabled();
++});
++
++test('clicking available flask calls adicionarQuimico', () => {
++  const add = jest.fn();
++  const { container } = render(
++    <Laboratorio
++      laboratorio={{ ...DEFAULT_LABORATORIO, desbloqueado: true, frascos:{green:0,red:0,blue:0,yellow:0}, grande: [] }}
++      spriteSheet="x.png"
++      adicionarQuimico={add}
++      beberFrasco={()=>{}}
++    />
++  );
++  const flasks = container.querySelectorAll('.lab-frasco-pequeno');
++  fireEvent.click(flasks[0]);
++  expect(add).toHaveBeenCalledWith('green');
++});
++
++test('drink enabled and callable when flask has contents', () => {
++  const beber = jest.fn();
++  render(
++    <Laboratorio
++      laboratorio={{ ...DEFAULT_LABORATORIO, desbloqueado: true, frascos:{green:-1,red:0,blue:0,yellow:0}, grande: ['green'] }}
++      spriteSheet="x.png"
++      adicionarQuimico={()=>{}}
++      beberFrasco={beber}
++    />
++  );
++  const btn = screen.getByText('Beber');
++  expect(btn).not.toBeDisabled();
++  fireEvent.click(btn);
++  expect(beber).toHaveBeenCalled();
++});
+diff --git a/src/laboratorio.test.js b/src/laboratorio.test.js
+new file mode 100644
+index 0000000..0bf71ca
+--- /dev/null
++++ b/src/laboratorio.test.js
+@@ -0,0 +1,55 @@
++import { contarCores, descreverGrande, calcularEfeitos, estaDisponivel, CORES } from './laboratorio';
++
++test('contarCores counts colors', () => {
++  expect(contarCores(['green','green','red'])).toEqual({green:2, red:1});
++});
++
++test('green effects', () => {
++  expect(calcularEfeitos(['green']).cookiesMinutos).toBe(20);
++  expect(calcularEfeitos(['green','green']).cookiesMinutos).toBe(40);
++  expect(calcularEfeitos(['green','green','green']).cookiesMinutos).toBe(60);
++});
++
++test('red click boost', () => {
++  expect(calcularEfeitos(['red']).clickBoost).toEqual({mult:10,duracao:10});
++  expect(calcularEfeitos(['red','red']).clickBoost).toEqual({mult:15,duracao:10});
++  expect(calcularEfeitos(['red','red','red']).clickBoost).toEqual({mult:20,duracao:10});
++});
++
++test('blue cps boost', () => {
++  expect(calcularEfeitos(['blue']).cpsBoost).toEqual({mult:1.1,duracao:3600});
++  expect(calcularEfeitos(['blue','blue']).cpsBoost).toEqual({mult:1.2,duracao:3600});
++  expect(calcularEfeitos(['blue','blue','blue']).cpsBoost).toEqual({mult:1.2,duracao:36000});
++});
++
++test('yellow luck / golden', () => {
++  expect(calcularEfeitos(['yellow']).sorteBoost).toEqual({valor:1,duracao:180});
++  expect(calcularEfeitos(['yellow','yellow']).sorteBoost).toEqual({valor:1,duracao:600});
++  expect(calcularEfeitos(['yellow','yellow','yellow']).golden).toBe(true);
++});
++
++test('combined 2 blue + 1 red', () => {
++  const e = calcularEfeitos(['blue','blue','red']);
++  expect(e.cpsBoost).toEqual({mult:1.2,duracao:3600});
++  expect(e.clickBoost).toEqual({mult:10,duracao:10});
++});
++
++test('special 3-color combos', () => {
++  expect(calcularEfeitos(['red','green','blue']).buildingDesconto).toEqual({pct:0.2,duracao:300});
++  expect(calcularEfeitos(['red','green','yellow']).golden).toBe(true);
++  expect(calcularEfeitos(['red','blue','yellow']).unlockChemicalCookie).toBe(true);
++  expect(calcularEfeitos(['blue','green','yellow']).douradoDuracao).toEqual({pct:0.1,duracao:600});
++});
++
++test('descreverGrande text', () => {
++  expect(descreverGrande([])).toMatch(/vazio/);
++  expect(descreverGrande(['red'])).toMatch(/1 vermelho/);
++  expect(descreverGrande(['red'])).toMatch(/adicionar mais 2/);
++  expect(descreverGrande(['red','red','red'])).toMatch(/beber/);
++});
++
++test('estaDisponivel', () => {
++  expect(estaDisponivel({frascos:{green:0}}, 'green')).toBe(true);
++  expect(estaDisponivel({frascos:{green:Date.now()+10000}}, 'green')).toBe(false);
++  expect(estaDisponivel({frascos:{green:-1}}, 'green')).toBe(false);
++});
+diff --git a/src/sorte.js b/src/sorte.js
+index 9785029..da8369b 100644
+--- a/src/sorte.js
++++ b/src/sorte.js
+@@ -8,7 +8,7 @@ import { DEFAULT_DOURADO, CONFIG_DOURADO } from './defaults';
+ 
+ // Faz o cookie dourado nascer em uma posição aleatória da tela.
+ // Função pura em termos de estado: só usa setCookieDourado.
+-export function SpawnCookieDourado(setCookieDourado) {
++export function SpawnCookieDourado(setCookieDourado, duracaoMult = 1) {
+   const padding = 80; // evita spawn nos cantos
+ 
+   const width = window.innerWidth;
+@@ -17,7 +17,7 @@ export function SpawnCookieDourado(setCookieDourado) {
+   const x = Math.random() * (width - padding * 2) + padding;
+   const y = Math.random() * (height - padding * 2) + padding;
+ 
+-  const tempodetela = 15000; // fica por 15 segundos
++  const tempodetela = 15000 * duracaoMult; // fica por 15 segundos (x bônus de duração)
+ 
+   setCookieDourado({
+     x,
+diff --git a/src/version.js b/src/version.js
+index 07c4768..46b7b7f 100644
+--- a/src/version.js
++++ b/src/version.js
+@@ -1,6 +1,6 @@
+ // Módulo para permitir usar saves antigos em novas versões (para não ser necessário recomeçar a cada update)
+ 
+-import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS } from './defaults';
++import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_LABORATORIO, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS } from './defaults';
+ 
+ export const VERSAO_ATUAL = 8.1; // Versão atual do save (V8.1 - Pequenas mudanças)
+ 
+@@ -14,6 +14,7 @@ export const DEFAULT_SAVE = {
+   construcoes: DEFAULT_CONSTRUCOES.map(c => ({ nome: c.nome, quantidade: 0 })),
+   melhorias: DEFAULT_MELHORIAS.map(m => ({ id: m.id, comprado: false })),
+   cookieCoin: DEFAULT_COOKIE_COIN,
++  laboratorio: DEFAULT_LABORATORIO,
+   ascensao: DEFAULT_ASCENSAO,
+   sorte: 1, // Luck multiplier from upgrades
+   douradosTotais: 0, // Total golden cookies clicked
+@@ -82,6 +83,19 @@ function normalizeCookieCoin(saved) {
+     ...saved
+   };
+ }
++
++function normalizeLaboratorio(saved) {
++  if (!saved || Array.isArray(saved) || typeof saved !== 'object') {
++    return { ...DEFAULT_LABORATORIO };
++  }
++
++  return {
++    ...DEFAULT_LABORATORIO,
++    ...saved,
++    frascos: { ...DEFAULT_LABORATORIO.frascos, ...(saved.frascos || {}) },
++    grande: Array.isArray(saved.grande) ? saved.grande : [],
++  };
++}
+  
+ function normalizeAscensao(saved) {
+   if (!saved || typeof saved !== "object") {
+@@ -401,6 +415,7 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
+         melhoriasDefaults
+       ),
+       cookieCoin: normalizeCookieCoin(migrated.cookieCoin),
++      laboratorio: normalizeLaboratorio(migrated.laboratorio),
+       ascensao: normalizeAscensao(migrated.ascensao),
+       lastSavedAt: migrated.lastSavedAt ?? Date.now(),
+       wasPageClosed: migrated.wasPageClosed ?? false,

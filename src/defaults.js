@@ -3,6 +3,7 @@ import Vovo2 from './arte/Vovo2.png';
 import Vovo3 from './arte/Vovo3.png';
 import Fazenda from './arte/Fazenda.png';
 import Fazenda_d from './arte/Fazenda_d.png';
+import Fazenda_dc from './arte/Fazenda_dc.png';
 import Fabrica from './arte/Fabrica.png';
 import Fabrica_d from './arte/Fabrica_d.png';
 import Karaj from './arte/Karaj.png';
@@ -13,8 +14,9 @@ import PC from './arte/PC.png';
 import Cursor from './arte/Cursor.png';
 import Bancos from './arte/Bancos.png';
 import Bancos_d from './arte/Bancos_d.png';
-import Lab from './arte/Lab.png';
 import Torre from './arte/Torre.png';
+import Lab from './arte/Lab.png';
+import {getLitrosCafe} from './helper';
 import { velocityPerSecond } from 'framer-motion';
 
 // Estruturas padrão para construções e melhorias
@@ -24,115 +26,148 @@ export const DEFAULT_CONSTRUCOES = [
     {nome: "Mina", preço: 1000, cps: 8, quantidade: 0, descricao: "As Minas mineram Cookie Mineral direto da terra!", icone: Mina, icone_pequeno: Mina},
     {nome: "Fábrica", preço: 11000, cps: 45, quantidade: 0, descricao: "As Fábricas produzem cookies em larga escala", icone: Fabrica, icone_pequeno: Fabrica},
     {nome: "Computador", preço: 120_000, cps: 300, quantidade: 0, descricao: "O Computador produz cookies a partir do código do próprio jogo!", icone: PC, icone_pequeno: PC},
-    {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos produzem cookies a partir de empréstimos", icone: Bancos, icone_pequeno: Bancos},
-    {nome: "Templo de Karaj", preço: 77_777_000, cps: 7777, quantidade: 0, descricao: "Os Templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!", icone: Karaj, icone_pequeno: Karaj},
+    {nome: "Banco", preço: 1_500_000, cps: 1600, quantidade: 0, descricao: "Os Bancos fazem empréstimos de cookies e ganham juros", icone: Bancos, icone_pequeno: Bancos},
+    {nome: "Templo de Karaj", preço: 77_777_000, cps: 7777, quantidade: 0, descricao: "Os fiéis dos templos louvam os Deuses dos Cookies, que entregam cookies diretamente a você!", icone: Karaj, icone_pequeno: Karaj},
     {nome: "Laboratório", preço: 400_000_000, cps: 50_000, quantidade: 0, descricao: "Os laboratórios criam Cookies usando CIÊNCIA!", icone: Lab, icone_pequeno: Lab},
-    {nome: "Torre", preço: 5_100_000_000, cps: 300_000, quantidade: 0, descricao: "As torres criam Cookies usanso magia!", icone: Torre, icone_pequeno: Torre}
-    //{nome: "Cassino da Sorte", preço: 77_777_777_777, cps: 1_777_777, quantidade: 0, descricao: "Pessoas apostam seus cookies no Cassino da Sorte, e você ganha uma parte! A Casa sempre vence!", icone: PC, icone_pequeno: PC},
-    //{nome: "Portal", preço: 1_000_000_000_000, cps: 10_000_000, quantidade: 0, descricao: "Trazem Cookies de outra dimensão... com certeza nada de ruim pode vir disso...", icone: PC, icone_pequeno: PC}
+    {nome: "Torre", preço: 5_100_000_000, cps: 300_000, quantidade: 0, descricao: "As torres contém poderosos magos que geram cookies do ar com magia!", icone: Torre, icone_pequeno: Torre},
+    {nome: "Cassino da Sorte", preço: 77_777_777_777, cps: 1_777_777, quantidade: 0, descricao: "Pessoas apostam seus cookies no Cassino da Sorte, e você ganha uma parte! A Casa sempre vence!", icone: PC, icone_pequeno: PC},
+    {nome: "Portal", preço: 1_000_000_000_000, cps: 10_000_000, quantidade: 0, descricao: "Trazem Cookies de outra dimensão... com certeza nada de ruim pode vir disso...", icone: PC, icone_pequeno: PC}
   ];
 export const DEFAULT_MELHORIAS = [
     // Click
-    {nome: "Double Click", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Clicar 2 vezes é melhor que uma! \n Clique 2 vezes mais eficiente!"},
-    {nome: "Click Aquecido", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu clique é aquecido para assar cookies mais rápido! \n Clique 2 vezes mais eficiente!"},
-    {nome: "Click Incrível", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false, descricao: "Você clica com mais vontade! \n Clique 2 vezes mais eficiente!"},
+    {nome: "Double Click", preço: 100, efeito:'duplicarClick', id: 'click1', comprado: false, descricao: "Clicar 2 vezes é melhor que uma! \n Clique 2 vezes mais eficiente!", spriteX: 0, spriteY: 0},
+    {nome: "Click Aquecido", preço: 500, efeito:'duplicarClick', id: 'click2', comprado: false, descricao: "Seu clique é aquecido para assar cookies mais rápido! \n Clique 2 vezes mais eficiente!", spriteX: 1, spriteY: 0},
+    {nome: "Click Incrível", preço: 10000, efeito:'duplicarClick', id: 'click3', comprado: false, descricao: "Você clica com mais vontade! \n Clique 2 vezes mais eficiente!", spriteX: 2, spriteY: 0},
 
-    {nome: "Super Mouse", preço: 30000, efeito:'clickCPS', id: 'clickcps1', comprado: false, descricao: "Seu Mouse ganha super poderes! \n O Clique ganha 2% do seu CPS"},
-    {nome: "Mouse de Cobre", preço: 3_000_000, efeito:'clickCPS', id: 'clickcps2', comprado: false, descricao: "Seu Mouse é encapado com uma camada de cobre \n O Clique ganha 2% do seu CPS"},
-    {nome: "Mouse de Aço", preço: 300_000_000, efeito:'clickCPS', id: 'clickcps3', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n O Clique ganha 2% do seu CPS"},
-    {nome: "Mouse de Ouro", preço: 30_000_000_000, efeito:'clickCPS', id: 'clickcps4', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n O Clique ganha 2% do seu CPS"},
-    {nome: "Mouse de Vibrânio", preço: 3_000_000_000_000, efeito:'clickCPS', id: 'clickcps5', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n O Clique ganha 2% do seu CPS"},
+    {nome: "Super Mouse", preço: 30000, efeito:'clickCPS', id: 'clickcps1', comprado: false, descricao: "Seu Mouse ganha super poderes! \n O Clique ganha 2% do seu CPS", spriteX: 3, spriteY: 0},
+    {nome: "Mouse de Cobre", preço: 3_000_000, efeito:'clickCPS', id: 'clickcps2', comprado: false, descricao: "Seu Mouse é encapado com uma camada de cobre \n O Clique ganha 2% do seu CPS", spriteX: 4, spriteY: 0},
+    {nome: "Mouse de Aço", preço: 300_000_000, efeito:'clickCPS', id: 'clickcps3', comprado: false, descricao: "Seu Mouse é encapado com uma camada de aço puro. \n O Clique ganha 2% do seu CPS", spriteX: 5, spriteY: 0},
+    {nome: "Mouse de Ouro", preço: 30_000_000_000, efeito:'clickCPS', id: 'clickcps4', comprado: false, descricao: "Seu Mouse é encapado com uma camada de ouro. \n O Clique ganha 2% do seu CPS", spriteX: 6, spriteY: 0},
+    {nome: "Mouse de Vibrânio", preço: 3_000_000_000_000, efeito:'clickCPS', id: 'clickcps5', comprado: false, descricao: "Seu Mouse é enriquecido com Vibrânio diretamente de Wakanda. \n O Clique ganha 2% do seu CPS", spriteX: 7, spriteY: 0},
+    // Sorte
+    {nome: "Trevo de Quatro Folhas", preço: 77_777, efeito:'sorte', id: 'sorte1', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!", spriteX: 9, spriteY: 0},
+    {nome: "Pé de Coelho", preço: 7_777_777, efeito:'sorte', id: 'sorte2', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!", spriteX: 10, spriteY: 0},
+    {nome: "Ferradura Dourada", preço: 777_777_777, efeito:'sorte', id: 'sorte3', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!", spriteX: 11, spriteY: 0},
+    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!", spriteX: 12, spriteY: 0},
+    
     // Vovó
-    {nome: "Treinamento da Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 0, spriteY: 2},
-    {nome: "Fornos de Cookie", preço: 500, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 2, spriteY: 2},
-    {nome: "Dentaduras Novas", preço: 10000, efeito:'duplicarVovo', id: 'vovo3', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 3, spriteY: 2},
-    {nome: "Vovós Extra Velhas", preço: 100_000, efeito:'duplicarVovo', id: 'vovo4', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 4, spriteY: 2},
-    {nome: "Vovós Unidas", preço: 10_000_000, efeito:'duplicarVovo', id: 'vovo5', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 5, spriteY: 2},
-    {nome: "Vovós... Vovós?", preço: 100_000_000, efeito:'duplicarVovo', id: 'vovo6', comprado: false, descricao: "Vovós 2 vezes mais eficientes!"},
+    {nome: "Treinamento da Vovó", preço: 100, efeito:'duplicarVovo', id: 'vovo1', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 0, spriteY: 1},
+    {nome: "Fornos de Cookie", preço: 500, efeito:'duplicarVovo', id: 'vovo2', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 1, spriteY: 1},
+    {nome: "Dentaduras Novas", preço: 10000, efeito:'duplicarVovo', id: 'vovo3', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 2, spriteY: 1},
+    {nome: "Vovós Extra Velhas", preço: 100_000, efeito:'duplicarVovo', id: 'vovo4', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 3, spriteY: 1},
+    {nome: "Vovós Unidas", preço: 10_000_000, efeito:'duplicarVovo', id: 'vovo5', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 4, spriteY: 1},
+    {nome: "Vovós... Vovós?", preço: 100_000_000, efeito:'duplicarVovo', id: 'vovo6', comprado: false, descricao: "Vovós 2 vezes mais eficientes!", spriteX: 5, spriteY: 1},
     // Fazenda
-    {nome: "Enxada de Pedra", preço: 1000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 0, spriteY: 3},
-    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 1, spriteY: 3},
-    {nome: "Enxada de Ferro", preço: 50_000, efeito:'duplicarFazenda', id: 'fazenda3', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 2, spriteY: 3},
-    {nome: "Mais Hectares", preço: 5_000_000, efeito:'duplicarFazenda', id: 'fazenda4', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 3, spriteY: 3},
-    {nome: "Novos Tratores", preço: 500_000_000, efeito:'duplicarFazenda', id: 'fazenda5', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 4, spriteY: 3},
-    {nome: "Aspersores de Irídio", preço: 50_000_000_000, efeito:'duplicarFazenda', id: 'fazenda6', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!"},
+    {nome: "Enxada de Pedra", preço: 1000, efeito:'duplicarFazenda', id: 'fazenda1', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 0, spriteY: 2},
+    {nome: "Fertilizante", preço: 5000, efeito:'duplicarFazenda', id: 'fazenda2', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 1, spriteY: 2},
+    {nome: "Enxada de Ferro", preço: 50_000, efeito:'duplicarFazenda', id: 'fazenda3', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 2, spriteY: 2},
+    {nome: "Mais Hectares", preço: 5_000_000, efeito:'duplicarFazenda', id: 'fazenda4', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 3, spriteY: 2},
+    {nome: "Novos Tratores", preço: 500_000_000, efeito:'duplicarFazenda', id: 'fazenda5', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 4, spriteY: 2},
+    {nome: "Aspersores de Irídio", preço: 50_000_000_000, efeito:'duplicarFazenda', id: 'fazenda6', comprado: false, descricao: "Fazendas 2 vezes mais eficientes!", spriteX: 5, spriteY: 2},
     // Minas
-    {nome: "Picareta de Madeira", preço: 11_000, efeito:'duplicarMinas', id: 'mina1', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 0, spriteY: 4},
-    {nome: "Picareta de Pedra", preço: 55_000, efeito:'duplicarMinas', id: 'mina2', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 1, spriteY: 4},
-    {nome: "Picareta de Ouro", preço: 555_000, efeito:'duplicarMinas', id: 'mina3', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 2, spriteY: 4},
-    {nome: "Picareta de Ferro", preço: 55_000_000, efeito:'duplicarMinas', id: 'mina4', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 3, spriteY: 4},
-    {nome: "Picareta de Diamante", preço: 5_500_000_000, efeito:'duplicarMinas', id: 'mina5', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 4, spriteY: 4},
-    {nome: "Picareta de Diamante", preço: 550_000_000_000, efeito:'duplicarMinas', id: 'mina6', comprado: false, descricao: "Minas 2 vezes mais eficientes!"},
+    {nome: "Picareta de Jardim", preço: 11_000, efeito:'duplicarMinas', id: 'mina1', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 0, spriteY: 3},
+    {nome: "Picareta de Madeira", preço: 55_000, efeito:'duplicarMinas', id: 'mina2', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 1, spriteY: 3},
+    {nome: "Picareta de Pedra", preço: 555_000, efeito:'duplicarMinas', id: 'mina3', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 2, spriteY: 3},
+    {nome: "Picareta de Ferro", preço: 55_000_000, efeito:'duplicarMinas', id: 'mina4', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 3, spriteY: 3},
+    {nome: "Picareta de Esmeralda", preço: 5_500_000_000, efeito:'duplicarMinas', id: 'mina5', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 4, spriteY: 3},
+    {nome: "Picareta de Rubi", preço: 550_000_000_000, efeito:'duplicarMinas', id: 'mina6', comprado: false, descricao: "Minas 2 vezes mais eficientes!", spriteX: 5, spriteY: 3},
     // Fábrica
-    {nome: "Engrenagens Melhores", preço: 120_000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 0, spriteY: 5},
-    {nome: "Energia Sustentável", preço: 600_000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 1, spriteY: 5},
-    {nome: "Trabalhadores Rápidos", preço: 6_000_000, efeito:'duplicarFabrica', id: 'fabrica3', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 2, spriteY: 5},
-    {nome: "Super Fábrica", preço: 600_000_000, efeito:'duplicarFabrica', id: 'fabrica4', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 3, spriteY: 5},
-    {nome: "Automação", preço: 60_000_000_000, efeito:'duplicarFabrica', id: 'fabrica5', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 4, spriteY: 5},
-    {nome: "Automação", preço: 6_000_000_000_000, efeito:'duplicarFabrica', id: 'fabrica6', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!"},
+    {nome: "Engrenagens Melhores", preço: 120_000, efeito:'duplicarFabrica', id: 'fabrica1', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 0, spriteY: 4},
+    {nome: "Energia Sustentável", preço: 600_000, efeito:'duplicarFabrica', id: 'fabrica2', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 1, spriteY: 4},
+    {nome: "Trabalhadores Rápidos", preço: 6_000_000, efeito:'duplicarFabrica', id: 'fabrica3', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 2, spriteY: 4},
+    {nome: "Super Fábrica", preço: 600_000_000, efeito:'duplicarFabrica', id: 'fabrica4', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 3, spriteY: 4},
+    {nome: "Automação do Create", preço: 60_000_000_000, efeito:'duplicarFabrica', id: 'fabrica5', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 4, spriteY: 4},
+    {nome: "Fumaça Limpa", preço: 6_000_000_000_000, efeito:'duplicarFabrica', id: 'fabrica6', comprado: false, descricao: "Fábricas 2 vezes mais eficientes!", spriteX: 5, spriteY: 4},
     // Computador
-    {nome: "Refrigeração", preço: 1_300_000, efeito:'duplicarPC', id: 'PC1', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
-    {nome: "Atualização de Software", preço: 6_500_000, efeito:'duplicarPC', id: 'PC2', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
-    {nome: "Novo Processador", preço: 65_000_000, efeito:'duplicarPC', id: 'PC3', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
-    {nome: "Memória SSD", preço: 6_500_000_000, efeito:'duplicarPC', id: 'PC4', comprado: false, descricao: "Tá caro demais essa memória RAM! Computadores 2 vezes mais eficientes!"},
-    {nome: "Formatação", preço: 650_000_000_000, efeito:'duplicarPC', id: 'PC5', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
-    {nome: "Mais Memória RAM", preço: 65_000_000_000_000, efeito:'duplicarPC', id: 'PC6', comprado: false, descricao: "Computadores 2 vezes mais eficientes!"},
+    {nome: "Refrigeração", preço: 1_300_000, efeito:'duplicarPC', id: 'PC1', comprado: false, descricao: "Computadores 2 vezes mais eficientes!", spriteX: 0, spriteY: 5},
+    {nome: "Atualização de Software", preço: 6_500_000, efeito:'duplicarPC', id: 'PC2', comprado: false, descricao: "Computadores 2 vezes mais eficientes!", spriteX: 1, spriteY: 5},
+    {nome: "Novo Processador", preço: 65_000_000, efeito:'duplicarPC', id: 'PC3', comprado: false, descricao: "Computadores 2 vezes mais eficientes!", spriteX: 2, spriteY: 5},
+    {nome: "Memória SSD", preço: 6_500_000_000, efeito:'duplicarPC', id: 'PC4', comprado: false, descricao: "Tá caro demais essa memória RAM! Computadores 2 vezes mais eficientes!", spriteX: 3, spriteY: 5},
+    {nome: "Formatação", preço: 650_000_000_000, efeito:'duplicarPC', id: 'PC5', comprado: false, descricao: "Computadores 2 vezes mais eficientes!", spriteX: 4, spriteY: 5},
+    {nome: "Mais Memória RAM", preço: 65_000_000_000_000, efeito:'duplicarPC', id: 'PC6', comprado: false, descricao: "Computadores 2 vezes mais eficientes!", spriteX: 5, spriteY: 5},
     // Banco
-    {nome: "Cartão Sem Anuidade", preço: 14_000_000, efeito:'duplicarBanco', id: 'banco1', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 0, spriteY: 7},
-    {nome: "Cofres de Cookie", preço: 70_000_000, efeito:'duplicarBanco', id: 'banco2', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 1, spriteY: 7},
-    {nome: "Juros Compostos", preço: 700_000_000, efeito:'duplicarBanco', id: 'banco3', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 2, spriteY: 7},
-    {nome: "Super Banco", preço: 70_000_000_000, efeito:'duplicarBanco', id: 'banco4', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 3, spriteY: 7},
-    {nome: "Corretores Corredores", preço: 7_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 4, spriteY: 7},
-    {nome: "Corretores Corredores", preço: 700_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 4, spriteY: 7},
+    {nome: "Cartão Sem Anuidade", preço: 14_000_000, efeito:'duplicarBanco', id: 'banco1', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 0, spriteY: 6},
+    {nome: "Cofres de Cookie", preço: 70_000_000, efeito:'duplicarBanco', id: 'banco2', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 1, spriteY: 6},
+    {nome: "Juros Compostos", preço: 700_000_000, efeito:'duplicarBanco', id: 'banco3', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 2, spriteY: 6},
+    {nome: "Super Banco", preço: 70_000_000_000, efeito:'duplicarBanco', id: 'banco4', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 3, spriteY: 6},
+    {nome: "Corretores Corredores", preço: 7_000_000_000_000, efeito:'duplicarBanco', id: 'banco5', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 4, spriteY: 6},
+    {nome: "Cartão Cookie Black", preço: 700_000_000_000_000, efeito:'duplicarBanco', id: 'banco6', comprado: false, descricao: "Bancos 2 vezes mais eficientes!", spriteX: 5, spriteY: 6},
     // Karaj
-    {nome: "Torres mais Pontudas", preço: 177_777_777, efeito:'duplicarTemplo', id: 'karaj1', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
-    {nome: "Festival do Sol", preço: 777_777_777, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
-    {nome: "Conexão Espiritual", preço: 7_777_777_777, efeito:'duplicarTemplo', id: 'karaj3', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
-    {nome: "Louvor com Fervor", preço: 777_777_777_777, efeito:'duplicarTemplo', id: 'karaj4', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
-    {nome: "Santo Padeiro", preço: 77_777_777_777_777, efeito:'duplicarTemplo', id: 'karaj5', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
-    {nome: "Café Salgado", preço: 7_777_777_777_777_777, efeito:'duplicarTemplo', id: 'karaj6', comprado: false, descricao: "Templos 2 vezes mais eficientes!"},
+    {nome: "Torres mais Pontudas", preço: 177_777_777, efeito:'duplicarTemplo', id: 'karaj1', comprado: false, descricao: "Templos 2 vezes mais eficientes!", spriteX: 0, spriteY: 7},
+    {nome: "Festival do Sol", preço: 777_777_777, efeito:'duplicarTemplo', id: 'karaj2', comprado: false, descricao: "Templos 2 vezes mais eficientes!", spriteX: 1, spriteY: 7},
+    {nome: "Conexão Espiritual", preço: 7_777_777_777, efeito:'duplicarTemplo', id: 'karaj3', comprado: false, descricao: "Templos 2 vezes mais eficientes!", spriteX: 2, spriteY: 7},
+    {nome: "Louvor com Fervor", preço: 777_777_777_777, efeito:'duplicarTemplo', id: 'karaj4', comprado: false, descricao: "Templos 2 vezes mais eficientes!", spriteX: 3, spriteY: 7},
+    {nome: "Santo Padeiro", preço: 77_777_777_777_777, efeito:'duplicarTemplo', id: 'karaj5', comprado: false, descricao: "Templos 2 vezes mais eficientes!", spriteX: 4, spriteY: 7},
+    {nome: "Dunas de Karaj", preço: 7_777_777_777_777_777, efeito:'duplicarTemplo', id: 'karaj6', comprado: false, descricao: "Templos 2 vezes mais eficientes!", spriteX: 5, spriteY: 7},
     // Laboratórios
-    {nome: "Nova fórmula", preço: 3_300_000_000, efeito:'duplicarLab', id: 'lab1', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 0, spriteY: 9},
-    {nome: "Ciência Maluca", preço: 15_000_000_000, efeito:'duplicarLab', id: 'lab2', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 1, spriteY: 9},
-    {nome: "Experimentos", preço: 150_000_000_000, efeito:'duplicarLab', id: 'lab3', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 2, spriteY: 9},
+    {nome: "Nova fórmula", preço: 3_300_000_000, efeito:'duplicarLab', id: 'lab1', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 0, spriteY: 8},
+    {nome: "Ciência Maluca", preço: 15_000_000_000, efeito:'duplicarLab', id: 'lab2', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 1, spriteY: 8},
+    {nome: "Jalecos Mais Brancos", preço: 150_000_000_000, efeito:'duplicarLab', id: 'lab3', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 2, spriteY: 8},
+    {nome: "Massa de Cookie Química", preço: 15_000_000_000_000, efeito:'duplicarLab', id: 'lab4', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 3, spriteY: 8},
+    {nome: "Experimentos Ilegais", preço: 1_500_000_000_000_000, efeito:'duplicarLab', id: 'lab5', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 4, spriteY: 8},
+    {nome: "Teoria Geral dos Cookies", preço: 150_000_000_000_000_000, efeito:'duplicarLab', id: 'lab6', comprado: false, descricao: "Laboratórios 2 vezes mais eficientes!", spriteX: 5, spriteY: 8},
     // Torre
+    {nome: "Feitiço Duplo", preço: 51_000_000_000, efeito:'duplicarTorre', id: 'torre1', comprado: false, descricao: "Torres 2 vezes mais eficientes!", spriteX: 0, spriteY: 9},
+    {nome: "Varinha Roladora de Massa", preço: 255_000_000_000, efeito:'duplicarTorre', id: 'torre2', comprado: false, descricao: "Torres 2 vezes mais eficientes!", spriteX: 1, spriteY: 9},
+    {nome: "Grimório Arcano", preço: 2_550_000_000_000, efeito:'duplicarTorre', id: 'torre3', comprado: false, descricao: "Torres 2 vezes mais eficientes!", spriteX: 2, spriteY: 9},
+    {nome: "Feitiços de Letras Gregas", preço: 255_000_000_000_000, efeito:'duplicarTorre', id: 'torre4', comprado: false, descricao: "Torres 2 vezes mais eficientes!", spriteX: 3, spriteY: 9},
+    {nome: "Convergência Arcana", preço: 25_500_000_000_000_000, efeito:'duplicarTorre', id: 'torre5', comprado: false, descricao: "Torres 2 vezes mais eficientes!", spriteX: 4, spriteY: 9},
+    {nome: "Segundo Sol", preço: 2_550_000_000_000_000_000, efeito:'duplicarTorre', id: 'torre6', comprado: false, descricao: "Torres 2 vezes mais eficientes!", spriteX: 5, spriteY: 9},
+
+    // Cassino da Sorte
+    {nome: "Cassino VIP", preço: 750_000_000_000, efeito:'duplicarCassino', id: 'cassino1', comprado: false, descricao: "Cassinos da Sorte 2 vezes mais eficientes!", spriteX: 0, spriteY: 10},
+    {nome: "Fichas de Cookie", preço: 3_700_000_000_000, efeito:'duplicarCassino', id: 'cassino2', comprado: false, descricao: "Cassinos da Sorte 2 vezes mais eficientes!", spriteX: 1, spriteY: 10},
+    {nome: "Roleta da Sorte", preço: 37_000_000_000_000, efeito:'duplicarCassino', id: 'cassino3', comprado: false, descricao: "Cassinos da Sorte 2 vezes mais eficientes!", spriteX: 2, spriteY: 10},
+    {nome: "Caça-Cookies", preço: 3_700_000_000_000_000, efeito:'duplicarCassino', id: 'cassino4', comprado: false, descricao: "Cassinos da Sorte 2 vezes mais eficientes!", spriteX: 3, spriteY: 10},
+    {nome: "Bets de Cookie", preço: 370_000_000_000_000_000, efeito:'duplicarCassino', id: 'cassino5', comprado: false, descricao: "Cassinos da Sorte 2 vezes mais eficientes!", spriteX: 4, spriteY: 10},
+    {nome: "Jackpot Cósmico", preço: 37_000_000_000_000_000_000, efeito:'duplicarCassino', id: 'cassino6', comprado: false, descricao: "Cassinos da Sorte 2 vezes mais eficientes!", spriteX: 5, spriteY: 10},
+
+    // Portal
+    {nome: "Portal do Nether", preço: 10_000_000_000_000, efeito:'duplicarPortal', id: 'portal1', comprado: false, descricao: "Portais 2 vezes mais eficientes!", spriteX: 0, spriteY: 11},
+    {nome: "Dimensão de Cookies", preço: 50_000_000_000_000, efeito:'duplicarPortal', id: 'portal2', comprado: false, descricao: "Portais 2 vezes mais eficientes!", spriteX: 1, spriteY: 11},
+    {nome: "Eco do Multiverso", preço: 500_000_000_000_000, efeito:'duplicarPortal', id: 'portal3', comprado: false, descricao: "Portais 2 vezes mais eficientes!", spriteX: 2, spriteY: 11},
+    {nome: "Portal do Fim", preço: 50_000_000_000_000_000, efeito:'duplicarPortal', id: 'portal4', comprado: false, descricao: "Portais 2 vezes mais eficientes!", spriteX: 3, spriteY: 11},
+    {nome: "Novas Dimensões", preço: 5_000_000_000_000_000_000, efeito:'duplicarPortal', id: 'portal5', comprado: false, descricao: "Portais 2 vezes mais eficientes!", spriteX: 4, spriteY: 11},
+    {nome: "Convergência entre os Mundos", preço: 500_000_000_000_000_000_000, efeito:'duplicarPortal', id: 'portal6', comprado: false, descricao: "Portais 2 vezes mais eficientes!", spriteX: 5, spriteY: 11},
+
+    // Café Salgado
+    {nome: "Café", preço: 9_000_000, efeito:'cafe', id: 'cafe1', comprado: false, descricao: "Suas conquistas te dão café! Os trabalhadores em Karaj bebem o café, aumentando o CPS total!", spriteX: 0, spriteY: 13},
+    {nome: "Café Salgado", preço: 9_000_000_000, efeito:'cafe', id: 'cafe2', comprado: false, descricao: "O sal aumenta muito a efetividade do café, aumentando o CPS total!", spriteX: 1, spriteY: 13},
+    {nome: "Sal Mascavo", preço: 90_000_000_000_000, efeito:'cafe', id: 'cafe3', comprado: false, descricao: "Sal Aprimorado! Aumenta a efetividade do café!", spriteX: 2, spriteY: 13},
 
     // Cookies Normais
-    {nome: "Cookie Sem Recheio", preço: 1_111_111, efeito:'1porcento', id: 'cookie1', comprado: false, descricao: "Todos começam em algum lugar... +1% de CPS"},
-    {nome: "Cookie Biscoito Maria", preço: 5_555_555, efeito:'1porcento', id: 'cookie2', comprado: false, descricao: "Tradicional! +1% de CPS"},
-    {nome: "Cookie com Uva Passa", preço: 11_111_111, efeito:'1porcento', id: 'cookie3', comprado: false, descricao: "Tem gente que gosta. +1% de CPS"},
-    {nome: "Cookie com Chocolate", preço: 55_555_555, efeito:'5porcento', id: 'cookie4', comprado: false, descricao: "O clássico! +5% de CPS!"},
-    {nome: "Cookie com Caramelo", preço: 111_111_111, efeito:'3porcento', id: 'cookie5', comprado: false, descricao: "Doce! +3% de CPS"},
-    {nome: "Cookie com Castanha de Caju", preço: 111_111_111, efeito:'3porcento', id: 'cookie6', comprado: false, descricao: "Contêm proteína. +3% de CPS"},
-    {nome: "Cookie com Chocolate Branco", preço: 111_111_111, efeito:'3porcento', id: 'cookie7', comprado: false, descricao: "É bom diferenciar. +3% de CPS"},
-    {nome: "Cookie de Aveia", preço: 111_111_111, efeito:'3porcento', id: 'cookie8', comprado: false, descricao: "Saudável! +3% de CPS"},
-    {nome: "Cookie com Chocolate Meio Amargo", preço: 111_111_111, efeito:'3porcento', id: 'cookie9', comprado: false, descricao: "80% cacau! +3% de CPS"},
-    {nome: "Cookie com nozes", preço: 111_111_111, efeito:'3porcento', id: 'cookie10', comprado: false, descricao: "Crocante! +3% de CPS"},
-    {nome: "Cookie Recheado", preço: 1_111_111_111, efeito:'5porcento', id: 'cookie11', comprado: false, descricao: "Qual é o recheio? Ninguém sabe. +5% de CPS"},
-    {nome: "Cookie com Sorvete", preço: 5_555_555_555, efeito:'3porcento', id: 'cookie12', comprado: false, descricao: "Boa combinação! +3% de CPS"},
+    {nome: "Cookie Sem Recheio", preço: 1_111_111, efeito:'1porcento', id: 'cookie1', comprado: false, descricao: "Todos começam em algum lugar... +1% de CPS", spriteX: 0, spriteY: 14},
+    {nome: "Cookie Biscoito Maria", preço: 5_555_555, efeito:'1porcento', id: 'cookie2', comprado: false, descricao: "Tradicional! +1% de CPS", spriteX: 1, spriteY: 14},
+    {nome: "Cookie com Uva Passa", preço: 11_111_111, efeito:'1porcento', id: 'cookie3', comprado: false, descricao: "Tem gente que gosta. +1% de CPS", spriteX: 2, spriteY: 14},
+    {nome: "Cookie com gotas de Chocolate", preço: 55_555_555, efeito:'5porcento', id: 'cookie4', comprado: false, descricao: "O clássico! +5% de CPS!", spriteX: 3, spriteY: 14},
+    {nome: "Cookie sanduíche", preço: 111_111_111, efeito:'3porcento', id: 'cookie5', comprado: false, descricao: "Com chocolate dentro! +3% de CPS", spriteX: 4, spriteY: 14},
+    {nome: "Cookie com Castanha de Caju", preço: 111_111_111, efeito:'3porcento', id: 'cookie6', comprado: false, descricao: "Contêm proteína. +3% de CPS", spriteX: 5, spriteY: 14},
+    {nome: "Cookie com Chocolate Branco", preço: 111_111_111, efeito:'3porcento', id: 'cookie7', comprado: false, descricao: "É bom diferenciar. +3% de CPS", spriteX: 6, spriteY: 14},
+    {nome: "Cookie de Aveia", preço: 111_111_111, efeito:'3porcento', id: 'cookie8', comprado: false, descricao: "Saudável! +3% de CPS", spriteX: 7, spriteY: 14},
+    {nome: "Cookie com Chocolate Meio Amargo", preço: 111_111_111, efeito:'3porcento', id: 'cookie9', comprado: false, descricao: "80% cacau! +3% de CPS", spriteX: 8, spriteY: 14},
+    {nome: "Cookie com nozes", preço: 111_111_111, efeito:'3porcento', id: 'cookie10', comprado: false, descricao: "Crocante! +3% de CPS", spriteX: 9, spriteY: 14},
+    {nome: "Cookie Recheado", preço: 1_111_111_111, efeito:'3porcento', id: 'cookie11', comprado: false, descricao: "Qual é o recheio? Ninguém sabe. +3% de CPS", spriteX: 10, spriteY: 14},
+    {nome: "Cookie com Sorvete", preço: 5_555_555_555, efeito:'3porcento', id: 'cookie12', comprado: false, descricao: "Boa combinação! +3% de CPS", spriteX: 11, spriteY: 14},
+   // {nome: "Cookie Galático", preço: 5_555_555_555, efeito:'10porcento', id: 'cookie13', comprado: false, descricao: "Vindo direto do Espaço +10% de CPS", spriteX: 11, spriteY: 14},
 
-    {nome: "Cookie Químico", preço: 1_000_000_000_000, efeito:'5porcento', id: 'chemicalcookie', comprado: false, descricao: "Cookie criado com química pura! +5% de CPS", spriteX: 8, spriteY: 9},
+    {nome: "Cookie Químico", preço: 1_000_000_000_000, efeito:'5porcento', id: 'chemicalcookie', comprado: false, descricao: "Cookie criado com química pura! +5% de CPS", spriteX: 12, spriteY: 14},
+
+
 
     // Cookies Caseiros - Vovós
-    {nome: "Biscoito Polvilho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo1', comprado: false, descricao: "Salgadinho! +3% de CPS"},
-    {nome: "Casadinho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo2', comprado: false, descricao: "Muito bom. +3% de CPS"},
-    {nome: "Biscoito de Nata", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo3', comprado: false, descricao: "Receita de vó! +3% de CPS"},
-    {nome: "Cookie de Coco", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo4', comprado: false, descricao: "Tropical! +3% de CPS"},
-    {nome: "Cookie com Goiabada", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo5', comprado: false, descricao: "Igual da padaria! +3% de CPS"},
+    {nome: "Biscoito Polvilho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo1', comprado: false, descricao: "Salgadinho! +3% de CPS", spriteX: 0, spriteY: 15},
+    {nome: "Casadinho", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo2', comprado: false, descricao: "Muito bom. +3% de CPS", spriteX: 1, spriteY: 15},
+    {nome: "Biscoito de Nata", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo3', comprado: false, descricao: "Receita de vó! +3% de CPS", spriteX: 2, spriteY: 15},
+    {nome: "Cookie de Coco", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo4', comprado: false, descricao: "Tropical! +3% de CPS", spriteX: 3, spriteY: 15},
+    {nome: "Cookie com Goiabada", preço: 100_000_000_000, efeito:'3porcento', id: 'cookievovo5', comprado: false, descricao: "Igual da padaria! +3% de CPS", spriteX: 4, spriteY: 15},
 
     // Cookies Brasileiros-fábricas
-    {nome: "Biscoito Maizena", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr1', comprado: false, descricao: "Não é redondo, mas serve. +3% de CPS"},
-    {nome: "Trakinas", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr2', comprado: false, descricao: "Cara de Bolacha! +3% de CPS"},
-    {nome: "Passatempo", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr3', comprado: false, descricao: "Nostálgico! +3% de CPS"},
-    {nome: "Negresco", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr4', comprado: false, descricao: "Melhor que Oreo! +3% de CPS"},
-    {nome: "Tortinhas de Chocolate", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr5', comprado: false, descricao: "Muito boa. +3% de CPS"},
-    {nome: "Tortinhas de Morango", preço: 100_000_000_000_000, efeito:'5porcento', id: 'cookiebr6', comprado: false, descricao: "A Melhor de Todas! +5% de CPS"},
-
-    // Sorte
-    {nome: "Trevo de Quatro Folhas", preço: 77_777, efeito:'sorte', id: 'sorte1', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"},
-    {nome: "Pé de Coelho", preço: 7_777_777, efeito:'sorte', id: 'sorte2', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"},
-    {nome: "Ferradura Dourada", preço: 777_777_777, efeito:'sorte', id: 'sorte3', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"},
-    {nome: "Carvão da Sorte", preço: 7_777_777_777, efeito:'sorte', id: 'sorte4', comprado: false, descricao: "Aumenta sua sorte! +1 Sorte. Na primeira vez que comprar isso, também ganha um Cookie Dourado!"}
+    {nome: "Biscoito Maizena", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr1', comprado: false, descricao: "Não é redondo, mas serve. +3% de CPS", spriteX: 5, spriteY: 15},
+    {nome: "Trakinas", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr2', comprado: false, descricao: "Cara de Bolacha! +3% de CPS", spriteX: 6, spriteY: 15},
+    {nome: "Passatempo", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr3', comprado: false, descricao: "Nostálgico! +3% de CPS", spriteX: 7, spriteY: 15},
+    {nome: "Negresco", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr4', comprado: false, descricao: "Melhor que Oreo! +3% de CPS", spriteX: 8, spriteY: 15},
+    {nome: "Tortinhas de Chocolate", preço: 100_000_000_000_000, efeito:'3porcento', id: 'cookiebr5', comprado: false, descricao: "Muito boa. +3% de CPS", spriteX: 9, spriteY: 15},
+    {nome: "Tortinhas de Morango", preço: 100_000_000_000_000, efeito:'5porcento', id: 'cookiebr6', comprado: false, descricao: "A Melhor de Todas! +5% de CPS", spriteX: 10, spriteY: 15}
   ];
 
 export const DEFAULT_DOURADO = [
@@ -199,9 +234,6 @@ export const DEFAULT_CONQUISTAS = [
     //  11-13  livre pra crescer
     //  14  Cookie Coin (cols 0-3) + Const. totais (cols 4-5) + Distritos (cols 6-7)
     //  15  secretas
-
-    
-
     
     // número de cookies obtidos no total
     {nome: "O Primeiro", tipo: 'cookiesTotais', quantidade: 1, id: 'assar1', obtido: false, descricao: "Asse 1 cookie. Para quem nunca assou, que jogue a primeira pedra", spriteX: 0, spriteY: 0},
@@ -248,6 +280,8 @@ export const DEFAULT_CONQUISTAS = [
     {nome: "Asilo Industrial", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 100, id: 'vovo3', obtido: false, descricao: "Tenha 100 vovós", spriteX: 3, spriteY: 2},
     {nome: "Conselho das Matriarcas", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 150, id: 'vovo4', obtido: false, descricao: "Tenha 150 vovós", spriteX: 4, spriteY: 2},
     {nome: "Vovocracia", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 200, id: 'vovo5', obtido: false, descricao: "Tenha 200 vovós", spriteX: 5, spriteY: 2},
+    {nome: "País das Vovós", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 250, id: 'vovo6', obtido: false, descricao: "Tenha 250 vovós", spriteX: 6, spriteY: 2},
+    {nome: "Vovós do Mundo todo", tipo: 'construcao', params: {nome: "Vovó"}, quantidade: 300, id: 'vovo7', obtido: false, descricao: "Tenha 300 vovós", spriteX: 7, spriteY: 2},
 
     // Fazenda
     {nome: "Fazenda Feliz", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 1, id: 'fazenda1', obtido: false, descricao: "Tenha 1 fazenda", spriteX: 0, spriteY: 3},
@@ -255,20 +289,24 @@ export const DEFAULT_CONQUISTAS = [
     {nome: "Agronegócio", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 100, id: 'fazenda3', obtido: false, descricao: "Tenha 100 fazendas", spriteX: 2, spriteY: 3},
     {nome: "Fazenda Automática", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 150, id: 'fazenda4', obtido: false, descricao: "Tenha 150 fazendas", spriteX: 3, spriteY: 3},
     {nome: "Reforma Agrária", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 200, id: 'fazenda5', obtido: false, descricao: "Tenha 200 fazendas", spriteX: 4, spriteY: 3},
-
+    {nome: "O Agro tem poder", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 250, id: 'fazenda6', obtido: false, descricao: "Tenha 150 fazendas", spriteX: 5, spriteY: 3},
+    {nome: "Plantação Mundial de Cookies", tipo: 'construcao', params: {nome: "Fazenda"}, quantidade: 300, id: 'fazenda7', obtido: false, descricao: "Tenha 200 fazendas", spriteX: 6, spriteY: 3},
     // Mina
     {nome: "Minerar e Craftar", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 1, id: 'mina1', obtido: false, descricao: "Tenha 1 mina", spriteX: 0, spriteY: 4},
     {nome: "Achou diamante", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 50, id: 'mina2', obtido: false, descricao: "Tenha 50 minas", spriteX: 1, spriteY: 4},
     {nome: "Mina das Caveiras", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 100, id: 'mina3', obtido: false, descricao: "Tenha 100 minas", spriteX: 2, spriteY: 4},
     {nome: "Chegou no Nether", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 150, id: 'mina4', obtido: false, descricao: "Tenha 150 minas", spriteX: 3, spriteY: 4},
     {nome: "Cavou até a China", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 200, id: 'mina5', obtido: false, descricao: "Tenha 200 minas", spriteX: 4, spriteY: 4},
-
+    {nome: "Minerando Chunks", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 250, id: 'mina6', obtido: false, descricao: "Tenha 250 minas", spriteX: 5, spriteY: 4},
+    {nome: "Minerar o Mundo", tipo: 'construcao', params: {nome: "Mina"}, quantidade: 300, id: 'mina7', obtido: false, descricao: "Tenha 300 minas", spriteX: 6, spriteY: 4},
     // Fábrica
     {nome: "Revolução Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 1, id: 'fabrica1', obtido: false, descricao: "Tenha 1 fábrica", spriteX: 0, spriteY: 5},
-    {nome: "Parque Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 50, id: 'fabrica2', obtido: false, descricao: "Tenha 50 fábricas", spriteX: 1, spriteY: 5},
-    {nome: "", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 100, id: 'fabrica3', obtido: false, descricao: "Tenha 100 fábricas", spriteX: 2, spriteY: 5},
-    {nome: "Polo Produtivo", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 150, id: 'fabrica4', obtido: false, descricao: "Tenha 150 fábricas", spriteX: 3, spriteY: 5},
-    {nome: "Nação Industrializada", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 200, id: 'fabrica5', obtido: false, descricao: "Tenha 200 fábricas", spriteX: 4, spriteY: 5},
+    {nome: "Indústria de Base", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 50, id: 'fabrica2', obtido: false, descricao: "Tenha 50 fábricas", spriteX: 1, spriteY: 5},
+    {nome: "Parque Industrial", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 100, id: 'fabrica3', obtido: false, descricao: "Tenha 100 fábricas", spriteX: 2, spriteY: 5},
+    {nome: "Em Busca do Cookie Automático", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 150, id: 'fabrica4', obtido: false, descricao: "Tenha 150 fábricas", spriteX: 3, spriteY: 5},
+    {nome: "Polo Produtivo", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 200, id: 'fabrica5', obtido: false, descricao: "Tenha 200 fábricas", spriteX: 4, spriteY: 5},
+    {nome: "Nação Industrializada", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 250, id: 'fabrica6', obtido: false, descricao: "Tenha 250 fábricas", spriteX: 5, spriteY: 5},
+    {nome: "Fábrica Mundial de Cookies", tipo: 'construcao', params: {nome: "Fábrica"}, quantidade: 300, id: 'fabrica7', obtido: false, descricao: "Tenha 300 fábricas", spriteX: 6, spriteY: 5},
 
     // Computador
     {nome: "Liga o PC", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 1, id: 'pc1', obtido: false, descricao: "Tenha 1 computador", spriteX: 0, spriteY: 6},
@@ -276,35 +314,62 @@ export const DEFAULT_CONQUISTAS = [
     {nome: "Data Center", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 100, id: 'pc3', obtido: false, descricao: "Tenha 100 computadores", spriteX: 2, spriteY: 6},
     {nome: "Nuvem Particular", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 150, id: 'pc4', obtido: false, descricao: "Tenha 150 computadores", spriteX: 3, spriteY: 6},
     {nome: "Fazenda de Servidores", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 200, id: 'pc5', obtido: false, descricao: "Tenha 200 computadores", spriteX: 4, spriteY: 6},
+    {nome: "Petabytes de Memória", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 250, id: 'pc6', obtido: false, descricao: "Tenha 250 computadores", spriteX: 5, spriteY: 6},
+    {nome: "Servidor Global", tipo: 'construcao', params: {nome: "Computador"}, quantidade: 300, id: 'pc7', obtido: false, descricao: "Tenha 300 computadores", spriteX: 6, spriteY: 6},
 
     // Banco
     {nome: "Primeiro Depósito", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 1, id: 'banco1', obtido: false, descricao: "Tenha 1 banco", spriteX: 0, spriteY: 7},
     {nome: "Bote seus Cookies para render!", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 50, id: 'banco2', obtido: false, descricao: "Tenha 50 bancos", spriteX: 1, spriteY: 7},
-    {nome: "Juros Compostos", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 100, id: 'banco3', obtido: false, descricao: "Tenha 100 bancos", spriteX: 2, spriteY: 7},
+    {nome: "Ganho Exponencial", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 100, id: 'banco3', obtido: false, descricao: "Tenha 100 bancos", spriteX: 2, spriteY: 7},
     {nome: "Cartel Financeiro", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 150, id: 'banco4', obtido: false, descricao: "Tenha 150 bancos", spriteX: 3, spriteY: 7},
     {nome: "Banco Central dos Cookies", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 200, id: 'banco5', obtido: false, descricao: "Tenha 200 bancos", spriteX: 4, spriteY: 7},
+    {nome: "Corrupção de Cookies", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 250, id: 'banco6', obtido: false, descricao: "Tenha 250 bancos", spriteX: 5, spriteY: 7},
+    {nome: "Banco Mundial de Cookies", tipo: 'construcao', params: {nome: "Banco"}, quantidade: 300, id: 'banco7', obtido: false, descricao: "Tenha 300 bancos", spriteX: 6, spriteY: 7},
 
     // Templo de Karaj
     {nome: "Fiel Dedicado", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 1, id: 'templo1', obtido: false, descricao: "Tenha 1 Templo de Karaj", spriteX: 0, spriteY: 8},
     {nome: "Ordem Religiosa", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 50, id: 'templo2', obtido: false, descricao: "Tenha 50 Templos de Karaj", spriteX: 1, spriteY: 8},
     {nome: "Cidade Sagrada", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 100, id: 'templo3', obtido: false, descricao: "Tenha 100 Templos de Karaj", spriteX: 2, spriteY: 8},
-    {nome: "Panteão Caseiro", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 150, id: 'templo4', obtido: false, descricao: "Tenha 150 Templos de Karaj", spriteX: 3, spriteY: 8},
-    {nome: "Café + Sal = ?", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 200, id: 'templo5', obtido: false, descricao: "Tenha 200 Templos de Karaj", spriteX: 4, spriteY: 8},
+    {nome: "Crentes de Cookie", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 150, id: 'templo4', obtido: false, descricao: "Tenha 150 Templos de Karaj", spriteX: 3, spriteY: 8},
+    {nome: "Abençoado Café Salgado", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 200, id: 'templo5', obtido: false, descricao: "Tenha 200 Templos de Karaj", spriteX: 4, spriteY: 8},
+    {nome: "Cookie nosso de cada dia", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 250, id: 'templo6', obtido: false, descricao: "Tenha 250 Templos de Karaj", spriteX: 5, spriteY: 8},
+    {nome: "Livro Sagrado dos Cookies", tipo: 'construcao', params: {nome: "Templo de Karaj"}, quantidade: 300, id: 'templo7', obtido: false, descricao: "Tenha 300 Templos de Karaj", spriteX: 6, spriteY: 8},
 
     // Laboratório
     {nome: "Experimento Inicial", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 1, id: 'lab1', obtido: false, descricao: "Tenha 1 laboratório", spriteX: 0, spriteY: 9},
     {nome: "Método Científico", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 50, id: 'lab2', obtido: false, descricao: "Tenha 50 laboratórios", spriteX: 1, spriteY: 9},
-    {nome: "Instituto de Pesquisa", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 100, id: 'lab3', obtido: false, descricao: "Tenha 100 laboratórios", spriteX: 2, spriteY: 9},
-    {nome: "Nobel de Química", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 150, id: 'lab4', obtido: false, descricao: "Tenha 150 laboratórios", spriteX: 3, spriteY: 9},
-    {nome: "Teoria Geral dos Cookies", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 200, id: 'lab5', obtido: false, descricao: "Tenha 200 laboratórios", spriteX: 4, spriteY: 9},
+    {nome: "A Terceira Lei dos Cookies", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 100, id: 'lab3', obtido: false, descricao: "Tenha 100 laboratórios", spriteX: 2, spriteY: 9},
+    {nome: "Instituto de Pesquisa", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 150, id: 'lab4', obtido: false, descricao: "Tenha 150 laboratórios", spriteX: 3, spriteY: 9},
+    {nome: "Universidade dos Cookies", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 200, id: 'lab5', obtido: false, descricao: "Tenha 200 laboratórios", spriteX: 4, spriteY: 9},
+    {nome: "Nobel de Química", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 250, id: 'lab6', obtido: false, descricao: "Tenha 250 laboratórios", spriteX: 5, spriteY: 9},
+    {nome: "Teoria Geral dos Cookies", tipo: 'construcao', params: {nome: "Laboratório"}, quantidade: 300, id: 'lab7', obtido: false, descricao: "Tenha 300 laboratórios", spriteX: 6, spriteY: 9},
 
     // Torre
     {nome: "Você é um bruxo!", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 1, id: 'torre1', obtido: false, descricao: "Tenha 1 torre", spriteX: 0, spriteY: 10},
     {nome: "Escola de magia", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 50, id: 'torre2', obtido: false, descricao: "Tenha 50 torres", spriteX: 1, spriteY: 10},
     {nome: "Grimório", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 100, id: 'torre3', obtido: false, descricao: "Tenha 100 torres", spriteX: 2, spriteY: 10},
     {nome: "Torre de Marfim", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 150, id: 'torre4', obtido: false, descricao: "Tenha 150 torres", spriteX: 3, spriteY: 10},
-    {nome: "Guilda Arcana", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 200, id: 'torre5', obtido: false, descricao: "Tenha 200 torres", spriteX: 4, spriteY: 10},
+    {nome: "Thaumcraft", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 200, id: 'torre5', obtido: false, descricao: "Tenha 200 torres", spriteX: 4, spriteY: 10},
+    {nome: "Feitiços Difíceis", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 250, id: 'torre6', obtido: false, descricao: "Tenha 250 torres", spriteX: 5, spriteY: 10},
+    {nome: "Guilda Arcana", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 300, id: 'torre7', obtido: false, descricao: "Tenha 300 torres", spriteX: 6, spriteY: 10},
 
+    // Cassino da Sorte
+    {nome: "Sorte de Principiante", tipo: 'construcao', params: {nome: "Cassino da Sorte"}, quantidade: 1, id: 'torre1', obtido: false, descricao: "Tenha 1 cassino", spriteX: 0, spriteY: 11},
+    {nome: "Talvez haja uma chance", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 50, id: 'torre2', obtido: false, descricao: "Tenha 50 cassinos", spriteX: 1, spriteY: 11},
+    {nome: "A Casa Sempre Ganha", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 100, id: 'torre3', obtido: false, descricao: "Tenha 100 cassinos", spriteX: 2, spriteY: 11},
+    {nome: "Vencer a Loteria", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 150, id: 'torre4', obtido: false, descricao: "Tenha 150 cassinos", spriteX: 3, spriteY: 11},
+    {nome: "Império da Sorte", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 200, id: 'torre5', obtido: false, descricao: "Tenha 200 cassinos", spriteX: 4, spriteY: 11},
+    {nome: "Role os Dados", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 250, id: 'torre6', obtido: false, descricao: "Tenha 250 cassinos", spriteX: 5, spriteY: 11},
+    {nome: "O Mundo Aposta Cookies", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 300, id: 'torre7', obtido: false, descricao: "Tenha 300 cassinos", spriteX: 6, spriteY: 11},
+
+    // Portais
+    {nome: "Novo Mundo", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 1, id: 'torre1', obtido: false, descricao: "Tenha 1 portal", spriteX: 0, spriteY: 12},
+    {nome: "Fenda Dimensional", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 50, id: 'torre2', obtido: false, descricao: "Tenha 50 portais", spriteX: 1, spriteY: 12},
+    {nome: "Sala de Portais", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 100, id: 'torre3', obtido: false, descricao: "Tenha 100 portais", spriteX: 2, spriteY: 12},
+    {nome: "O Outro Lado", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 150, id: 'torre4', obtido: false, descricao: "Tenha 150 portais", spriteX: 3, spriteY: 12},
+    {nome: "H̸̷͓̳̳̯̟͕̟͍͍̣͡ḛ̢̦̰̺̮̝͖͖̘̪͉͘͡ ̠̦͕̤̪̝̥̰̠̫̖̣͙̬͘ͅC̨̦̺̩̲̥͉̭͚̜̻̝̣̼͙̮̯̪o̴̡͇̘͎̞̲͇̦̲͞͡m̸̩̺̝̣̹̱͚̬̥̫̳̼̞̘̯͘ͅẹ͇̺̜́̕͢s̶̙̟̱̥̮̯̰̦͓͇͖͖̝͘͘͞	", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 200, id: 'torre5', obtido: false, descricao: "Tenha 200 portais", spriteX: 4, spriteY: 12},
+    {nome: "Mundos Colidem", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 250, id: 'torre6', obtido: false, descricao: "Tenha 250 portais", spriteX: 5, spriteY: 12},
+    {nome: "Singularidade de Cookies", tipo: 'construcao', params: {nome: "Torre"}, quantidade: 300, id: 'torre7', obtido: false, descricao: "Tenha 300 portais", spriteX: 6, spriteY: 12},
     // Secretas (linha 15)
     // um dos templos de karaj na "sua produção" vai ter um icone diferente, se você clicar ganha uma conquista
 
@@ -337,30 +402,20 @@ export const DEFAULT_CONQUISTAS = [
      spriteX: 4, spriteY: 15,
      check: (s) => s.vovoTodasCoresClicado === true},
 
-    // Progresso de descoberta no Laboratório de Frascos: conta só os 16
-    // combos únicos e especiais (EFEITOS_COMBOS) — os efeitos genéricos
-    // por cor não entram nessa contagem.
-    {nome: "Aprendiz de Alquimia", id: 'lab_10efeitos', obtido: false,
-     descricao: "Descobriu 8 dos 16 combos especiais do Laboratório de Frascos.",
-     spriteX: 8, spriteY: 14,
-     check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 8},
 
-    {nome: "Minä", id: 'lab_20efeitos', obtido: false,
-     descricao: "Descobriu todos os 16 combos especiais do Laboratório de Frascos.",
-     spriteX: 9, spriteY: 14,
-     check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 16},
+
 
 
 
     // Conquistas de cookie coins (linha 14, cols 0-3)
     {nome: "Primeiro Minerador", id: 'cc1', obtido: false, descricao: "Tenha 1 Cookie Coin",
      check: (s) => s.cookieCoin?.coins >= 1, spriteX: 0, spriteY: 14},
-    {nome: "HODL", id: 'cc2', obtido: false, descricao: "Tenha 1000 Cookie Coins ao mesmo tempo",
-     check: (s) => s.cookieCoin?.coins >= 1000, spriteX: 1, spriteY: 14},
-    {nome: "Todas que existem?", id: 'cc3', obtido: false, descricao: "Tenha 21 Milhões de Cookie Coins ao mesmo tempo",
-     check: (s) => s.cookieCoin?.coins >= 21_000_000, spriteX: 2, spriteY: 14},
-    {nome: "Especialista em Hardware", id: 'cc4', obtido: false, descricao: "Tenha 15 placas de vídeo",
-     check: (s) => s.cookieCoin?.level == 15, spriteX: 3, spriteY: 14},
+    {nome: "HODL", id: 'cc2', obtido: false, descricao: "Tenha 50 Cookie Coins ao mesmo tempo",
+     check: (s) => s.cookieCoin?.coins >= 50, spriteX: 1, spriteY: 14},
+    {nome: "Todas que existem?", id: 'cc3', obtido: false, descricao: "Tenha 500 Cookie Coins ao mesmo tempo",
+     check: (s) => s.cookieCoin?.coins >= 500, spriteX: 2, spriteY: 14},
+    {nome: "Especialista em Hardware", id: 'cc4', obtido: false, descricao: "Tenha todas as placas de vídeo (nível 5, sem contar upgrades de prestígio)",
+     check: (s) => s.cookieCoin?.level >= NVIDIA_NIVEL_MAXIMO_BASE, spriteX: 3, spriteY: 14},
 
 
     // tenha 100 construções no total (linha 14, cols 4-5)
@@ -385,15 +440,27 @@ export const DEFAULT_CONQUISTAS = [
        return chaves.every(k => s.ascensao[k]?.desbloqueado);
      }, spriteX: 7, spriteY: 14},
 
+    {nome: "Aprendiz de Alquimia", id: 'lab_10efeitos', obtido: false,
+     descricao: "Descobriu 8 dos 16 combos especiais do Laboratório de Frascos.",
+     spriteX: 8, spriteY: 14,
+     check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 8},
 
+    {nome: "Minä", id: 'lab_20efeitos', obtido: false,
+     descricao: "Descobriu todos os 16 combos especiais do Laboratório de Frascos.",
+     spriteX: 9, spriteY: 14,
+     check: (s) => (s.efeitosLaboratorioDescobertos ?? 0) >= 16},
+
+    {nome: "Café Salgado", id: 'cafe1', obtido: false, descricao: "Consiga o lendário Café Salgado",
+     check: (s) => s.melhorias.filter(m => m.efeito === "cafe" && m.comprado).length >= 2, spriteX: 5, spriteY: 15},
+
+    {nome: "Apreciador médio", id: 'cafe2', obtido: false, descricao: "Consiga 100% de CPS Bônus do Café Salgado",
+     check: (s) => s.melhorias.filter(m => m.efeito === "cafe" && m.comprado).length * getLitrosCafe(s.conquistas) * 0.15 >= 1, spriteX: 6, spriteY: 15},
+
+    {nome: "Apreciador médio", id: 'cafe3', obtido: false, descricao: "Consiga 500% de CPS Bônus do Café Salgado",
+     check: (s) => s.melhorias.filter(m => m.efeito === "cafe" && m.comprado).length * getLitrosCafe(s.conquistas) * 0.15 >= 5, spriteX: 7, spriteY: 15},
 
 ];
 
-// Nível base (sem upgrades) e teto teórico absoluto (com todos os upgrades
-// de prestígio de +5 slots comprados) das placas de Cookie Coin. O limite
-// EFETIVO de cada jogador é calculado dinamicamente por getNivelMaximoPlacas
-// (helper.js), que soma NVIDIA_NIVEL_MAXIMO_BASE aos upgrades do Distrito
-// dos Computadores comprados (efeito 'maisplacas', +5 cada).
 export const NVIDIA_NIVEL_MAXIMO_BASE = 5;
 export const NVIDIA_NIVEL_MAXIMO_ABSOLUTO = 15; // base 5 + 2 upgrades x 5
 
@@ -557,6 +624,9 @@ export const DEFAULT_ASCENSAO = {
       desbloqueado: false,
       prestigio: 0,
       prestigioTotal: 0,
+
+
+      upgradesPermanentes: [null, null, null, null],
   
       // Distrito dos Templos
       distritotemplo: {
@@ -566,10 +636,12 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Karaj,
         icone_destruido: Karaj_d,
+        icone_a_construir: Karaj_d,
         upgrades: [
           {nome: "Conexão Espiritual", preço: 1, efeito:'ascensao', id: 'ascensaocps', comprado: false, descricao: "Você ganha 1% de cps por nível de prestígio"},
+          {nome: "Sorte dos Deuses", preço: 7, efeito:'sorte', id: 'ascensaosorte1', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"},
           {nome: "Armazém Temporal", preço: 13, efeito:'offline1', id: 'offline1', comprado: false, descricao: "Você ganha 50% de CPS enquanto o jogo está fechado (por um máximo de 2 horas)"},
-          {nome: "Sorte dos Deuses", preço: 77, efeito:'sorte', id: 'ascensaosorte1', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"}
+          
         ]
       },
       distritovovo: {
@@ -579,12 +651,13 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Vovo1,
         icone_destruido: Vovo2,
+        icone_a_construir: Vovo3,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Vovó",
         upgrades: [
           {nome: "Caixa de Cookies da Vovó", preço: 25, efeito:'caixavovo', id: 'vovoascensao1', comprado: false, descricao: "Desbloqueia vários novos cookies de vovó"},
-          {nome: "Vovós Ancestrais", preço: 100, efeito:'vovoGratis', id: 'vovoascensao2', comprado: false, descricao: "Você começa a próxima ascensão com 10 vovós grátis!"},
-          {nome: "Sorte no Bingo!", preço: 7777, efeito:'sorte', id: 'ascensaosorte2', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"}
+          {nome: "Sorte no Bingo!", preço: 77, efeito:'sorte', id: 'ascensaosorte2', comprado: false, descricao: "Você ganha +1 de sorte permanentemente!"},
+          {nome: "Vovós Ancestrais", preço: 100, efeito:'vovoGratis', id: 'vovoascensao2', comprado: false, descricao: "Você começa a próxima ascensão com 10 vovós grátis!"}
         ]
       },
       distritofazenda: {
@@ -594,9 +667,15 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Fazenda,
         icone_destruido: Fazenda_d,
+        icone_a_construir: Fazenda_dc,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Fazenda",
-        upgrades: []
+        upgrades: [
+          {nome: "Plantar Upgrade I", preço: 100, efeito:'permanente', id: 'fazendaascensao1', comprado: false, descricao: "Escolha 1 upgrade da ascensão anterior para continuar na próxima!"},
+          {nome: "Plantar Upgrade II", preço: 20_000, efeito:'permanente', id: 'fazendaascensao2', comprado: false, descricao: "Abre mais 1 slot de Upgrade Permanente."},
+          {nome: "Plantar Upgrade III", preço: 3_000_000, efeito:'permanente', id: 'fazendaascensao3', comprado: false, descricao: "Abre mais 1 slot de Upgrade Permanente."}
+          //{nome: "Plantar Upgrade IV", preço: 180, efeito:'permanente', id: 'fazendaascensao4', comprado: false, descricao: "Abre mais 1 slot de Upgrade Permanente."}
+        ]
       },
       distritomina: {
         desbloqueado: false,
@@ -605,6 +684,7 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Mina,
         icone_destruido: Mina_d,
+        icone_a_construir: Mina_d,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Mina",
         upgrades: []
@@ -616,6 +696,7 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Fabrica,
         icone_destruido: Fabrica_d,
+        icone_a_construir: Fabrica_d,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Fábrica",
         upgrades: [
@@ -630,11 +711,12 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: PC,
         icone_destruido:PC,
+        icone_a_construir: PC,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Computador",
         upgrades: [
-          {nome: "Slots PCI-E Extras", preço: 10_000, efeito:'maisplacas', id: 'pcascensao1', comprado: false, descricao: "Permite instalar mais 5 placas de vídeo."},
-          {nome: "Operação de Mineração", preço: 1_000_000, efeito:'maisplacas', id: 'pcascensao2', comprado: false, descricao: "Permite instalar mais 5 placas de vídeo."}
+          {nome: "Slots PCI-E Extras", preço: 2500, efeito:'maisplacas', id: 'pcascensao1', comprado: false, descricao: "Permite instalar mais 5 placas de vídeo."},
+          {nome: "Placa-Mãe Server-Grade", preço: 6000, efeito:'maisplacas', id: 'pcascensao2', comprado: false, descricao: "Permite instalar mais 5 placas de vídeo."}
         ]
       },
       distritobanco: {
@@ -644,6 +726,7 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Bancos,
         icone_destruido: Bancos_d,
+        icone_a_construir: Bancos_d,
         requisitoQuantidade: 100,
         requisitoConstrucao: "Banco",
         upgrades: []
@@ -655,6 +738,7 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Cursor,
         icone_destruido:Cursor,
+        icone_a_construir: Cursor,
         requisitoQuantidade: 0,
         requisitoConstrucao: null,
         upgrades: []
@@ -666,6 +750,7 @@ export const DEFAULT_ASCENSAO = {
         aberto: false,
         icone: Karaj,
         icone_destruido:Karaj,
+        icone_a_construir:Karaj,
         requisitoQuantidade: 0,
         requisitoConstrucao: null,
         upgrades: []
@@ -677,7 +762,7 @@ export const DEFAULT_ASCENSAO = {
 // Retorna as melhorias já filtradas, ordenadas do mais barato ao mais caro,
 // e com um campo extra `indiceOriginal` que guarda a posição no array original
 // (necessário para a função ComprarMelhoria saber qual melhoria foi comprada).
-export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao, laboratorio) {
+export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotaisAscensao, douradosTotais, ascensao, laboratorio, conquistasObtidas = 0) {
   const ContagemVovo = construcoes.find((c) => c.nome === "Vovó")?.quantidade || 0;
   const ContagemFazenda = construcoes.find((c) => c.nome === "Fazenda")?.quantidade || 0;
   const ContagemMinas = construcoes.find((c) => c.nome === "Mina")?.quantidade || 0;
@@ -686,6 +771,9 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
   const ContagemComputador = construcoes.find((c) => c.nome === "Computador")?.quantidade || 0;
   const ContagemTemplo = construcoes.find((c) => c.nome === "Templo de Karaj")?.quantidade || 0;
   const ContagemLab = construcoes.find((c) => c.nome === "Laboratório")?.quantidade || 0;
+  const ContagemTorre = construcoes.find((c) => c.nome === "Torre")?.quantidade || 0;
+  const ContagemCassino = construcoes.find((c) => c.nome === "Cassino da Sorte")?.quantidade || 0;
+  const ContagemPortal = construcoes.find((c) => c.nome === "Portal")?.quantidade || 0;
 
   const disponiveis = melhorias
     .map((m, i) => ({ ...m, indiceOriginal: i }))
@@ -746,6 +834,30 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
       if (m.id === "lab1" && ContagemLab < 1) return false;
       if (m.id === "lab2" && ContagemLab < 10) return false;
       if (m.id === "lab3" && ContagemLab < 25) return false;
+      if (m.id === "lab4" && ContagemLab < 50) return false;
+      if (m.id === "lab5" && ContagemLab < 100) return false;
+      if (m.id === "lab6" && ContagemLab < 150) return false;
+
+      if (m.id === "torre1" && ContagemTorre < 1) return false;
+      if (m.id === "torre2" && ContagemTorre < 10) return false;
+      if (m.id === "torre3" && ContagemTorre < 25) return false;
+      if (m.id === "torre4" && ContagemTorre < 50) return false;
+      if (m.id === "torre5" && ContagemTorre < 100) return false;
+      if (m.id === "torre6" && ContagemTorre < 150) return false;
+
+      if (m.id === "cassino1" && ContagemCassino < 1) return false;
+      if (m.id === "cassino2" && ContagemCassino < 10) return false;
+      if (m.id === "cassino3" && ContagemCassino < 25) return false;
+      if (m.id === "cassino4" && ContagemCassino < 50) return false;
+      if (m.id === "cassino5" && ContagemCassino < 100) return false;
+      if (m.id === "cassino6" && ContagemCassino < 150) return false;
+
+      if (m.id === "portal1" && ContagemPortal < 1) return false;
+      if (m.id === "portal2" && ContagemPortal < 10) return false;
+      if (m.id === "portal3" && ContagemPortal < 25) return false;
+      if (m.id === "portal4" && ContagemPortal < 50) return false;
+      if (m.id === "portal5" && ContagemPortal < 100) return false;
+      if (m.id === "portal6" && ContagemPortal < 150) return false;
 
       if (m.id === "cookie1" && cookiesTotaisAscensao < 50_000) return false;
       if (m.id === "cookie2" && cookiesTotaisAscensao < 250_000) return false;
@@ -766,6 +878,11 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
       if (m.id === "sorte3" && douradosTotais < 77) return false;
       if (m.id === "sorte4" && douradosTotais < 777) return false;
 
+      if (m.id === "cafe1" && conquistasObtidas < 10) return false;
+      if (m.id === "cafe2" && conquistasObtidas < 25) return false;
+      if (m.id === "cafe3" && conquistasObtidas < 50) return false;
+      if (m.id === "cafe4" && conquistasObtidas < 75) return false;
+
       const CaixaVovoAtivo = ascensao.distritovovo.upgrades.some(u => u.id === "vovoascensao1" && u.comprado);
       const CaixaFabricaAtivo = ascensao.distritofabrica.upgrades.some(u => u.id === "fabricaascensao1" && u.comprado);
 
@@ -778,3 +895,161 @@ export function filtrarUpgradesDisponiveis(melhorias, construcoes, cookiesTotais
   // Ordena do mais barato ao mais caro
   return [...disponiveis].sort((a, b) => a.preço - b.preço);
 }
+
+
+export const DEFAULT_VERSOES = [
+
+{
+    versao: "10.0",
+    data: "07/09/2026",
+    titulo: "O Grande Update das Melhorias",
+    mudancas: [
+      "Melhorias permanentes adicionadas na ascensão",
+      "Muitas melhorias no visual",
+      "Ícones adicionados pra todas as melhorias",
+      "2 construções adicionadas: Cassinos e Portais (ainda sem ícone)",
+      "Muitas melhorias e conquistas novas",
+      "Nova tela de versionamento (Oi!)"
+    ]
+  },
+  {
+    versao: "9.1",
+    data: "24/08/2026",
+    titulo: "Novos Cookie Coins",
+    mudancas: [
+      "Cookie Coins agora são mais difíceis de minerar e gastam CPS, mas são mais úteis",
+      "Cookie Coins agora são usados para desbloquear minigames",
+      "preço dos Cookie Coins agora escalona com CPS (vão valer muito!)",
+      "mais usos para Cookie Coins no futuro"
+    ]
+  },
+
+  {
+    versao: "9.0",
+    data: "07/08/2026",
+    titulo: "Alquimia",
+    mudancas: [
+      "Minigame 'Laboratório de Alquimia' adicionado",
+      "16 combinações especiais de poções para serem descobertas, e muito mais combinações genéricas com vários efeitos",
+      "Menu dos minigames melhorado",
+      "novo ícone para as torres",
+      "novas conquistas (incluindo secretas!)"
+    ]
+  },
+  {
+    versao: "8.1",
+    data: "03/08/2026",
+    titulo: "Update",
+    mudancas: [
+      "Adicionados botões de comprar múltiplas construções"
+    ]
+  },
+  {
+    versao: "8.0",
+    data: "27/04/2026",
+    titulo: "A Conquista",
+    mudancas: [
+      "Adicionados menus de Opções e Conquistas",
+      "Novo sistema de conquistas com 88 conquistas para os jogadores (incluindo secretas...)",
+      "Nova melhoria para ouvir quando um cookie dourado aparece",
+      "Múltiplos bugs resolvidos",
+      "Muitos ícones novos!"
+    ]
+  },
+  {
+    versao: "7.9",
+    data: "17/04/2026",
+    titulo: "Melhorias Gerais!",
+    mudancas: [
+      "sons adicionados ao cookie e cookie dourado",
+      "código organizado, funções foram colocadas em diferentes arquivos",
+    ]
+  },
+  {
+    versao: "7.8",
+    data: "01/04/2026",
+    titulo: "Novos Dourados",
+    mudancas: [
+      "Lógica de cookies dourados mudada",
+      "Novas melhorias de cookies dourados",
+    ]
+  },
+  {
+    versao: "7.7",
+    data: "27/03/2026",
+    titulo: "O Update da Sorte!",
+    mudancas: [
+      "Cookies Dourados adicionados",
+      "visualização para os cookies dourados adicionada",
+      "Novo ícone para o banco"
+    ]
+  },
+  {
+    versao: "7.2",
+    data: "17/03/2026",
+    titulo: "Ganho Offline",
+    mudancas: [
+      "Nova melhoria de Ascensão: Armazém Temporal, que ganha cookies com o jogo fechado",
+      "Sistema preparado para mais melhorias de ganho offline no futuro",
+    ]
+  },
+  {
+    versao: "7.1",
+    data: "23/02/2026",
+    titulo: "Ganho minimizado",
+    mudancas: [
+      "o jogo agora gera cookies e Cookie Coins mesmo minimizado! (não gera com o jogo fechado ainda)",
+    ]
+  },
+  {
+    versao: "7.0",
+    data: "10/02/2026",
+    titulo: "O Grande Update de Karaj!",
+    mudancas: [
+      "Adicionado o Minigame de KARAJ, que será o sistema de ascensão",
+      "Adicionados alguns upgrades de Ascensão",
+      "Vários upgrades novos como porcentagem de click e porcentagem de CPS",
+      "Novas construções: Minas e Laboratórios",
+      "Construa sua própria cidade de Karaj!"
+    ]
+  },
+  {
+    versao: "6.3",
+    data: "28/01/2026",
+    titulo: "Update",
+    mudancas: [
+      "Adicionadas descrições para as construções",
+      "Adicionada a simplificação dos números (por exemplo 1000000 = 1 milhão)",
+    ]
+  },
+  {
+    versao: "6.2",
+    data: "09/01/2026",
+    titulo: "Muitas Melhoras!",
+    mudancas: [
+      "Agora o jogo aceita saves antigos!",
+      "Novo arquivo version.js cuida das versões do jogo",
+      "Bancos adicionados (sem icone por enquanto)",
+      "Construções mudaram de ordem",
+      "Muitos novos upgrades",
+      "Organização melhorada"
+    ]
+  },
+  {
+    versao: "6.1",
+    data: "09/01/2026",
+    titulo: "Visual",
+    mudancas: [
+      "Visual melhorado para o novo minigame",
+    ]
+  },
+  {
+    versao: "6.0",
+    data: "08/01/2026",
+    titulo: "Cookie Coins",
+    mudancas: [
+      "Nova Construção: Computadores",
+      "Primeiro Minigame adicionado: Mineração de Cookie Coins!",
+    ]
+  },
+];

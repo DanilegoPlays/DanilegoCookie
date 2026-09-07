@@ -56,6 +56,9 @@ const EFEITO_DUPLICA = {
   "Computador": "duplicarPC",
   "Templo de Karaj": "duplicarTemplo",
   "Laboratório": "duplicarLab",
+  "Torre": "duplicarTorre",
+  "Cassino da Sorte": "duplicarCassino",
+  "Portal": "duplicarPortal",
 };
 
 // Multiplicador específico daquela construção (vovós dobram com cada upgrade
@@ -72,15 +75,30 @@ export function getMultiplicador(construcao, melhorias) {
 // - Upgrades de cookies (1%, 3%, 5%, 10%)
 // - Bônus de prestígio se o upgrade "ascensaocps" foi comprado
 //
+// Café Salgado (equivalente ao Leite/Gatinhos do Cookie Clicker): cada
+// conquista dá 40ml de café permanentemente. 1 litro = 1000ml = 25
+// conquistas. Cada upgrade "cafe" comprado dá +15% de CPS por litro.
+export const ML_CAFE_POR_CONQUISTA = 40;
+export const ML_POR_LITRO_CAFE = 1000;
+export const BONUS_CAFE_POR_LITRO = 0.15;
+
+export function getLitrosCafe(conquistas) {
+  const obtidas = Array.isArray(conquistas) ? conquistas.filter(c => c.obtido).length : 0;
+  return (obtidas * ML_CAFE_POR_CONQUISTA) / ML_POR_LITRO_CAFE;
+}
+
 // Esta função substitui tanto getMultiplicadorP() quanto getMultiplicadorPFromData()
 // que existiam no App.js — agora é só uma, recebe os dados explicitamente.
-export function getMultiplicadorP(melhorias, ascensao) {
+export function getMultiplicadorP(melhorias, ascensao, conquistas) {
   const m1 = melhorias.filter(m => m.efeito === "1porcento" && m.comprado).length;
   const m3 = melhorias.filter(m => m.efeito === "3porcento" && m.comprado).length;
   const m5 = melhorias.filter(m => m.efeito === "5porcento" && m.comprado).length;
   const m10 = melhorias.filter(m => m.efeito === "10porcento" && m.comprado).length;
 
-  const multiplicadorBasico = 1 + m1 * 0.01 + m3 * 0.03 + m5 * 0.05 + m10 * 0.1;
+  const cafeCount = melhorias.filter(m => m.efeito === "cafe" && m.comprado).length;
+  const bonusCafe = cafeCount * getLitrosCafe(conquistas) * BONUS_CAFE_POR_LITRO;
+
+  const multiplicadorBasico = 1 + m1 * 0.01 + m3 * 0.03 + m5 * 0.05 + m10 * 0.1 + bonusCafe;
 
   const CPSAscensaoAtivo = ascensao?.distritotemplo?.upgrades?.some(
     u => u.id === "ascensaocps" && u.comprado

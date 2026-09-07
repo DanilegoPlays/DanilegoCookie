@@ -28,24 +28,25 @@ import './App.css';
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Save, Load, saveGame, loadSave } from './version';
-import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, CONQUISTA_SPRITE, EFEITOS_COMBOS, EFEITOS_GENERICOS, NVIDIA_NIVEL_MAXIMO_BASE, filtrarUpgradesDisponiveis} from './defaults';
+import {DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_DOURADO, CONFIG_DOURADO, DEFAULT_VERSOES, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, CONQUISTA_SPRITE, EFEITOS_COMBOS, EFEITOS_GENERICOS, NVIDIA_NIVEL_MAXIMO_BASE, filtrarUpgradesDisponiveis} from './defaults';
 import conquistasSprite from './arte/conquistas.png';
+import melhoriasSprite from './arte/melhorias.png';
 import tinyCookie from './arte/TinyCookie.png';
 import madalenaIcon from './arte/Madalena.png';
 import temploSecretoIcon from './arte/MarioL.png';
 import cookieCoinIcon from './arte/CookieCoin.png';
 import {SpawnCookieDourado as SpawnCookieDouradoFn, calcularProximoSpawn as calcularProximoSpawnFn, CPSBuffado, criarEfeitoCookieDourado, criarCookieInstaneo} from './sorte';
 import {SEGUNDOS_CPS_POR_COOKIE_COIN, FRACAO_CPS_POR_PLACA, COINS_POR_SEGUNDO_POR_PLACA, criarComprarCookieCoinNivel, criarAjustarPlacasLigadas, criarVenderCookieCoin, GraficoCookieCoin, criarAdicionarQuimica, criarDesfazerQuimica, criarBeberPocao, getCargasAtuais, MAX_CARGAS} from './minigame';
-import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP, getNivelMaximoPlacas} from './helper';
+import {CasasDecimais, simplificarNumero, simplificarNumeroPT, getMultiplicador, getMultiplicadorP, getNivelMaximoPlacas, getLitrosCafe} from './helper';
 
 function App() {
- 
-
- 
   // useStates principais
   const [contagem, setContagem] = useState(0); // contagem de cookies
   const [click, setClick] = useState(1); // valor do click
   const [CPS, setCPS] = useState(0); // CPS
+  // CPS sem os buffs temporários do Laboratório — só pra precificar a venda
+  // de Cookie Coins (ver producaoEstavelRef mais abaixo).
+  const [cpsEstavel, setCpsEstavel] = useState(0);
   const [construcoes, setConstrucoes] = useState(DEFAULT_CONSTRUCOES)
   const [multiplicador, setMultiplicador] = useState(1);
   const [melhorias, setMelhorias] = useState(DEFAULT_MELHORIAS)
@@ -66,6 +67,10 @@ function App() {
   const [cookieCoin, setCookieCoin] = useState(DEFAULT_COOKIE_COIN);
   const [ascensao, setAscensao] = useState(DEFAULT_ASCENSAO);
   const [laboratorio, setLaboratorio] = useState(DEFAULT_LABORATORIO);
+
+  const [ultimosUpgradesComprados, setUltimosUpgradesComprados] = useState([]);
+
+  const [seletorPermanenteAberto, setSeletorPermanenteAberto] = useState(null);
 
   const [telaAtual, setTelaAtual] = useState("jogo"); // telas: "jogo", "karaj" (ascensao), "conquistas", "opções"
   // Tooltip da grade de conquistas — position: fixed pra escapar do overflow
@@ -114,7 +119,7 @@ function App() {
 
     // Som contínuo do "O Sol" — toca em loop enquanto ele estiver na tela.
     solSomRef.current = new Audio(somSol);
-    solSomRef.current.volume = 0.5;
+    solSomRef.current.volume = 0.7;
     solSomRef.current.loop = true;
   }, []);
 
@@ -125,24 +130,24 @@ function App() {
     return Math.floor(preçoBase * Math.pow(1.15, quantidade) * multiplicadorDesconto);
   }
   function preverCustoMultiplo(precoBase, quantidadeAtual, saldoCookies, quantidadeDesejada) {
-  let custoSimulado = 0;
-  let quantPossivel = 0;
-  let nivel = quantidadeAtual;
+    let custoSimulado = 0;
+    let quantPossivel = 0;
+    let nivel = quantidadeAtual;
 
-  for (let i = 0; i < quantidadeDesejada; i++) {
-    // Utiliza a sua função original para manter a consistência matemática
-    const preco = getPreçoAtual(precoBase, nivel); 
-    
-    if (saldoCookies >= custoSimulado + preco) {
-      custoSimulado += preco;
-      quantPossivel++;
-      nivel++;
-    } else {
-      break;
+    for (let i = 0; i < quantidadeDesejada; i++) {
+      // Utiliza a sua função original para manter a consistência matemática
+      const preco = getPreçoAtual(precoBase, nivel); 
+      
+      if (saldoCookies >= custoSimulado + preco) {
+        custoSimulado += preco;
+        quantPossivel++;
+        nivel++;
+      } else {
+        break;
+      }
     }
+    return { custoSimulado, quantPossivel };
   }
-  return { custoSimulado, quantPossivel };
-}
  
   // use effect que desbloqueia minigames e distritos
   useEffect(() => {
@@ -227,7 +232,7 @@ function App() {
   const [arrastandoSobreVovo, setArrastandoSobreVovo] = useState(false);
 
   // --- Easter egg: colorir a Vovó com a poção do Laboratório ---
-  const VOVO_SPRITE_X = { verde: 6, vermelho: 7, azul: 8, amarelo: 9 };
+  const VOVO_SPRITE_X = { verde: 5, vermelho: 6, azul: 7, amarelo: 8 };
   const VOVO_NOMES = { verde: "Verde", vermelho: "Vermelha", azul: "Azul", amarelo: "Amarela" };
   const [vovoCor, setVovoCor] = useState(null); // null | 'verde' | 'vermelho' | 'azul' | 'amarelo'
   const [vovoCoresFeitas, setVovoCoresFeitas] = useState([]); // cores distintas já aplicadas
@@ -238,7 +243,7 @@ function App() {
     if (!VOVO_SPRITE_X[cor]) return;
 
     setVovoCor(cor);
-    mostrarAvisoPersistente(`Sua Vovó agora é a Vovó ${VOVO_NOMES[cor]}! 🧪`);
+    mostrarAviso(`Sua Vovó agora é a Vovó ${VOVO_NOMES[cor]}! 🧪`);
 
     if (!vovoCoresFeitas.includes(cor)) {
       const novasCores = [...vovoCoresFeitas, cor];
@@ -254,9 +259,6 @@ function App() {
   }
  
   // Sistema de avisos persistentes: ficam na tela até o jogador clicar pra fechar.
-  // Usado para eventos importantes que o jogador não deveria perder
-  // (ganho offline, venda de Cookie Coin, distrito desbloqueado, etc).
-  // Estrutura: array de { id, texto }. Cada um vira uma caixinha embaixo da tela.
   const [avisosPersistentes, setAvisosPersistentes] = useState([]);
  
   function mostrarAvisoPersistente(texto, icone = null) {
@@ -288,6 +290,7 @@ function App() {
   const conquistasRef = useRef(conquistas);
   const laboratorioRef = useRef(laboratorio);
   const buffRef = useRef(buff);
+  const ultimosUpgradesCompradosRef = useRef(ultimosUpgradesComprados);
  
   // Manter referencias sincronizadas
   useEffect(() => { 
@@ -307,6 +310,7 @@ function App() {
   useEffect(() => { producaoMinimizadaRef.current = producaoMinimizada; }, [producaoMinimizada]);
   useEffect(() => { conquistasRef.current = conquistas; }, [conquistas]);
   useEffect(() => { laboratorioRef.current = laboratorio; }, [laboratorio]);
+  useEffect(() => { ultimosUpgradesCompradosRef.current = ultimosUpgradesComprados; }, [ultimosUpgradesComprados]);
   useEffect(() => { buffRef.current = buff; }, [buff]);
  
  
@@ -341,7 +345,7 @@ function App() {
     const efeitosLaboratorioDescobertos =
       (laboratorio.descobertos ?? []).filter(k => EFEITOS_COMBOS[k]).length;
 
-    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, efeitosLaboratorioDescobertos, cookieCoin}))
+    const novasConquistas = conquistas.filter(c => !c.obtido && checkConquista(c, {cookiesTotais, CPS, cpsEstavel, construcoes, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, efeitosLaboratorioDescobertos, cookieCoin, melhorias, conquistas}))
  
     if (novasConquistas.length === 0) return;
  
@@ -358,7 +362,7 @@ function App() {
     setConquistas(prev => prev.map(c => 
       idsObtidos.has(c.id) ? {...c, obtido: true} : c));
  
-  }, [cookiesTotais, CPS, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, laboratorio.descobertos, cookieCoin]);
+  }, [cookiesTotais, CPS, cpsEstavel, cookiePequenoClicado, madalenaClicada, temploSecretoClicado, icaroClicado, vovoTodasCoresClicado, laboratorio.descobertos, cookieCoin]);
  
  
  
@@ -369,7 +373,7 @@ function App() {
       case 'cookiesTotais':
         return state.cookiesTotais >= conquista.quantidade;
       case 'cps':
-        return state.CPS >= conquista.quantidade;
+        return state.cpsEstavel >= conquista.quantidade;
       case 'construcao':
         return (state.construcoes.find(c => c.nome === conquista.params.nome)?.quantidade ?? 0) >= conquista.quantidade;
       case 'valorClick':
@@ -399,6 +403,7 @@ function App() {
       conquistas: conquistasRef.current,
       laboratorio: laboratorioRef.current,
       buff: buffRef.current,
+      ultimosUpgradesComprados: ultimosUpgradesCompradosRef.current,
       lastSavedAt: Date.now()
     };
   }
@@ -417,7 +422,14 @@ function App() {
   }, []);
  
   // Load Quicksave
+  // Guarda contra o efeito rodar 2x (ex: React.StrictMode em dev double-invoca
+  // efeitos de montagem) — sem isso, o ganho offline era aplicado 2 vezes de
+  // verdade (não só o aviso duplicado, os cookies também dobravam).
+  const cargaInicialFeitaRef = useRef(false);
   useEffect(() => {
+    if (cargaInicialFeitaRef.current) return;
+    cargaInicialFeitaRef.current = true;
+
     const salvamento = localStorage.getItem("QuickSave");
  
     if (salvamento) {
@@ -451,6 +463,7 @@ function App() {
       if (dados.conquistas) setConquistas(dados.conquistas);
       setLaboratorio(dados.laboratorio ?? DEFAULT_LABORATORIO);
       setBuff(dados.buff ?? []);
+      setUltimosUpgradesComprados(dados.ultimosUpgradesComprados ?? []);
  
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -461,14 +474,13 @@ function App() {
         // limite de ganho offline (inicial: 2 horas)
         const capped = Math.min(diffSeconds, stats.capSeconds);
  
-        // Use dados.construcoes instead of state construcoes
         const producaoBase = dados.construcoes.reduce((soma, c) => {
           const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
-          return soma + CpsConstrucao(c) * quantidadeTotal;
+          return soma + c.cps * getMultiplicador(c, dados.melhorias) * quantidadeTotal;
         }, 0);
  
-        // Calcula o multiplicador a partir do save
-        const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao);
+        // Calcula o multiplicador global a partir do save (não do estado ao vivo)
+        const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao, dados.conquistas);
  
         const producao = producaoBase * multiplicador;
  
@@ -477,10 +489,12 @@ function App() {
         setContagem(prev => prev + ganho);
         setCookiesTotais(prev => prev + ganho);
         setCookiesTotaisAscensao(prev => prev + ganho);
- 
-        mostrarAvisoPersistente(
-          `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
-        );
+        // só mostra o aviso depois de 5min
+        if (diffSeconds > 300) {
+          mostrarAvisoPersistente(
+            `Você ganhou ${simplificarNumeroPT(ganho)} cookies offline (${Math.floor(capped/3600)}h ${Math.floor((capped % 3600) / 60)}min)`
+          );
+        }
       }
     }
     
@@ -611,16 +625,31 @@ function App() {
   }, [cookieDourado, tempoDourado, sorte, ascensao]);
     
  
-  // some cookie dourado
+  // some cookie dourado — entra num fade-out de 2s (ainda clicável) antes
+  // de sumir de vez, em vez de desaparecer na hora. Isso estende o tempo
+  // total que ele fica na tela.
+  const DURACAO_FADE_DOURADO = 10000;
+
   useEffect(() => {
-    if (!cookieDourado) return;
+    if (!cookieDourado || cookieDourado.saindo) return;
  
     const timeout = setTimeout(() => {
-      setCookieDourado(null);
+      setCookieDourado(prev => (prev ? { ...prev, saindo: true } : prev));
     }, cookieDourado.expira - Date.now());
  
     return () => clearTimeout(timeout);
   }, [cookieDourado]);
+
+  // depois do fade-out, remove de vez
+  useEffect(() => {
+    if (!cookieDourado?.saindo) return;
+
+    const timeout = setTimeout(() => {
+      setCookieDourado(null);
+    }, DURACAO_FADE_DOURADO);
+
+    return () => clearTimeout(timeout);
+  }, [cookieDourado?.saindo]);
 
   // Quando o cookie dourado some (clicado, expirou, ou ascensão), limpa o aviso do título da aba
   useEffect(() => {
@@ -755,14 +784,23 @@ function App() {
  
   // Mantém a produção atual numa ref pra não remontar o timer a cada mudança.
   const producaoRef = useRef(0);
+  // CPS "estável" — igual ao de cima, mas SEM os buffs temporários do
+  // Laboratório (nem o desvio das placas de Cookie Coin). Usado só pra
+  // precificar a venda de Cookie Coins, pra ninguém conseguir manipular o
+  // preço de venda ativando um combo de +CPS por alguns minutos.
+  const producaoEstavelRef = useRef(0);
  
   useEffect(() => {
     const producaoBase = construcoes.reduce((soma, c) => {
       const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0);
       return soma + CpsConstrucao(c) * quantidadeTotal;
     }, 0);
-    const multiplicador = getMultiplicadorP(melhorias, ascensao);
+    const multiplicador = getMultiplicadorP(melhorias, ascensao, conquistas);
     const producaoBruta = CPSBuffado(producaoBase * multiplicador, buff);
+
+    const producaoEstavel = producaoBase * multiplicador;
+    producaoEstavelRef.current = producaoEstavel;
+    setCpsEstavel(producaoEstavel);
 
     // Cada placa de Cookie Coin "ligada" desvia 5% da CPS pra converter em
     // Cookie Coins (ver ganho de coins abaixo). A CPS exibida/recebida já
@@ -811,7 +849,7 @@ function App() {
   // getMultiplicador e getMultiplicadorP vêm de helper.js — recebem
   // os states (melhorias, ascensao) explicitamente em vez de pegá-los do escopo.
   function CpsConstrucao(c) {
-    return c.cps * getMultiplicador(c, melhorias) * getMultiplicadorP(melhorias, ascensao);
+    return c.cps * getMultiplicador(c, melhorias) * getMultiplicadorP(melhorias, ascensao, conquistas);
   }
 
   // Penalidade de alguns combos "instáveis" do Laboratório de Frascos:
@@ -1064,6 +1102,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       if (dados.conquistas) setConquistas(dados.conquistas);
       setLaboratorio(dados.laboratorio ?? DEFAULT_LABORATORIO);
       setBuff(dados.buff ?? []);
+      setUltimosUpgradesComprados(dados.ultimosUpgradesComprados ?? []);
  
       // ganho offline
       const stats = getOffline(dados.ascensao);
@@ -1075,13 +1114,16 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
         const capped = Math.min(diffSeconds, stats.capSeconds);
  
         // Usa dados do save em vez do state "construcoes"
+        // IMPORTANTE: usa c.cps (base) + getMultiplicador (por construção)
+        // aqui, e NÃO CpsConstrucao(c) — evita contar o multiplicador
+        // global 2 vezes (ver explicação no outro bloco de ganho offline).
         const producaoBase = dados.construcoes.reduce((soma, c) => {
           const quantidadeTotal = c.quantidade + (c.quantidadeGratis || 0)
-          return soma + CpsConstrucao(c) * quantidadeTotal;
+          return soma + c.cps * getMultiplicador(c, dados.melhorias) * quantidadeTotal;
         }, 0);
  
         // Calcula multiplicador
-        const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao);
+        const multiplicador = getMultiplicadorPFromData(dados.melhorias, dados.ascensao, dados.conquistas);
  
         const producao = producaoBase * multiplicador;
  
@@ -1111,7 +1153,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
     cookiesTotaisAscensao,
     douradosTotais,
     ascensao,
-    laboratorio
+    laboratorio,
+    conquistas.filter(c => c.obtido).length
   );
  
   // lista de upgrades comprados
@@ -1120,8 +1163,9 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
  
   // Minigame Cookie Coin (implementado em minigame.js)
   const cookieCoinSellBuff = buff.find(b => b.tipo === "CookieCoinSell" && b.expira > Date.now());
-  // Preço médio (mercado = 1): 10 segundos de CPS por Cookie Coin.
-  const valorBaseCookieCoin = CPS * SEGUNDOS_CPS_POR_COOKIE_COIN;
+  // Preço médio (mercado = 1): 10 segundos de CPS ESTÁVEL (sem buffs
+  // temporários do Laboratório) por Cookie Coin.
+  const valorBaseCookieCoin = cpsEstavel * SEGUNDOS_CPS_POR_COOKIE_COIN;
   const valorAtualCookieCoin = Math.floor(
     valorBaseCookieCoin * cookieCoin.mercado * (cookieCoinSellBuff ? cookieCoinSellBuff.mult : 1)
   );
@@ -1181,7 +1225,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
 
         // CPS lido da ref (sempre atual) — evita usar um valor de CPS
         // desatualizado de quando este efeito rodou pela última vez.
-        const valor = novoMercado * producaoRef.current * SEGUNDOS_CPS_POR_COOKIE_COIN;
+        const valor = novoMercado * producaoEstavelRef.current * SEGUNDOS_CPS_POR_COOKIE_COIN;
         setHistoricoCookieCoin(h => [...h, valor].slice(-30)); // últimos 30 pontos do gráfico
 
         return { ...prev, mercado: novoMercado };
@@ -1265,7 +1309,22 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       setCookiesTotaisAscensao(0);
       setClick(1);
       setConstrucoes(DEFAULT_CONSTRUCOES);
-      setMelhorias(DEFAULT_MELHORIAS);
+
+      // Guarda quais melhorias normais estavam compradas nessa ascensão que
+      // está terminando — é o "pool" de onde os slots de Upgrade Permanente
+      // (Distrito das Fazendas) escolhem na tela de ascensão.
+      setUltimosUpgradesComprados(melhorias.filter(m => m.comprado).map(m => m.id));
+
+      // Melhorias resetam, EXCETO as marcadas num slot de Upgrade
+      // Permanente ativo (ascensao.upgradesPermanentes) — essas já nascem
+      // compradas de novo, de graça, nessa nova ascensão.
+      const idsPermanentes = new Set((ascensao.upgradesPermanentes ?? []).filter(Boolean));
+      setMelhorias(
+        idsPermanentes.size > 0
+          ? DEFAULT_MELHORIAS.map(m => idsPermanentes.has(m.id) ? { ...m, comprado: true } : m)
+          : DEFAULT_MELHORIAS
+      );
+
       setBuff([]);
       // O Laboratório reseta "construído" (a construção física some junto
       // das outras) — "desbloqueado" é permanente, conquistado ao construir
@@ -1295,6 +1354,30 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
     }, 4000);
   }
 
+  // Atribui (ou remove, se upgradeId for null/'') uma melhoria de cookies
+  // (a mesma lista de sempre, melhorias/DEFAULT_MELHORIAS) a um slot de
+  // Upgrade Permanente. Só funciona durante a tela de ascensão — não faria
+  // sentido trocar isso no meio do jogo normal.
+  function SelecionarUpgradePermanente(slotIndex, upgradeId) {
+    if (telaAtual !== "ascensão") return;
+
+    const idAnterior = ascensao.upgradesPermanentes?.[slotIndex] ?? null;
+
+    setAscensao(prev => {
+      const upgradesPermanentes = [...(prev.upgradesPermanentes ?? [null, null, null, null])];
+      upgradesPermanentes[slotIndex] = upgradeId || null;
+      return { ...prev, upgradesPermanentes };
+    });
+
+    setMelhorias(prev =>
+      prev.map(m => {
+        if (upgradeId && m.id === upgradeId && !m.comprado) return { ...m, comprado: true };
+        if (idAnterior && idAnterior !== upgradeId && m.id === idAnterior) return { ...m, comprado: false };
+        return m;
+      })
+    );
+  }
+  
   // Gasta 1 Cookie Coin pra reativar o Laboratório depois de uma ascensão
   // (construido reseta toda ascensão; desbloqueado é permanente, conquistado
   // ao construir o Laboratório pela 1ª vez — isso já funciona via o
@@ -1398,17 +1481,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
       {cookieDourado && telaAtual !== "ascensão" &&
         <div
           onClick={efeitoCookieDourado}
-          style={{
-            position: "fixed",
-            left: cookieDourado.x,
-            top: cookieDourado.y,
-            width: "100px",
-            height: "100px",
-            cursor: "pointer",
-            zIndex: 9999,
-          }}
-          className="cookie-dourado"
-        >
+          style={{position: "fixed",left: cookieDourado.x,top: cookieDourado.y,width: "100px",height: "100px",cursor: "pointer",zIndex: 9999}}
+          className={`cookie-dourado ${cookieDourado.saindo ? 'saindo' : ''}`}>
           <motion.img style={{height: "100px", width:"100px"}}
           animate={{
             scale: [1, 1.1, 1],
@@ -1423,19 +1497,8 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
         <div
           onClick={CliqueSol}
           title="O Sol"
-          style={{
-            position: "fixed",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "60vmin",
-            height: "60vmin",
-            cursor: "pointer",
-            zIndex: 10000,
-            filter: "drop-shadow(0 0 60px rgba(255, 200, 0, 0.8))"
-          }}
-          className="o-sol"
-        >
+          style={{position: "fixed",left: "50%",top: "50%",transform: "translate(-50%, -50%)",width: "60vmin",height: "60vmin",cursor: "pointer",zIndex: 10000,filter: "drop-shadow(0 0 60px rgba(255, 200, 0, 0.8))"}}
+          className="o-sol">
           <motion.img style={{width: "100%", height: "100%"}}
           animate={{
             scale: [1, 1.1, 1],
@@ -1445,7 +1508,6 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
           src={dourado} alt={"O Sol"}></motion.img>
         </div>
       }
-      
       
         <div className="jogo">
           {telaAtual !== "ascensão" && (
@@ -1465,6 +1527,12 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 >
                   Conquistas
                 </button>
+                <button
+                  className="portao-karaj"
+                  onClick={() => setTelaAtual(telaAtual === "versao" ? "jogo" : "versao")}
+                >
+                  Versões
+                </button>
               </div>
               <div className="seção-minigames">
                 <h3> Minigames</h3>
@@ -1475,7 +1543,6 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                   <p>
                     <img src={cookieCoinIcon} alt="" className="cookie-coin-icon" /> {CasasDecimais(cookieCoin.coins, 3)}
                   </p>
-                  <p>Placas: {cookieCoin.level} / {nivelMaximoPlacas}</p>
 
                   <button
                     onClick={ComprarCookieCoinNivel}
@@ -1483,11 +1550,11 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                     style={{cursor: "pointer"}}
                   >
                     {cookieCoin.level >= nivelMaximoPlacas ? (
-                      "Nível Máximo Atingido"
+                      "Limite de placas atingido"
                     ) : (
                       <>
                         Nova Placa de Vídeo<br />
-                        Preço: {simplificarNumeroPT(precoNvidia)}
+                        <img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(precoNvidia)}
                       </>
                     )}
                   </button>
@@ -1869,10 +1936,24 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
             </div>
           )}
 
+          {telaAtual === "versao" && (
+            <div className="tela-menu">
+              <h2>📋 Versões</h2>
+              {DEFAULT_VERSOES.map(v => (
+                <div key={v.versao}>
+                  <h3>v{v.versao} — {v.titulo} <small>({v.data})</small></h3>
+                  <ul>
+                    {v.mudancas.map((m, i) => <li key={i}>{m}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Tela de Conquistas e estatísticas do jogador */}
           {telaAtual === "conquistas" && (
             <div className="tela-menu">
-              <h3 style={{ marginTop: 0 }}>Estatísticas</h3>
+              <h2 style={{ marginTop: 0 }}>Estatísticas</h2>
               <div className="menu-estatisticas">
                 <div>
                   {`Cookies assados: `}
@@ -1903,9 +1984,37 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 )}
               </div>
 
-              <h3 style={{ marginTop: 30 }}>Conquistas</h3>
+              <h2 style={{ marginTop: 30 }}>Melhorias</h2>
+                {upgradesComprados.map((m, i) => {
+                  const T = CONQUISTA_SPRITE.tamanho;
+                  const temSprite = typeof m.spriteX === 'number' && typeof m.spriteY === 'number';
+                  return (
+                  <div key={m.indiceOriginal} className="upgrade-wrapper">
+                    <button
+                      className="melhorias"
+                      style={{opacity: 1,cursor: "pointer",marginBottom: "8px",}}>
+                      {temSprite ? (
+                        <div
+                          style={{width: T,height: T,backgroundImage: `url(${melhoriasSprite})`,backgroundPosition: `-${m.spriteX * T}px -${m.spriteY * T}px`,backgroundSize: `${CONQUISTA_SPRITE.colunas * T}px ${CONQUISTA_SPRITE.linhas * T}px`,imageRendering: 'pixelated'}}/>
+                      ) : (
+                        <span style={{fontSize: '11px'}}>{m.nome}</span>
+                      )}
+                    </button>
+
+                    <div className="info info-melhoria">
+                      <strong>{m.nome}</strong><br />
+                      {m.descricao}<br />
+                      <img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(m.preço)}
+                    </div>
+                  </div>
+                  );
+                  })}
+              
+
+              <h2 style={{ marginTop: 30 }}>Conquistas</h2>
               <div className="menu-estatisticas" style={{ marginTop: 0, marginBottom: 10 }}>
                 <div>{`Obtidas: ${conquistas.filter(c => c.obtido).length} / ${conquistas.length}`}</div>
+                <div>{`☕ Café: ${getLitrosCafe(conquistas).toFixed(2)} L`}</div>
               </div>
 
               {/* Grade de "troféus": cada conquista é uma caixa preta.
@@ -1968,19 +2077,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                         distrito: prev.ativo ? null : prev.distrito
                       }));
                     }}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      background: modoConstrucao.ativo ? '#ffd700' : '#666',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: modoConstrucao.ativo ? '#000' : '#fff',
-                      fontWeight: 'bold',
-                      fontSize: '14px',
-                      marginBottom: modoConstrucao.ativo ? '10px' : '0'
-                    }}
-                  >
+                    style={{width: '100%',padding: '10px', background: modoConstrucao.ativo ? '#ffd700' : '#666', border: 'none', borderRadius: '8px', cursor: 'pointer', color: modoConstrucao.ativo ? '#000' : '#fff', fontWeight: 'bold',fontSize: '14px', marginBottom: modoConstrucao.ativo ? '10px' : '0'}}>
                     {modoConstrucao.ativo ? '🏗️ Modo Construção (Ativo)' : '🏗️ Modo Construção'}
                   </button>
                   <div className ="prestigio-info">
@@ -1989,13 +2086,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
 
                   {modoConstrucao.ativo && (
                     <div>
-                      <div style={{
-                        color: '#ffd700',
-                        fontSize: '12px',
-                        marginBottom: '8px',
-                        borderBottom: '1px solid #666',
-                        paddingBottom: '5px'
-                      }}>
+                      <div style={{color: '#ffd700',fontSize: '12px',marginBottom: '8px',borderBottom: '1px solid #666',paddingBottom: '5px'}}>
                         Distritos Disponíveis:
                       </div>
                       
@@ -2016,20 +2107,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                                   distrito: key
                                 });
                               }}
-                              style={{
-                                width: '100%',
-                                padding: '8px',
-                                margin: '5px 0',
-                                background: modoConstrucao.distrito === key ? '#4CAF50' : 'rgba(255,215,0,0.2)',
-                                border: modoConstrucao.distrito === key ? '2px solid #4CAF50' : '1px solid #888',
-                                borderRadius: '5px',
-                                cursor: 'pointer',
-                                color: '#fff',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                              }}
+                              style={{width: '100%',padding: '8px',margin: '5px 0',background: modoConstrucao.distrito === key ? '#4CAF50' : 'rgba(255,215,0,0.2)',border: modoConstrucao.distrito === key ? '2px solid #4CAF50' : '1px solid #888',borderRadius: '5px',cursor: 'pointer',color: '#fff',fontSize: '12px',display: 'flex',alignItems: 'center',gap: '8px'}}
                             >
                               <img src={distrito.icone} style={{width: '20px', height: '20px'}} alt="" />
                               {getNomeDistrito(key)}
@@ -2107,17 +2185,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
               
               {/* Botão de Prestígio e Ascender — fixo no centro superior
                   do .karaj-viewport (que é position:relative) */}
-              <div style={{
-                position: 'absolute',
-                top: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 99,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '5px'
-              }}>
+              <div style={{position: 'absolute',top: '20px',left: '50%',transform: 'translateX(-50%)',zIndex: 99,display: 'flex',flexDirection: 'column',alignItems: 'center',gap: '5px'}}>
                 <div className="prestigio-grande" style={{
                   margin: 0
                 }}>
@@ -2145,12 +2213,12 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                     Explodir Karaj
                   </button>
                 )}
-                {telaAtual == "ascensão" && (
+                {telaAtual === "ascensão" && (
                 <div className="prestigio-box">
                   Karaj foi destruída, mas será refeita mais forte do que nunca
                 </div>
                 )}
-                {telaAtual == "ascensão" && (
+                {telaAtual === "ascensão" && (
                   <button
                     className="portao-karaj"
                     onClick={() => {
@@ -2197,18 +2265,13 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                       return null;
                     }
 
-                    const { posicao, icone, icone_destruido, aberto, upgrades } = distrito;
+                    const { posicao, icone, icone_destruido, icone_a_construir, aberto, upgrades } = distrito;
                     
                     return (
                       <div 
                         key={key}
                         className="distrito-wrapper"
-                        style={{
-                          position: 'absolute',
-                          left: `${posicao.x}%`,
-                          top: `${posicao.y}%`,
-                          transform: 'translate(-50%, -50%)'
-                        }}
+                        style={{position: 'absolute',left: `${posicao.x}%`,top: `${posicao.y}%`,transform: 'translate(-50%, -50%)'}}
                       >
                         {!aberto && (
                           <div
@@ -2243,8 +2306,6 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                               }
                             }}
                           >
-                            <h3>{getNomeDistrito(key)}</h3>
-
                             {upgrades && upgrades.length > 0 ? (
                               <div className="upgrades-distrito">
                                 {upgrades.map((u, i) => (
@@ -2259,15 +2320,115 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                                     >
                                       <img 
                                         className="icone-pequeno"
-                                        src={u.comprado ? icone : icone_destruido}
+                                        src={u.comprado ? icone : icone_a_construir}
                                         alt={u.nome}
                                       />
                                     </button>
-                                    <div className="info">
-                                      <strong>{u.nome}</strong><br />
-                                      {u.descricao} <br />
-                                      Preço: {u.preço}
-                                    </div>
+                                    {/* tooltip some quando seletor está aberto*/}
+                                    {seletorPermanenteAberto !== i && (
+                                      <div className="info info-melhoria">
+                                        <strong>{u.nome}</strong><br />
+                                        {u.descricao} <br />
+                                        Preço: {u.preço}
+                                      </div>
+                                    )}
+
+                                    {u.efeito === 'permanente' && u.comprado && (() => {
+                                      const T = CONQUISTA_SPRITE.tamanho;
+                                      const idSelecionado = ascensao.upgradesPermanentes?.[i];
+                                      const melhoriaAtual = idSelecionado
+                                        ? DEFAULT_MELHORIAS.find(m => m.id === idSelecionado)
+                                        : null;
+
+                                      return (
+                                        <div
+                                          className="slot-upgrade-permanente"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <button
+                                            className="botao-slot-permanente"
+                                            disabled={telaAtual !== "ascensão"}
+                                            title={melhoriaAtual ? melhoriaAtual.nome : "Escolher Upgrade Permanente"}
+                                            onClick={() =>
+                                              setSeletorPermanenteAberto(prev => (prev === i ? null : i))
+                                            }
+                                          >
+                                            {melhoriaAtual && typeof melhoriaAtual.spriteX === 'number' ? (
+                                              <div
+                                                style={{
+                                                  width: T,
+                                                  height: T,
+                                                  backgroundImage: `url(${melhoriasSprite})`,
+                                                  backgroundPosition: `-${melhoriaAtual.spriteX * T}px -${melhoriaAtual.spriteY * T}px`,
+                                                  backgroundSize: `${CONQUISTA_SPRITE.colunas * T}px ${CONQUISTA_SPRITE.linhas * T}px`,
+                                                  imageRendering: 'pixelated'
+                                                }}
+                                              />
+                                            ) : (
+                                              <span className="botao-slot-permanente-vazio">+</span>
+                                            )}
+                                          </button>
+
+                                          {seletorPermanenteAberto === i && (
+                                            <div className="caixa-seletor-permanente">
+                                              <button
+                                                className="opcao-seletor-permanente nenhum"
+                                                onClick={() => {
+                                                  SelecionarUpgradePermanente(i, null);
+                                                  setSeletorPermanenteAberto(null);
+                                                }}
+                                              >
+                                                — Nenhum —
+                                              </button>
+
+                                              {ultimosUpgradesComprados
+                                                .filter(idUpgrade => {
+                                                  // Some da lista qualquer upgrade já escolhido em OUTRO slot
+                                                  const indiceUsado = (ascensao.upgradesPermanentes ?? []).indexOf(idUpgrade);
+                                                  return indiceUsado === -1 || indiceUsado === i;
+                                                })
+                                                .map(idUpgrade => {
+                                                const melhoriaSelecionada = DEFAULT_MELHORIAS.find(m => m.id === idUpgrade);
+                                                if (!melhoriaSelecionada) return null;
+                                                return (
+                                                  <button
+                                                    key={idUpgrade}
+                                                    className={`opcao-seletor-permanente ${ascensao.upgradesPermanentes?.[i] === idUpgrade ? "selecionado" : ""}`}
+                                                    onClick={() => {
+                                                      SelecionarUpgradePermanente(i, idUpgrade);
+                                                      setSeletorPermanenteAberto(null);
+                                                    }}
+                                                  >
+                                                    {typeof melhoriaSelecionada.spriteX === 'number' && (
+                                                      <div
+                                                        style={{
+                                                          width: T,
+                                                          height: T,
+                                                          zIndex:99999,
+                                                          flexShrink: 0,
+                                                          backgroundImage: `url(${melhoriasSprite})`,
+                                                          backgroundPosition: `-${melhoriaSelecionada.spriteX * T}px -${melhoriaSelecionada.spriteY * T}px`,
+                                                          backgroundSize: `${CONQUISTA_SPRITE.colunas * T}px ${CONQUISTA_SPRITE.linhas * T}px`,
+                                                          imageRendering: 'pixelated'
+                                                        }}
+                                                      />
+                                                    )}
+                                                    <div className="opcao-seletor-permanente-texto">
+                                                      <strong>{melhoriaSelecionada.nome}</strong>
+                                                      <span className="descricao-opcao-seletor">{melhoriaSelecionada.descricao}</span>
+                                                    </div>
+                                                  </button>
+                                                  
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
+
+
+
                                   </div>
                                 ))}
                               </div>
@@ -2340,14 +2501,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 {hoveredBuff && (
                   <div
                     className="info-frasco"
-                    style={{
-                      position: "fixed",
-                      left: tooltipPosBuff.x,
-                      top: tooltipPosBuff.y,
-                      transform: "translate(0, -50%)",
-                      zIndex: 9999
-                    }}
-                  >
+                    style={{position: "fixed",left: tooltipPosBuff.x,top: tooltipPosBuff.y,transform: "translate(0, -50%)",zIndex: 9999}}>
                     <strong style={{ color: hoveredBuff.debuff ? '#ff5252' : '#ffd700' }}>{hoveredBuff.nome}</strong><br />
                     {hoveredBuff.tipo === "CPS" && `${hoveredBuff.mult}x CPS`}
                     {hoveredBuff.tipo === "Click" && `${hoveredBuff.mult}x Clique`}
@@ -2368,9 +2522,11 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                 )}
 
                 {/* Contagem de Cookies */}
+                <div className='seção-numero'>
                 <div style={{ fontSize: "40px", margin: "20px 0" }}>{`${simplificarNumeroPT(contagem)} de cookies`}</div>
-                <div style={{ fontSize: "30px", margin: "20px 0" }}>{`Cookies por segundo: ${simplificarNumeroPT(CPS)}`}</div>
+                <div style={{ fontSize: "20px", margin: "20px 0" }}>{`Cookies por segundo: ${simplificarNumeroPT(CPS)}`}</div>
                 <script src="cookie.js"></script>
+                </div>
 
                 
                 {/* novo cookie com animação! */}
@@ -2382,11 +2538,10 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                   animate={controls}
                   whileHover={{
                     scale: 1.1,
-                    //boxShadow: "0 0 25px 5px rgba(255, 200, 100, 0.8)",
                     filter: "brightness(1.1)",
                     transition: { duration: 0.3, repeat: Infinity, repeatType: "reverse" },
                   }}
-                  //whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.95 }}
                   style={{ width: "400px", cursor: "pointer", borderRadius: "50%", userSelect: "none", }}
                 />
 
@@ -2497,28 +2652,32 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
           {telaAtual === "jogo" && (
             <div className='lado-direito'>
               <div className="seção-upgrades">
-                <h2> Upgrades </h2>
-                {upgradesOrdenados.map((m, i) => (
+                {upgradesOrdenados.map((m, i) => {
+                  const T = CONQUISTA_SPRITE.tamanho;
+                  const temSprite = typeof m.spriteX === 'number' && typeof m.spriteY === 'number';
+                  return (
                   <div key={m.indiceOriginal} className="upgrade-wrapper">
                     <button
                       className="melhorias"
                       onClick={() => ComprarMelhoria(m.indiceOriginal)}
                       disabled={contagem < m.preço}
-                      style={{
-                        opacity: contagem < m.preço ? 0.6 : 1,
-                        cursor: contagem < m.preço ? "auto" : "pointer",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      {m.nome} <br /> {simplificarNumeroPT(m.preço)}
+                      style={{opacity: contagem < m.preço ? 0.6 : 1,cursor: contagem < m.preço ? "auto" : "pointer",marginBottom: "8px",}}>
+                      {temSprite ? (
+                        <div
+                          style={{width: T,height: T,backgroundImage: `url(${melhoriasSprite})`,backgroundPosition: `-${m.spriteX * T}px -${m.spriteY * T}px`,backgroundSize: `${CONQUISTA_SPRITE.colunas * T}px ${CONQUISTA_SPRITE.linhas * T}px`,imageRendering: 'pixelated'}}/>
+                      ) : (
+                        <span style={{fontSize: '11px'}}>{m.nome}</span>
+                      )}
                     </button>
 
-                    <div className="info">
+                    <div className="info info-melhoria">
                       <strong>{m.nome}</strong><br />
-                      {m.descricao}
+                      {m.descricao}<br />
+                      <img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(m.preço)}
                     </div>
                   </div>
-                  ))}
+                  );
+                  })}
               </div>
               <div className="seção-construções">
 
@@ -2615,13 +2774,13 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
                           {/* exibição dinâmica do preço */}
                           <div className="construções-preco">
                             {multiplicador === 1 ? (// Modo padrão x1
-                              <>Preço: {simplificarNumeroPT(precoAtualUm)}</>
+                              <><img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(precoAtualUm)}</>
                             ) : naoPodeComprarNada ? (// Modo múltiplo ativo, mas sem dinheiro pra comprar 1
-                              <>Preço: {simplificarNumeroPT(precoAtualUm)}</>
+                              <><img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(precoAtualUm)}</>
                             ) : quantPossivel < multiplicador ? (// Sem dinheiro pra comprar tudo (ex: 47 de 100)
-                              <>Preço ({quantPossivel}): {simplificarNumeroPT(custoSimulado)}</>
+                              <>({quantPossivel}) <img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(custoSimulado)}</>
                             ) : (// Com dinheiro pra comprar tudo
-                              <>Preço ({multiplicador}): {simplificarNumeroPT(custoSimulado)}</>
+                              <>({multiplicador}) <img src={tinyCookie} alt="" className="preco-cookie-icone" /> {simplificarNumeroPT(custoSimulado)}</>
                             )}
                           </div>
                         </div>
@@ -2635,14 +2794,7 @@ function comprarConstrucao(indice, quantidadeDesejada = 1) {
               {hoveredConstrucao && (
                 <div
                   className="info-const"
-                  style={{
-                    position: "fixed",
-                    left: tooltipPos.x,
-                    top: tooltipPos.y,
-                    transform: "translate(-100%, -50%)",
-                    zIndex: 9999
-                  }}
-                >
+                  style={{position: "fixed",left: tooltipPos.x,top: tooltipPos.y,transform: "translate(-100%, -50%)",zIndex: 9999}}>
                   <strong>{hoveredConstrucao.nome}</strong><br />
                   {hoveredConstrucao.descricao}<br />
                   CPS: {simplificarNumeroPT(CpsConstrucao(hoveredConstrucao))}

@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONSTRUCOES, DEFAULT_MELHORIAS, DEFAULT_COOKIE_COIN, DEFAULT_ASCENSAO, DEFAULT_CONQUISTAS, DEFAULT_LABORATORIO, NVIDIA_NIVEL_MAXIMO_ABSOLUTO } from './defaults';
 
-export const VERSAO_ATUAL = 9.1; // Versão atual do save (V9.1 - Rework dos Cookie Coins)
+export const VERSAO_ATUAL = 10.0; // Versão atual do save (V10.0 - O Grande Update das Melhorias)
 
 // Formato padrão do save
 export const DEFAULT_SAVE = {
@@ -29,7 +29,11 @@ export const DEFAULT_SAVE = {
   laboratorio: DEFAULT_LABORATORIO,
   // Buffs/debuffs ativos (a maioria vem do Laboratório). Só os que ainda
   // não expiraram são salvos — ver normalizeBuff.
-  buff: []
+  buff: [],
+  // Ids das melhorias normais que estavam compradas na ascensão que acabou
+  // de terminar — pool de escolha pros slots de Upgrade Permanente
+  // (Distrito das Fazendas) na tela de ascensão.
+  ultimosUpgradesComprados: []
 }
  
 // --- MIGRAÇÃO  ---
@@ -151,7 +155,12 @@ function normalizeAscensao(saved) {
   const normalized = {
     desbloqueado: saved.desbloqueado ?? DEFAULT_ASCENSAO.desbloqueado,
     prestigio: saved.prestigio ?? DEFAULT_ASCENSAO.prestigio,
-    prestigioTotal: saved.prestigioTotal ?? DEFAULT_ASCENSAO.prestigioTotal
+    prestigioTotal: saved.prestigioTotal ?? DEFAULT_ASCENSAO.prestigioTotal,
+    // Slots de Upgrade Permanente (Distrito das Fazendas): garante um
+    // array de 4 posições, cada uma null ou o id de uma melhoria normal.
+    upgradesPermanentes: Array.isArray(saved.upgradesPermanentes)
+      ? [0, 1, 2, 3].map(i => saved.upgradesPermanentes[i] ?? null)
+      : DEFAULT_ASCENSAO.upgradesPermanentes
   };
  
   const distritos = [
@@ -184,6 +193,7 @@ function normalizeAscensao(saved) {
       posicao: savedDistrito?.posicao ?? defaultDistrito.posicao,
       icone: defaultDistrito.icone,
       icone_destruido: defaultDistrito.icone_destruido,
+      icone_a_construir: defaultDistrito.icone_a_construir,
       requisitoQuantidade: defaultDistrito.requisitoQuantidade,
       requisitoConstrucao: defaultDistrito.requisitoConstrucao,
       upgrades: defaultDistrito.upgrades.map(defUpg => {
@@ -399,6 +409,22 @@ const migrations = {
         : save.laboratorio,
       version: 9.1
     };
+  },
+
+  // Migração da 9.1 para 10.0 - MUITAS MELHORIAS!
+  // Leva: ícones em todas as melhorias (spriteX/spriteY), Café Salgado
+  // (upgrades 'cafe', efeito calculado a partir das conquistas obtidas —
+  // não precisa de estado novo), e os upgrades de Torre/Cassino da
+  // Sorte/Portal. Nenhuma transformação de dado é necessária aqui: como
+  // normalizeMelhorias/normalizeConquistas já constroem a lista a partir
+  // dos DEFAULTS atuais (preenchendo com "comprado: false"/"obtido: false"
+  // qualquer id novo ausente do save), os upgrades novos já aparecem
+  // automaticamente em saves antigos sem precisar de código extra aqui.
+  9.1: (save) => {
+    return {
+      ...save,
+      version: 10.0
+    };
   }
 };
  
@@ -479,7 +505,8 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       conquistas: DEFAULT_CONQUISTAS,
       sorteUpgradesAtivados: [],
       laboratorio: DEFAULT_LABORATORIO,
-      buff: []
+      buff: [],
+      ultimosUpgradesComprados: []
     };
   }
  
@@ -515,6 +542,7 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       sorteUpgradesAtivados: Array.isArray(migrated.sorteUpgradesAtivados) ? migrated.sorteUpgradesAtivados : [],
       laboratorio: normalizeLaboratorio(migrated.laboratorio),
       buff: normalizeBuff(migrated.buff),
+      ultimosUpgradesComprados: Array.isArray(migrated.ultimosUpgradesComprados) ? migrated.ultimosUpgradesComprados : [],
       version: VERSAO_ATUAL
     };
   } catch (error) {
@@ -535,7 +563,8 @@ export function loadSave(raw, defaultConstrucoes = null, defaultMelhorias = null
       conquistas: DEFAULT_CONQUISTAS,
       sorteUpgradesAtivados: [],
       laboratorio: DEFAULT_LABORATORIO,
-      buff: []
+      buff: [],
+      ultimosUpgradesComprados: []
     };
   }
 }
@@ -575,7 +604,8 @@ export function saveGame(state) {
     sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? [],
     laboratorio: state.laboratorio ?? DEFAULT_LABORATORIO,
     // Só salva buffs ainda ativos — descarta os já expirados.
-    buff: (state.buff ?? []).filter(b => b && typeof b.expira === 'number' && b.expira > Date.now())
+    buff: (state.buff ?? []).filter(b => b && typeof b.expira === 'number' && b.expira > Date.now()),
+    ultimosUpgradesComprados: state.ultimosUpgradesComprados ?? []
   };
  
   localStorage.setItem("QuickSave", JSON.stringify(save));
@@ -616,7 +646,8 @@ export function Save(state) {
     sorteUpgradesAtivados: state.sorteUpgradesAtivados ?? [],
     laboratorio: state.laboratorio ?? DEFAULT_LABORATORIO,
     // Só salva buffs ainda ativos — descarta os já expirados.
-    buff: (state.buff ?? []).filter(b => b && typeof b.expira === 'number' && b.expira > Date.now())
+    buff: (state.buff ?? []).filter(b => b && typeof b.expira === 'number' && b.expira > Date.now()),
+    ultimosUpgradesComprados: state.ultimosUpgradesComprados ?? []
   };
  
   return btoa(JSON.stringify(save));
@@ -644,7 +675,8 @@ export function Load(saveString, defaultConstrucoes = null, defaultMelhorias = n
       conquistas: DEFAULT_CONQUISTAS,
       sorteUpgradesAtivados: [],
       laboratorio: DEFAULT_LABORATORIO,
-      buff: []
+      buff: [],
+      ultimosUpgradesComprados: []
     };
   }
 }
